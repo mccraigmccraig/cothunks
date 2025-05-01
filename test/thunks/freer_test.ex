@@ -104,72 +104,45 @@ defmodule Thunks.FreerTest do
     Freer.etaf({:divide, a, b})
   end
 
+  def number_unit(n) do
+    {:number, n}
+  end
+
+  def number_bind({:number, n}, f), do: f.(n)
+
+  def number_bind({:multiply, a, b}, f), do: f.(a * b)
+
+  def number_bind({:divide, a, b}, f) do
+    if b != 0 do
+      f.(a / b)
+    else
+      {:error, "divide by zero: #{a}/#{b}"}
+    end
+  end
+
+  def number_bind({:error, err}, _f), do: {:error, err}
+
   describe "interpret" do
     test "it interprets a pure value" do
     end
 
-    test "it interprets a sequence of operations" do
+    test "it interprets a short sequence of operations" do
       v =
         number(10)
         |> Freer.bind(fn x -> multiply(x, 10) end)
 
-      o =
-        Freer.interpret(
-          v,
-          fn
-            n -> {:number, n}
-          end,
-          fn
-            {:number, n}, f ->
-              f.(n)
-
-            {:multiply, a, b}, f ->
-              f.(a * b)
-
-            {:divide, a, b}, f ->
-              if b != 0 do
-                f.(a / b)
-                {:error, "divide by zero: #{a} / 0"}
-              end
-
-            err, f ->
-              f.(err)
-          end
-        )
+      o = Freer.interpret(v, &number_unit/1, &number_bind/2)
 
       assert {:number, 100} = o
     end
 
-    test "it interprets another sequence of operations" do
+    test "it interprets a slightly longer sequence of operations" do
       v =
         number(10)
         |> Freer.bind(fn x -> multiply(x, 10) end)
         |> Freer.bind(fn y -> divide(y, 0) end)
 
-      o =
-        Freer.interpret(
-          v,
-          fn
-            n -> {:number, n}
-          end,
-          fn
-            {:number, n}, f ->
-              f.(n)
-
-            {:multiply, a, b}, f ->
-              f.(a * b)
-
-            {:divide, a, b}, f ->
-              if b != 0 do
-                f.(a / b)
-              else
-                {:error, "divide by zero: #{a} / #{b}"}
-              end
-
-            {:error, err}, _f ->
-              {:error, err}
-          end
-        )
+      o = Freer.interpret(v, &number_unit/1, &number_bind/2)
 
       assert {:error, err} = o
       assert err =~ ~r/divide by zero/
