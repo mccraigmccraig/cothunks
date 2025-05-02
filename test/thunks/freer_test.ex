@@ -220,7 +220,7 @@ defmodule Thunks.FreerTest do
     #   Logger.error("EXPR:\n#{inspect(expanded, pretty: true)}")
     # end
 
-    test "it does the binding thing" do
+    test "it provides a nice bind syntax sugar" do
       require Freer
 
       v =
@@ -234,6 +234,23 @@ defmodule Thunks.FreerTest do
       o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
 
       assert {:number, 10000} == o
+    end
+
+    test "it short circuits" do
+      require Freer
+
+      v =
+        Freer.con Numbers do
+          steps a <- number(10),
+                b <- number(1000),
+                c <- multiply(a, b) do
+            divide(c, 0)
+          end
+        end
+
+      o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
+
+      assert {:error, _} = o
     end
   end
 end

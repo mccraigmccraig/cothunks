@@ -10,6 +10,9 @@ defmodule Thunks.Freer do
 
   alias Thunks.Freer
 
+  @doc """
+  con - profitable cheating - and `with` in Spanish
+  """
   defmacro con(mod, do: body) do
     quote do
       import unquote(mod)
