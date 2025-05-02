@@ -16,7 +16,6 @@ defmodule Thunks.Freer do
   def return(x), do: pure(x)
 
   def bind({:pure, x}, k), do: k.(x)
-
   def bind({:impure, u, kp}, k), do: {:impure, u, gtgtgt(kp, k)}
 
   # >>> in Haskell - composes monadic functions
