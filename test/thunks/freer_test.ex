@@ -88,12 +88,26 @@ defmodule Thunks.FreerTest do
     end
   end
 
+  # define constructors for a simple language with
+  # - number
+  # - error
+  # - multiply operation
+  # - divide operation
+
+  def number(a) do
+    Freer.etaf({:number, a})
+  end
+
   def error(e) do
     Freer.etaf({:error, e})
   end
 
-  def number(a) do
-    Freer.etaf({:number, a})
+  def add(a, b) do
+    Freer.etaf({:add, a, b})
+  end
+
+  def subtract(a, b) do
+    Freer.etaf({:subtract, a, b})
   end
 
   def multiply(a, b) do
@@ -104,12 +118,14 @@ defmodule Thunks.FreerTest do
     Freer.etaf({:divide, a, b})
   end
 
-  def number_unit(n) do
-    {:number, n}
-  end
+  # interpret the langauge with unit + bind functions
+
+  def number_unit(n), do: {:number, n}
 
   def number_bind({:number, n}, f), do: f.(n)
-
+  def number_bind({:error, err}, _f), do: {:error, err}
+  def number_bind({:add, a, b}, f), do: f.(a + b)
+  def number_bind({:subtract, a, b}, f), do: f.(a - b)
   def number_bind({:multiply, a, b}, f), do: f.(a * b)
 
   def number_bind({:divide, a, b}, f) do
@@ -120,7 +136,7 @@ defmodule Thunks.FreerTest do
     end
   end
 
-  def number_bind({:error, err}, _f), do: {:error, err}
+  # now take the interpreter for a run
 
   describe "interpret" do
     test "it interprets a pure value" do
@@ -137,6 +153,19 @@ defmodule Thunks.FreerTest do
     end
 
     test "it interprets a slightly longer sequence of operations" do
+      v =
+        number(10)
+        |> Freer.bind(fn a -> multiply(a, 5) end)
+        |> Freer.bind(fn b -> add(b, 30) end)
+        |> Freer.bind(fn c -> divide(c, 20) end)
+        |> Freer.bind(fn d -> subtract(d, 8) end)
+
+      o = Freer.interpret(v, &number_unit/1, &number_bind/2)
+
+      assert {:number, -4.0} = o
+    end
+
+    test "it short circuits on divide by zero" do
       v =
         number(10)
         |> Freer.bind(fn x -> multiply(x, 10) end)
