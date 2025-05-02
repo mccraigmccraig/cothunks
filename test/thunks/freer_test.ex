@@ -94,29 +94,12 @@ defmodule Thunks.FreerTest do
   # - multiply operation
   # - divide operation
 
-  def number(a) do
-    Freer.etaf({:number, a})
-  end
-
-  def error(e) do
-    Freer.etaf({:error, e})
-  end
-
-  def add(a, b) do
-    Freer.etaf({:add, a, b})
-  end
-
-  def subtract(a, b) do
-    Freer.etaf({:subtract, a, b})
-  end
-
-  def multiply(a, b) do
-    Freer.etaf({:multiply, a, b})
-  end
-
-  def divide(a, b) do
-    Freer.etaf({:divide, a, b})
-  end
+  def number(a), do: Freer.etaf({:number, a})
+  def error(e), do: Freer.etaf({:error, e})
+  def add(a, b), do: Freer.etaf({:add, a, b})
+  def subtract(a, b), do: Freer.etaf({:subtract, a, b})
+  def multiply(a, b), do: Freer.etaf({:multiply, a, b})
+  def divide(a, b), do: Freer.etaf({:divide, a, b})
 
   # interpret the langauge with unit + bind functions
 
