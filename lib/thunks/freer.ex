@@ -9,41 +9,23 @@ defmodule Thunks.Freer do
 
   alias Thunks.Freer
 
-  def pure(x) do
-    {:pure, x}
-  end
+  def pure(x), do: {:pure, x}
 
-  # brings some structure into the Freer monad
-  def etaf(fa) do
-    {:impure, fa, &Freer.pure/1}
-  end
+  def etaf(fa), do: {:impure, fa, &Freer.pure/1}
 
-  def return(x) do
-    pure(x)
-  end
+  def return(x), do: pure(x)
 
-  def bind({:pure, x}, k) do
-    k.(x)
-  end
+  def bind({:pure, x}, k), do: k.(x)
 
-  def bind({:impure, u, kp}, k) do
-    {:impure, u, gtgtgt(kp, k)}
-  end
+  def bind({:impure, u, kp}, k), do: {:impure, u, gtgtgt(kp, k)}
 
   # >>> in Haskell - composes monadic functions
   # (a -> m b) -> (b -> m c) -> (a -> m c)
-  def gtgtgt(mff, mfg) do
-    fn x ->
-      mff.(x)
-      |> bind(mfg)
-    end
-  end
+  def gtgtgt(mff, mfg), do: fn x -> mff.(x) |> bind(mfg) end
 
   # not yet sure why aemaeth returns a function rather than
   # interprets directly
-  def interpret({:pure, x}, unit_f, _bind_f) do
-    unit_f.(x)
-  end
+  def interpret({:pure, x}, unit_f, _bind_f), do: unit_f.(x)
 
   def interpret({:impure, m, q}, unit_f, bind_f) do
     f = fn x -> x |> q.() |> interpret(unit_f, bind_f) end
