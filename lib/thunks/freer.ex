@@ -6,8 +6,35 @@ defmodule Thunks.Freer do
   with some Elixir inspiration from:
   https://github.com/aemaeth-me/freer
   """
+  require Logger
 
   alias Thunks.Freer
+
+  defmacro con(mod, do: body) do
+    quote do
+      import unquote(mod)
+      unquote(Macro.postwalk(body, &steps/1))
+    end
+  end
+
+  defp steps({:steps, ctx, [{:<-, _ctx, [lhs, rhs]} | exprs]}) do
+    binder(lhs, rhs, steps({:steps, ctx, exprs}))
+  end
+
+  defp steps({:steps, _ctx, [[do: expr] | []]}) do
+    quote do
+      unquote(expr)
+    end
+  end
+
+  defp steps(x), do: x
+
+  defp binder(lhs, rhs, body) do
+    quote do
+      unquote(rhs)
+      |> Freer.bind(fn unquote(lhs) -> unquote(body) end)
+    end
+  end
 
   def pure(x), do: {:pure, x}
 

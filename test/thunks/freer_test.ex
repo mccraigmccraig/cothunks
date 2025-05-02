@@ -88,7 +88,7 @@ defmodule Thunks.FreerTest do
     end
   end
 
-  defmodule Thunks.FreerTest.Numbers do
+  defmodule Numbers do
     # define constructors for a simple language with
     # - number
     # - error
@@ -120,8 +120,6 @@ defmodule Thunks.FreerTest do
       end
     end
   end
-
-  alias Thunks.FreerTest.Numbers
 
   # now take the interpreter for a run
 
@@ -200,6 +198,42 @@ defmodule Thunks.FreerTest do
       o = interpreter.(v)
 
       assert {:number, -4.0} = o
+    end
+  end
+
+  describe "con" do
+    # test "it expands the macro" do
+    #   require Freer
+    #   require Logger
+
+    #   expr =
+    #     quote do
+    #       Freer.con Numbers do
+    #         steps a <- number(10),
+    #               b <- number(1000) do
+    #           multiply(a, b)
+    #         end
+    #       end
+    #     end
+
+    #   expanded = Macro.expand_once(expr, __ENV__)
+    #   Logger.error("EXPR:\n#{inspect(expanded, pretty: true)}")
+    # end
+
+    test "it does the binding thing" do
+      require Freer
+
+      v =
+        Freer.con Numbers do
+          steps a <- number(10),
+                b <- number(1000) do
+            multiply(a, b)
+          end
+        end
+
+      o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
+
+      assert {:number, 10000} == o
     end
   end
 end
