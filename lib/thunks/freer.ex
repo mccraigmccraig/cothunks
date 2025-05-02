@@ -22,12 +22,14 @@ defmodule Thunks.Freer do
   # (a -> m b) -> (b -> m c) -> (a -> m c)
   def gtgtgt(mff, mfg), do: fn x -> mff.(x) |> bind(mfg) end
 
-  # not yet sure why aemaeth returns a function rather than
-  # interprets directly
   def interpret({:pure, x}, unit_f, _bind_f), do: unit_f.(x)
 
   def interpret({:impure, m, q}, unit_f, bind_f) do
     f = fn x -> x |> q.() |> interpret(unit_f, bind_f) end
     bind_f.(m, f)
+  end
+
+  def interpreter(unit_f, bind_f) do
+    fn freer -> interpret(freer, unit_f, bind_f) end
   end
 end

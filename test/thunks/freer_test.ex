@@ -181,4 +181,21 @@ defmodule Thunks.FreerTest do
       assert err =~ ~r/divide by zero/
     end
   end
+
+  describe "interpreter" do
+    test "it builds an interpreter" do
+      v =
+        number(10)
+        |> Freer.bind(fn a -> multiply(a, 5) end)
+        |> Freer.bind(fn b -> add(b, 30) end)
+        |> Freer.bind(fn c -> divide(c, 20) end)
+        |> Freer.bind(fn d -> subtract(d, 8) end)
+
+      interpreter = Freer.interpreter(&number_unit/1, &number_bind/2)
+
+      o = interpreter.(v)
+
+      assert {:number, -4.0} = o
+    end
+  end
 end
