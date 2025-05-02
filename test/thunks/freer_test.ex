@@ -165,6 +165,27 @@ defmodule Thunks.FreerTest do
       assert {:number, -4.0} = o
     end
 
+    test "it interprets nested operations" do
+      v =
+        number(10)
+        |> Freer.bind(fn a ->
+          number(20)
+          |> Freer.bind(fn b ->
+            number(5)
+            |> Freer.bind(fn c ->
+              multiply(a, b)
+              |> Freer.bind(fn d ->
+                add(c, d)
+              end)
+            end)
+          end)
+        end)
+
+      o = Freer.interpret(v, &number_unit/1, &number_bind/2)
+
+      assert {:number, 205} = o
+    end
+
     test "it short circuits on divide by zero" do
       v =
         number(10)
