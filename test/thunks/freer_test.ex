@@ -1,6 +1,7 @@
 defmodule Thunks.FreerTest do
   use ExUnit.Case
 
+  require Logger
   alias Thunks.Freer
 
   describe "pure" do
@@ -92,34 +93,44 @@ defmodule Thunks.FreerTest do
     # define constructors for a simple language with
     # - number
     # - error
+    # - add operation
+    # - subtract ooperation
     # - multiply operation
     # - divide operation
 
-    def number(a), do: Freer.etaf({:number, a})
-    def error(e), do: Freer.etaf({:error, e})
-    def add(a, b), do: Freer.etaf({:add, a, b})
-    def subtract(a, b), do: Freer.etaf({:subtract, a, b})
-    def multiply(a, b), do: Freer.etaf({:multiply, a, b})
-    def divide(a, b), do: Freer.etaf({:divide, a, b})
+    def number(a), do: {:number, a}
+    def error(e), do: {:error, e}
+    def add(a, b), do: {:add, a, b}
+    def subtract(a, b), do: {:subtract, a, b}
+    def multiply(a, b), do: {:multiply, a, b}
+    def divide(a, b), do: {:divide, a, b}
 
     # interpret the langauge with unit + bind functions
 
-    def unit(n), do: {:number, n}
+    defmodule Interpret do
+      def unit(n), do: {:number, n}
 
-    def bind({:number, n}, f), do: f.(n)
-    def bind({:error, err}, _f), do: {:error, err}
-    def bind({:add, a, b}, f), do: f.(a + b)
-    def bind({:subtract, a, b}, f), do: f.(a - b)
-    def bind({:multiply, a, b}, f), do: f.(a * b)
+      def bind({:number, n}, f), do: f.(n)
+      def bind({:error, err}, _f), do: {:error, err}
+      def bind({:add, a, b}, f), do: f.(a + b)
+      def bind({:subtract, a, b}, f), do: f.(a - b)
+      def bind({:multiply, a, b}, f), do: f.(a * b)
 
-    def bind({:divide, a, b}, f) do
-      if b != 0 do
-        f.(a / b)
-      else
-        {:error, "divide by zero: #{a}/#{b}"}
+      def bind({:divide, a, b}, f) do
+        if b != 0 do
+          f.(a / b)
+        else
+          {:error, "divide by zero: #{a}/#{b}"}
+        end
       end
     end
   end
+
+  defmodule FreerNumbers do
+    use Freer.FreerOps, ops: Numbers
+  end
+
+  Logger.error("FreerNumbers: #{inspect(FreerNumbers.number(10))}")
 
   # now take the interpreter for a run
 
@@ -129,55 +140,55 @@ defmodule Thunks.FreerTest do
 
     test "it interprets a short sequence of operations" do
       v =
-        Numbers.number(10)
-        |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
+        FreerNumbers.number(10)
+        |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
 
-      o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
+      o = Freer.interpret(v, &Numbers.Interpret.unit/1, &Numbers.Interpret.bind/2)
 
       assert {:number, 100} = o
     end
 
     test "it interprets a slightly longer sequence of operations" do
       v =
-        Numbers.number(10)
-        |> Freer.bind(fn a -> Numbers.multiply(a, 5) end)
-        |> Freer.bind(fn b -> Numbers.add(b, 30) end)
-        |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
-        |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
+        FreerNumbers.number(10)
+        |> Freer.bind(fn a -> FreerNumbers.multiply(a, 5) end)
+        |> Freer.bind(fn b -> FreerNumbers.add(b, 30) end)
+        |> Freer.bind(fn c -> FreerNumbers.divide(c, 20) end)
+        |> Freer.bind(fn d -> FreerNumbers.subtract(d, 8) end)
 
-      o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
+      o = Freer.interpret(v, &Numbers.Interpret.unit/1, &Numbers.Interpret.bind/2)
 
       assert {:number, -4.0} = o
     end
 
     test "it interprets nested operations" do
       v =
-        Numbers.number(10)
+        FreerNumbers.number(10)
         |> Freer.bind(fn a ->
-          Numbers.number(20)
+          FreerNumbers.number(20)
           |> Freer.bind(fn b ->
-            Numbers.number(5)
+            FreerNumbers.number(5)
             |> Freer.bind(fn c ->
-              Numbers.multiply(a, b)
+              FreerNumbers.multiply(a, b)
               |> Freer.bind(fn d ->
-                Numbers.add(c, d)
+                FreerNumbers.add(c, d)
               end)
             end)
           end)
         end)
 
-      o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
+      o = Freer.interpret(v, &Numbers.Interpret.unit/1, &Numbers.Interpret.bind/2)
 
       assert {:number, 205} = o
     end
 
     test "it short circuits on divide by zero" do
       v =
-        Numbers.number(10)
-        |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
-        |> Freer.bind(fn y -> Numbers.divide(y, 0) end)
+        FreerNumbers.number(10)
+        |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
+        |> Freer.bind(fn y -> FreerNumbers.divide(y, 0) end)
 
-      o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
+      o = Freer.interpret(v, &Numbers.Interpret.unit/1, &Numbers.Interpret.bind/2)
 
       assert {:error, err} = o
       assert err =~ ~r/divide by zero/
@@ -187,13 +198,13 @@ defmodule Thunks.FreerTest do
   describe "interpreter" do
     test "it builds an interpreter" do
       v =
-        Numbers.number(10)
-        |> Freer.bind(fn a -> Numbers.multiply(a, 5) end)
-        |> Freer.bind(fn b -> Numbers.add(b, 30) end)
-        |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
-        |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
+        FreerNumbers.number(10)
+        |> Freer.bind(fn a -> FreerNumbers.multiply(a, 5) end)
+        |> Freer.bind(fn b -> FreerNumbers.add(b, 30) end)
+        |> Freer.bind(fn c -> FreerNumbers.divide(c, 20) end)
+        |> Freer.bind(fn d -> FreerNumbers.subtract(d, 8) end)
 
-      interpreter = Freer.interpreter(&Numbers.unit/1, &Numbers.bind/2)
+      interpreter = Freer.interpreter(&Numbers.Interpret.unit/1, &Numbers.Interpret.bind/2)
 
       o = interpreter.(v)
 
@@ -224,14 +235,14 @@ defmodule Thunks.FreerTest do
       require Freer
 
       v =
-        Freer.con Numbers do
+        Freer.con FreerNumbers do
           steps a <- number(10),
                 b <- number(1000) do
             multiply(a, b)
           end
         end
 
-      o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
+      o = Freer.interpret(v, &Numbers.Interpret.unit/1, &Numbers.Interpret.bind/2)
 
       assert {:number, 10000} == o
     end
@@ -240,15 +251,15 @@ defmodule Thunks.FreerTest do
       require Freer
 
       v =
-        Freer.con Numbers do
+        Freer.con FreerNumbers do
           steps a <- number(10),
                 b <- number(1000),
-                c <- multiply(a, b) do
-            divide(c, 0)
+                c <- divide(a, 0) do
+            multiply(b, c)
           end
         end
 
-      o = Freer.interpret(v, &Numbers.unit/1, &Numbers.bind/2)
+      o = Freer.interpret(v, &Numbers.Interpret.unit/1, &Numbers.Interpret.bind/2)
 
       assert {:error, _} = o
     end
