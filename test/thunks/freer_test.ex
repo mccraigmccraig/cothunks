@@ -3,6 +3,7 @@ defmodule Thunks.FreerTest do
 
   require Logger
   alias Thunks.Freer
+  alias Thunks.FreerOps
 
   describe "pure" do
     test "it wraps a value" do
@@ -106,7 +107,7 @@ defmodule Thunks.FreerTest do
   end
 
   defmodule FreerNumbers do
-    use Freer.FreerOps, ops: Numbers
+    use FreerOps, ops: Numbers
   end
 
   # interpret the langauge with unit + bind functions
