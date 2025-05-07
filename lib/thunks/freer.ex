@@ -75,15 +75,15 @@ defmodule Thunks.Freer do
     defmacro __using__(opts) do
       ops_mod_alias = Keyword.get(opts, :ops)
       ops_mod = Macro.expand(ops_mod_alias, __CALLER__)
-      Logger.error("ops_mod: #{inspect(ops_mod)}")
+      # Logger.error("ops_mod: #{inspect(ops_mod)}")
       functions = ops_mod.__info__(:functions)
-      Logger.error("functions: #{inspect(functions)}")
+      # Logger.error("functions: #{inspect(functions)}")
 
       freer_functions =
         functions
         |> Enum.map(fn {f, arity} -> Freer.freer_op(ops_mod, f, arity) end)
 
-      Logger.error("FREER_FUNCTIONS\n#{inspect(freer_functions, pretty: true)}")
+      # Logger.error("FREER_FUNCTIONS\n#{inspect(freer_functions, pretty: true)}")
 
       quote do
         (unquote_splicing(freer_functions))
