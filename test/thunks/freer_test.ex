@@ -106,8 +106,16 @@ defmodule Thunks.FreerTest do
     def divide(a, b), do: {:divide, a, b}
   end
 
+  defmodule AlsoNumbers do
+    def also_number(a), do: {:also_number, a}
+  end
+
   defmodule FreerNumbers do
     use FreerOps, ops: Numbers
+  end
+
+  defmodule FreerAlsoNumbers do
+    use FreerOps, ops: AlsoNumbers
   end
 
   # interpret the langauge with unit + bind functions
@@ -115,6 +123,7 @@ defmodule Thunks.FreerTest do
     def unit(n), do: {:number, n}
 
     def bind({:number, n}, f), do: f.(n)
+    def bind({:also_number, n}, f), do: f.(n)
     def bind({:error, err}, _f), do: {:error, err}
     def bind({:add, a, b}, f), do: f.(a + b)
     def bind({:subtract, a, b}, f), do: f.(a - b)
@@ -218,6 +227,24 @@ defmodule Thunks.FreerTest do
         Freer.con FreerNumbers do
           steps a <- number(10),
                 b <- number(1000),
+                c <- add(a, b),
+                d <- multiply(a, b) do
+            subtract(d, c)
+          end
+        end
+
+      o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+
+      assert {:number, 8990} == o
+    end
+
+    test "it can mix multiple ops modules" do
+      require Freer
+
+      v =
+        Freer.con [FreerNumbers, FreerAlsoNumbers] do
+          steps a <- number(10),
+                b <- also_number(1000),
                 c <- add(a, b),
                 d <- multiply(a, b) do
             subtract(d, c)

@@ -13,11 +13,26 @@ defmodule Thunks.Freer do
   @doc """
   con - profitable cheating - and `with` in Spanish
   """
-  defmacro con(mod, do: body) do
+  defmacro con(mod_or_mods, do: body) do
+    imports = expand_imports(mod_or_mods)
+
     quote do
-      import unquote(mod)
+      unquote_splicing(imports)
       unquote(Macro.postwalk(body, &steps/1))
     end
+  end
+
+  defp expand_imports(mods) when is_list(mods) do
+    mods
+    |> Enum.map(fn mod ->
+      quote do
+        import unquote(mod)
+      end
+    end)
+  end
+
+  defp expand_imports(mod) do
+    expand_imports([mod])
   end
 
   defp steps({:steps, ctx, [{:<-, _ctx, [lhs, rhs]} | exprs]}) do
