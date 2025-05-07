@@ -216,14 +216,16 @@ defmodule Thunks.FreerTest do
       v =
         Freer.con FreerNumbers do
           steps a <- number(10),
-                b <- number(1000) do
-            multiply(a, b)
+                b <- number(1000),
+                c <- add(a, b),
+                d <- multiply(a, b) do
+            subtract(d, c)
           end
         end
 
       o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
-      assert {:number, 10000} == o
+      assert {:number, 8990} == o
     end
 
     test "it short circuits" do
@@ -240,7 +242,8 @@ defmodule Thunks.FreerTest do
 
       o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
-      assert {:error, _} = o
+      assert {:error, err} = o
+      assert err =~ ~r/divide by zero/
     end
   end
 end
