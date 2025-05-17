@@ -54,6 +54,8 @@ defmodule Thunks.Freer do
     end
   end
 
+  # now the Freer functions
+
   def pure(x), do: {:pure, x}
 
   def etaf(fa), do: {:impure, fa, &Freer.pure/1}
@@ -70,23 +72,6 @@ defmodule Thunks.Freer do
   def interpret({:pure, x}, unit_f, _bind_f), do: unit_f.(x)
 
   def interpret({:impure, m, q}, unit_f, bind_f) do
-    # how about... stick with the freer monad, with
-    # a simple-data langauge and interpreted effects...
-    # the add logging into the interpretation
-    # - return logged values on retry/resume
-    # - return resumed value on yield
-    # &c
-    # or maybe logging &c is just another layer inside freer...
-    # forget about thunks - all about the data ?
-    # hmmm.... thought required
-    #
-    # macro to compiles a delegation module for operations
-    # modules, which does the op-function -> etaf wrapping
-    #
-    # defoperations(MODULE, language_module)
-    #
-    # maybe create a signature struct/structs for the operations
-    # of a langauge - so we can dynamically check results
     f = fn x -> x |> q.() |> interpret(unit_f, bind_f) end
     bind_f.(m, f)
   end
