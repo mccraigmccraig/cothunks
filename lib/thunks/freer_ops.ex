@@ -34,35 +34,35 @@ defmodule Thunks.FreerOps do
       0 ->
         quote do
           def unquote(f_atom)() do
-            apply(unquote(ops_mod), unquote(f_atom), []) |> Thunks.Freer.etaf()
+            apply(unquote(ops_mod), unquote(f_atom), []) |> Thunks.Freer.etaf(ops_mod)
           end
         end
 
       1 ->
         quote do
           def unquote(f_atom)(a) do
-            apply(unquote(ops_mod), unquote(f_atom), [a]) |> Thunks.Freer.etaf()
+            apply(unquote(ops_mod), unquote(f_atom), [a]) |> Thunks.Freer.etaf(ops_mod)
           end
         end
 
       2 ->
         quote do
           def unquote(f_atom)(a, b) do
-            apply(unquote(ops_mod), unquote(f_atom), [a, b]) |> Thunks.Freer.etaf()
+            apply(unquote(ops_mod), unquote(f_atom), [a, b]) |> Thunks.Freer.etaf(ops_mod)
           end
         end
 
       3 ->
         quote do
           def unquote(f_atom)(a, b, c) do
-            apply(unquote(ops_mod), unquote(f_atom), [a, b, c]) |> Thunks.Freer.etaf()
+            apply(unquote(ops_mod), unquote(f_atom), [a, b, c]) |> Thunks.Freer.etaf(ops_mod)
           end
         end
 
       4 ->
         quote do
           def unquote(f_atom)(a, b, c, d) do
-            apply(unquote(ops_mod), unquote(f_atom), [a, b, c, d]) |> Thunks.Freer.etaf()
+            apply(unquote(ops_mod), unquote(f_atom), [a, b, c, d]) |> Thunks.Freer.etaf(ops_mod)
           end
         end
     end

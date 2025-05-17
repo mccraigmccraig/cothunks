@@ -54,29 +54,66 @@ defmodule Thunks.Freer do
     end
   end
 
+  # Freer values are %Pure{} and %Impure{}
+
+  defmodule Pure do
+    defstruct val: nil
+  end
+
+  defmodule Impure do
+    defstruct eff: nil, mval: nil, q: []
+  end
+
   # now the Freer functions
 
-  def pure(x), do: {:pure, x}
+  def pure(x), do: %Pure{val: x}
 
-  def etaf(fa), do: {:impure, fa, &Freer.pure/1}
+  def etaf(fa, eff), do: %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
 
   def return(x), do: pure(x)
 
-  def bind({:pure, x}, k), do: k.(x)
-  def bind({:impure, u, kp}, k), do: {:impure, u, gtgtgt(kp, k)}
+  def bind(%Pure{val: x}, k), do: k.(x)
+  def bind(%Impure{eff: eff, mval: u, q: q}, k), do: %Impure{eff: eff, mval: u, q: q_append(q, k)}
 
-  # >>> in Haskell - composes monadic functions
-  # (a -> m b) -> (b -> m c) -> (a -> m c)
-  def gtgtgt(mff, mfg), do: fn x -> mff.(x) |> bind(mfg) end
-
-  def interpret({:pure, x}, unit_f, _bind_f), do: unit_f.(x)
-
-  def interpret({:impure, m, q}, unit_f, bind_f) do
-    f = fn x -> x |> q.() |> interpret(unit_f, bind_f) end
-    bind_f.(m, f)
+  def q_append(q, mf) do
+    Enum.concat(q, [mf])
   end
 
-  def interpreter(unit_f, bind_f) do
-    fn freer -> interpret(freer, unit_f, bind_f) end
+  def q_concat(qa, qb) do
+    Enum.concat(qa, qb)
+  end
+
+  def q_apply(q, x) do
+    case q do
+      [f] -> f.(x)
+      [f | t] -> bindp(f.(x), t)
+    end
+  end
+
+  def bindp(mx, k) do
+    case mx do
+      %Pure{val: y} -> q_apply(y, k)
+      %Impure{eff: eff, mval: u, q: q} -> %Impure{eff: eff, mval: u, q: q_concat(q, k)}
+    end
+  end
+
+  def handle_relay(_effs, ret, _, %Pure{val: x}) do
+    ret.(x)
+  end
+
+  def handle_relay(effs, ret, h, %Impure{eff: eff, mval: u, q: q}) do
+    k = q_comp(q, &handle_relay(effs, ret, h, &1))
+
+    if Enum.member?(effs, eff) do
+      h.(u, k)
+    else
+      %Impure{eff: eff, mval: u, q: [k]}
+    end
+  end
+
+  def q_comp(g, h) do
+    fn x ->
+      q_apply(g, x) |> h.()
+    end
   end
 end
