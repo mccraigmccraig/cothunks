@@ -1,10 +1,11 @@
 defmodule Thunks.Freer do
   @moduledoc """
-  A Freer Monad, based on the Haskell from:
-  https://okmij.org/ftp/Computation/free-monad.html
+  A Freer Monad with extensible effects, based on the paper:
+  https://okmij.org/ftp/Haskell/extensible/more.pdf
 
   with some Elixir inspiration from:
   https://github.com/aemaeth-me/freer
+  https://github.com/bootstarted/effects
   """
   require Logger
 

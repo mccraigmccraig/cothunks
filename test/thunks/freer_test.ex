@@ -14,8 +14,8 @@ defmodule Thunks.FreerTest do
 
   describe "etaf" do
     test "it wraps values into the Freer Monad" do
-      assert %Impure{eff: Thunks.FreerTest, mval: :val, q: [&Freer.pure/1]} ==
-               Freer.etaf(:val, Thunks.FreerTest)
+      assert %Impure{eff: EffectMod, mval: :val, q: [&Freer.pure/1]} ==
+               Freer.etaf(:val, EffectMod)
     end
   end
 
@@ -25,55 +25,45 @@ defmodule Thunks.FreerTest do
     end
   end
 
-  # describe "bind" do
-  #   test "it binds a value" do
-  #     assert {:impure, 10, f} =
-  #              Freer.etaf(10)
-  #              |> Freer.bind(fn x -> Freer.return(2 * x) end)
+  describe "bind" do
+    test "it binds a value" do
+      assert %Impure{eff: EffectMod, mval: 10, q: [pure_f, step_f]} =
+               Freer.etaf(10, EffectMod)
+               |> Freer.bind(fn x -> Freer.return(2 * x) end)
 
-  #     assert {:pure, 200} == f.(100)
-  #   end
+      assert %Pure{val: 200} == step_f.(100)
+    end
 
-  #   test "it binds repeatedly with pure expressions" do
-  #     assert {:impure, 10, f} =
-  #              Freer.etaf(10)
-  #              |> Freer.bind(fn x -> Freer.return(2 * x) end)
-  #              |> Freer.bind(fn x -> Freer.return(5 + x) end)
+    test "it binds repeatedly with pure expressions" do
+      assert %Impure{eff: EffectMod, mval: 10, q: [pure_f, step_1_f, step_2_f]} =
+               Freer.etaf(10, EffectMod)
+               |> Freer.bind(fn x -> Freer.return(2 * x) end)
+               |> Freer.bind(fn x -> Freer.return(5 + x) end)
 
-  #     assert {:pure, 205} = f.(100)
-  #   end
+      assert %Pure{val: 200} = step_1_f.(100)
+      assert %Pure{val: 105} = step_2_f.(100)
+    end
 
-  #   test "it binds repeatedly with impoure expressions" do
-  #     assert {:impure, 10, f} =
-  #              Freer.etaf(10)
-  #              |> Freer.bind(fn x ->
-  #                x |> Freer.etaf() |> Freer.bind(fn y -> Freer.return(2 * y) end)
-  #              end)
-  #              |> Freer.bind(fn x ->
-  #                x |> Freer.etaf() |> Freer.bind(fn y -> Freer.return(5 + y) end)
-  #              end)
+    test "it binds repeatedly with impoure expressions" do
+      assert %Impure{eff: EffectMod, mval: 10, q: [step_1, step_2, step_3]} =
+               Freer.etaf(10, EffectMod)
+               |> Freer.bind(fn x ->
+                 x |> Freer.etaf(EffectMod) |> Freer.bind(fn y -> Freer.return(2 * y) end)
+               end)
+               |> Freer.bind(fn x ->
+                 x |> Freer.etaf(EffectMod) |> Freer.bind(fn y -> Freer.return(5 + y) end)
+               end)
 
-  #     # each invocation of the composed function returns
-  #     # the next step, so we thread the values through
-  #     # repeated invocations
-  #     assert {:impure, 100, g} = f.(100)
-  #     assert {:impure, 200, h} = g.(100)
-  #     assert {:pure, 205} = h.(200)
-  #   end
-  # end
-
-  # describe "gtgtgt" do
-  #   test "it composes monadic functions on a pure value" do
-  #     f =
-  #       Freer.gtgtgt(
-  #         fn x -> Freer.return(2 * x) end,
-  #         fn x -> Freer.return(5 + x) end
-  #       )
-
-  #     # functions on pure values get evaluated immediately
-  #     assert {:pure, 5} = f.(0)
-  #     assert {:pure, 25} = f.(10)
-  #   end
+      # trace the steps manually, feeding values from one into the next - this
+      # is exactly what an interpreter for the identity effect would do
+      pure = &Freer.pure/1
+      assert %Pure{val: 10} = step_1.(10)
+      assert %Impure{eff: EffectMod, mval: 10, q: [^pure, step_2_2]} = step_2.(10)
+      assert %Pure{val: 20} = step_2_2.(10)
+      assert %Impure{eff: EffectMod, mval: 20, q: [^pure, step_3_2]} = step_3.(20)
+      assert %Pure{val: 25} = step_3_2.(20)
+    end
+  end
 
   #   test "it composes monadic functions on an impure value" do
   #     f =
