@@ -65,134 +65,125 @@ defmodule Thunks.FreerTest do
     end
   end
 
-  #   test "it composes monadic functions on an impure value" do
-  #     f =
-  #       Freer.gtgtgt(
-  #         fn x -> Freer.etaf(2 * x) end,
-  #         fn x -> Freer.return(5 + x) end
-  #       )
+  # define constructors for a simple language with
+  # - number
+  # - error
+  # - add operation
+  # - subtract ooperation
+  # - multiply operation
+  # - divide operation
+  defmodule Numbers do
+    def number(a), do: {:number, a}
+    def error(e), do: {:error, e}
+    def add(a, b), do: {:add, a, b}
+    def subtract(a, b), do: {:subtract, a, b}
+    def multiply(a, b), do: {:multiply, a, b}
+    def divide(a, b), do: {:divide, a, b}
+  end
 
-  #     # each invocation of the composed function returns
-  #     # the next step
-  #     assert {:impure, 0, g1} = f.(0)
-  #     assert {:pure, 5} = g1.(0)
+  defmodule AlsoNumbers do
+    def also_number(a), do: {:also_number, a}
+  end
 
-  #     assert {:impure, 20, g2} = f.(10)
-  #     assert {:pure, 25} = g2.(20)
-  #   end
-  # end
+  defmodule FreerNumbers do
+    use FreerOps, ops: Numbers
+  end
 
-  # # define constructors for a simple language with
-  # # - number
-  # # - error
-  # # - add operation
-  # # - subtract ooperation
-  # # - multiply operation
-  # # - divide operation
-  # defmodule Numbers do
-  #   def number(a), do: {:number, a}
-  #   def error(e), do: {:error, e}
-  #   def add(a, b), do: {:add, a, b}
-  #   def subtract(a, b), do: {:subtract, a, b}
-  #   def multiply(a, b), do: {:multiply, a, b}
-  #   def divide(a, b), do: {:divide, a, b}
-  # end
+  defmodule FreerAlsoNumbers do
+    use FreerOps, ops: AlsoNumbers
+  end
 
-  # defmodule AlsoNumbers do
-  #   def also_number(a), do: {:also_number, a}
-  # end
+  # interpret the langauge with unit + bind functions
+  defmodule InterpretNumbers do
+    def unit(n), do: {:number, n}
 
-  # defmodule FreerNumbers do
-  #   use FreerOps, ops: Numbers
-  # end
+    def bind({:number, n}, f), do: f.(n)
+    def bind({:also_number, n}, f), do: f.(n)
+    def bind({:error, err}, _f), do: {:error, err}
+    def bind({:add, a, b}, f), do: f.(a + b)
+    def bind({:subtract, a, b}, f), do: f.(a - b)
+    def bind({:multiply, a, b}, f), do: f.(a * b)
 
-  # defmodule FreerAlsoNumbers do
-  #   use FreerOps, ops: AlsoNumbers
-  # end
+    def bind({:divide, a, b}, f) do
+      if b != 0 do
+        f.(a / b)
+      else
+        {:error, "divide by zero: #{a}/#{b}"}
+      end
+    end
+  end
 
-  # # interpret the langauge with unit + bind functions
-  # defmodule InterpretNumbers do
-  #   def unit(n), do: {:number, n}
+  describe "q_apply" do
+  end
 
-  #   def bind({:number, n}, f), do: f.(n)
-  #   def bind({:also_number, n}, f), do: f.(n)
-  #   def bind({:error, err}, _f), do: {:error, err}
-  #   def bind({:add, a, b}, f), do: f.(a + b)
-  #   def bind({:subtract, a, b}, f), do: f.(a - b)
-  #   def bind({:multiply, a, b}, f), do: f.(a * b)
+  describe "q_comp" do
+  end
 
-  #   def bind({:divide, a, b}, f) do
-  #     if b != 0 do
-  #       f.(a / b)
-  #     else
-  #       {:error, "divide by zero: #{a}/#{b}"}
-  #     end
-  #   end
-  # end
+  # now take the interpreter for a run
 
-  # # now take the interpreter for a run
+  describe "interpret" do
+    test "it interprets a pure value" do
+    end
 
-  # describe "interpret" do
-  #   test "it interprets a pure value" do
-  #   end
+    test "it interprets a short sequence of operations" do
+      v =
+        FreerNumbers.number(10)
+        |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
 
-  #   test "it interprets a short sequence of operations" do
-  #     v =
-  #       FreerNumbers.number(10)
-  #       |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
+      handled =
+        Freer.handle_relay(v, [Numbers], &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
-  #     o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+      # o = Freer.run(handled)
+      assert {:number, 100} = handled
+    end
 
-  #     assert {:number, 100} = o
-  #   end
+    # test "it interprets a slightly longer sequence of operations" do
+    #   v =
+    #     FreerNumbers.number(10)
+    #     |> Freer.bind(fn a -> FreerNumbers.multiply(a, 5) end)
+    #     |> Freer.bind(fn b -> FreerNumbers.add(b, 30) end)
+    #     |> Freer.bind(fn c -> FreerNumbers.divide(c, 20) end)
+    #     |> Freer.bind(fn d -> FreerNumbers.subtract(d, 8) end)
 
-  #   test "it interprets a slightly longer sequence of operations" do
-  #     v =
-  #       FreerNumbers.number(10)
-  #       |> Freer.bind(fn a -> FreerNumbers.multiply(a, 5) end)
-  #       |> Freer.bind(fn b -> FreerNumbers.add(b, 30) end)
-  #       |> Freer.bind(fn c -> FreerNumbers.divide(c, 20) end)
-  #       |> Freer.bind(fn d -> FreerNumbers.subtract(d, 8) end)
+    #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
-  #     o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+    #   assert {:number, -4.0} = o
+    # end
 
-  #     assert {:number, -4.0} = o
-  #   end
+    # test "it interprets nested operations" do
+    #   v =
+    #     FreerNumbers.number(10)
+    #     |> Freer.bind(fn a ->
+    #       FreerNumbers.number(20)
+    #       |> Freer.bind(fn b ->
+    #         FreerNumbers.number(5)
+    #         |> Freer.bind(fn c ->
+    #           FreerNumbers.multiply(a, b)
+    #           |> Freer.bind(fn d ->
+    #             FreerNumbers.add(c, d)
+    #           end)
+    #         end)
+    #       end)
+    #     end)
 
-  #   test "it interprets nested operations" do
-  #     v =
-  #       FreerNumbers.number(10)
-  #       |> Freer.bind(fn a ->
-  #         FreerNumbers.number(20)
-  #         |> Freer.bind(fn b ->
-  #           FreerNumbers.number(5)
-  #           |> Freer.bind(fn c ->
-  #             FreerNumbers.multiply(a, b)
-  #             |> Freer.bind(fn d ->
-  #               FreerNumbers.add(c, d)
-  #             end)
-  #           end)
-  #         end)
-  #       end)
+    #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
-  #     o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+    #   assert {:number, 205} = o
+    # end
 
-  #     assert {:number, 205} = o
-  #   end
+    # test "it short circuits on divide by zero" do
+    #   v =
+    #     FreerNumbers.number(10)
+    #     |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
+    #     |> Freer.bind(fn y -> FreerNumbers.divide(y, 0) end)
+    #     |> Freer.bind(fn z -> FreerNumbers.add(z, 10) end)
 
-  #   test "it short circuits on divide by zero" do
-  #     v =
-  #       FreerNumbers.number(10)
-  #       |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
-  #       |> Freer.bind(fn y -> FreerNumbers.divide(y, 0) end)
-  #       |> Freer.bind(fn z -> FreerNumbers.add(z, 10) end)
+    #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
-  #     o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
-
-  #     assert {:error, err} = o
-  #     assert err =~ ~r/divide by zero/
-  #   end
-  # end
+    #   assert {:error, err} = o
+    #   assert err =~ ~r/divide by zero/
+    # end
+  end
 
   # describe "interpreter" do
   #   test "it builds an interpreter" do

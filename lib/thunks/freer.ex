@@ -93,22 +93,8 @@ defmodule Thunks.Freer do
 
   def bindp(mx, k) do
     case mx do
-      %Pure{val: y} -> q_apply(y, k)
+      %Pure{val: y} -> q_apply(k, y)
       %Impure{eff: eff, mval: u, q: q} -> %Impure{eff: eff, mval: u, q: q_concat(q, k)}
-    end
-  end
-
-  def handle_relay(_effs, ret, _, %Pure{val: x}) do
-    ret.(x)
-  end
-
-  def handle_relay(effs, ret, h, %Impure{eff: eff, mval: u, q: q}) do
-    k = q_comp(q, &handle_relay(effs, ret, h, &1))
-
-    if Enum.member?(effs, eff) do
-      h.(u, k)
-    else
-      %Impure{eff: eff, mval: u, q: [k]}
     end
   end
 
@@ -116,5 +102,32 @@ defmodule Thunks.Freer do
     fn x ->
       q_apply(g, x) |> h.()
     end
+  end
+
+  @doc """
+  Aloows easy implementation of interpreters with `ret` and `h` functions which
+  are like to `return` and `bind` for a particular grammar
+  """
+  def handle_relay(%Pure{val: x}, _effs, ret, _h) do
+    ret.(x)
+  end
+
+  def handle_relay(%Impure{eff: eff, mval: u, q: q}, effs, ret, h) do
+    k = q_comp(q, &handle_relay(&1, effs, ret, h))
+
+    if Enum.member?(effs, eff) do
+      # we can handle this effect
+      h.(u, k)
+    else
+      # we can't handle this particular effect: add this handler to the list,
+      # so it can handle its effects when they arise
+      %Impure{eff: eff, mval: u, q: [k]}
+    end
+  end
+
+  def run(%Pure{val: x}), do: x
+
+  def run(%Impure{eff: eff, mval: _u, q: _q} = impure) do
+    raise "unhandled effect: #{eff} - #{inspect(impure)}"
   end
 end
