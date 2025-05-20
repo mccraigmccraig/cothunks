@@ -105,8 +105,7 @@ defmodule Thunks.Freer do
   end
 
   @doc """
-  Aloows easy implementation of interpreters with `ret` and `h` functions which
-  are like to `return` and `bind` for a particular grammar
+  Aloows easy implementation of interpreters with `ret` and `h` functions
   """
   def handle_relay(%Pure{val: x}, _effs, ret, _h) do
     %Pure{val: ret.(x)}
