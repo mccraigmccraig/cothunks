@@ -31,7 +31,8 @@ defmodule Thunks.FreerTest do
                Freer.etaf(10, EffectMod)
                |> Freer.bind(fn x -> Freer.return(2 * x) end)
 
-      assert %Pure{val: 200} == step_f.(100)
+      assert %Pure{val: 10} == pure_f.(10)
+      assert %Pure{val: 20} == step_f.(10)
     end
 
     test "it binds repeatedly with pure expressions" do
@@ -40,8 +41,9 @@ defmodule Thunks.FreerTest do
                |> Freer.bind(fn x -> Freer.return(2 * x) end)
                |> Freer.bind(fn x -> Freer.return(5 + x) end)
 
-      assert %Pure{val: 200} = step_1_f.(100)
-      assert %Pure{val: 105} = step_2_f.(100)
+      assert %Pure{val: 10} = pure_f.(10)
+      assert %Pure{val: 20} = step_1_f.(10)
+      assert %Pure{val: 25} = step_2_f.(20)
     end
 
     test "it binds repeatedly with impoure expressions" do
