@@ -83,22 +83,29 @@ defmodule Thunks.FreerTest do
     def divide(a, b), do: {:divide, a, b}
   end
 
-  defmodule AlsoNumbers do
-    def also_number(a), do: {:also_number, a}
+  defmodule Reader do
+    def get(), do: :get
   end
 
   defmodule FreerNumbers do
     use FreerOps, ops: Numbers
   end
 
-  defmodule FreerAlsoNumbers do
-    use FreerOps, ops: AlsoNumbers
+  defmodule FreerReader do
+    use FreerOps, ops: Reader
   end
 
-  # interpret the langauge with ret + handle functions
+  # interpret the Numbers langauge with ret + handle functions
+  #
+  # ret and handle must return Freer structs
+  #
+  # - ret : wrap a plain value in a Freer<Numbers>
+  # - handle : interpret a Numbers statement, either
+  #  passing a plain value on to the continuation, or
+  #  short-circuit returning a Freer<Numbers> 
   defmodule InterpretNumbers do
     # wrap a value in a Numbers structure
-    def ret(n), do: {:number, n}
+    def ret(n), do: Freer.return({:number, n})
 
     # interpret a Numbers structure and pass a value on to
     # the continuation. The continuiation will return a Freer,
@@ -119,6 +126,10 @@ defmodule Thunks.FreerTest do
     end
 
     def handle({:error, err}, _f), do: Freer.return({:error, err})
+  end
+
+  defmodule InterpretReader do
+    def ret(v), do: Freer.return(v)
   end
 
   describe "q_apply" do
