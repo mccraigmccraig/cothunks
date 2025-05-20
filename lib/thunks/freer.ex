@@ -125,6 +125,9 @@ defmodule Thunks.Freer do
     end
   end
 
+  @doc """
+  after all effects are handled, only %Pure{} is left
+  """
   def run(%Pure{val: x}), do: x
 
   def run(%Impure{eff: eff, mval: _u, q: _q} = impure) do

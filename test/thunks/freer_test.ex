@@ -125,28 +125,32 @@ defmodule Thunks.FreerTest do
 
   describe "interpret" do
     test "it interprets a pure value" do
-      v = Freer.pure(10)
+      fv = Freer.pure(10)
 
-      handled =
-        Freer.handle_relay(v, [Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+      result =
+        fv
+        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+        |> Freer.run()
 
-      assert {:number, 10} = Freer.run(handled)
+      assert {:number, 10} = result
     end
 
     test "it interprets a short sequence of operations" do
-      v =
+      fv =
         FreerNumbers.number(10)
         |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
 
-      handled =
-        Freer.handle_relay(v, [Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+      result =
+        fv
+        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+        |> Freer.run()
 
       # o = Freer.run(handled)
-      assert {:number, 100} = Freer.run(handled)
+      assert {:number, 100} = result
     end
 
     test "it interprets a more complex composition of operations" do
-      op =
+      fv =
         FreerNumbers.number(10)
         |> Freer.bind(fn x ->
           FreerNumbers.number(2) |> Freer.bind(fn y -> Freer.return(x + y) end)
@@ -155,10 +159,12 @@ defmodule Thunks.FreerTest do
           FreerNumbers.number(5) |> Freer.bind(fn z -> Freer.return(x * z) end)
         end)
 
-      handled =
-        Freer.handle_relay(op, [Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+      result =
+        fv
+        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+        |> Freer.run()
 
-      assert {:number, 60} = Freer.run(handled)
+      assert {:number, 60} = result
     end
 
     # test "it interprets a slightly longer sequence of operations" do
