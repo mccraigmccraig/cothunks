@@ -364,9 +364,13 @@ defmodule Thunks.FreerTest do
                 put(b),
                 c <- add(a, b),
                 put(c),
-                d <- multiply(a, b),
-                put(d) do
-            subtract(d, c)
+                d <- multiply(a, b) do
+            # you can use the grammar constructs inside the do block, but
+            # you have to sequence them manually
+            put(d)
+            |> Freer.bind(fn _ ->
+              subtract(d, c)
+            end)
           end
         end
 
