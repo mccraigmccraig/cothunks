@@ -323,6 +323,10 @@ defmodule Thunks.FreerTest do
 
       # TODO why is the order of the writer monoid reversed from what I expected ?
       assert {44, [22, 120]} = result
+
+      # the order of the handlers should not matter for this combination of effects
+      result2 = fv |> run_reader(12) |> run_writer() |> Freer.run()
+      assert result2 == result
     end
 
     test "it can mix numbers with a reader" do
