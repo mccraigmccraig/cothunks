@@ -359,13 +359,13 @@ defmodule Thunks.FreerTest do
       fv =
         Freer.con [Numbers, Reader, Writer] do
           steps a <- number(10),
-                _aa <- put(a),
+                put(a),
                 b <- get(),
-                _bb <- put(b),
+                put(b),
                 c <- add(a, b),
-                _cc <- put(c),
+                put(c),
                 d <- multiply(a, b),
-                _dd <- put(d) do
+                put(d) do
             subtract(d, c)
           end
         end

@@ -46,6 +46,16 @@ defmodule Thunks.Freer do
     end
   end
 
+  defp steps({:steps, ctx, [expr | exprs]}) do
+    binder(
+      quote do
+        _
+      end,
+      expr,
+      steps({:steps, ctx, exprs})
+    )
+  end
+
   defp steps(x), do: x
 
   defp binder(lhs, rhs, body) do
