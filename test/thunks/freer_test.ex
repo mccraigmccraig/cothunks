@@ -83,16 +83,8 @@ defmodule Thunks.FreerTest do
     def divide(a, b), do: {:divide, a, b}
   end
 
-  defmodule Reader do
-    def get(), do: :get
-  end
-
   defmodule FreerNumbers do
     use FreerOps, ops: Numbers
-  end
-
-  defmodule FreerReader do
-    use FreerOps, ops: Reader
   end
 
   # interpret the Numbers langauge with ret + handle functions
@@ -111,15 +103,15 @@ defmodule Thunks.FreerTest do
     # the continuation. The continuiation will return a Freer,
     # so handle must return a Freer too if it doesn't call
     # the continuation
-    def handle({:number, n}, f), do: f.(n)
-    def handle({:also_number, n}, f), do: f.(n)
-    def handle({:add, a, b}, f), do: f.(a + b)
-    def handle({:subtract, a, b}, f), do: f.(a - b)
-    def handle({:multiply, a, b}, f), do: f.(a * b)
+    def handle({:number, n}, k), do: k.(n)
+    def handle({:also_number, n}, k), do: k.(n)
+    def handle({:add, a, b}, k), do: k.(a + b)
+    def handle({:subtract, a, b}, k), do: k.(a - b)
+    def handle({:multiply, a, b}, k), do: k.(a * b)
 
-    def handle({:divide, a, b}, f) do
+    def handle({:divide, a, b}, k) do
       if b != 0 do
-        f.(a / b)
+        k.(a / b)
       else
         Freer.return({:error, "divide by zero: #{a}/#{b}"})
       end
@@ -128,8 +120,22 @@ defmodule Thunks.FreerTest do
     def handle({:error, err}, _f), do: Freer.return({:error, err})
   end
 
-  defmodule InterpretReader do
-    def ret(v), do: Freer.return(v)
+  def run_numbers(fv) do
+    Freer.handle_relay(fv, [Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+  end
+
+  defmodule Reader do
+    def get(), do: :get
+  end
+
+  defmodule FreerReader do
+    use FreerOps, ops: Reader
+  end
+
+  def run_reader(fv, reader_val) do
+    Freer.handle_relay(fv, [Reader], &Freer.return/1, fn :get, k ->
+      k.(reader_val)
+    end)
   end
 
   describe "q_apply" do
@@ -144,10 +150,7 @@ defmodule Thunks.FreerTest do
     test "it interprets a pure value" do
       fv = Freer.pure(10)
 
-      result =
-        fv
-        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
-        |> Freer.run()
+      result = fv |> run_numbers() |> Freer.run()
 
       assert {:number, 10} = result
     end
@@ -157,10 +160,7 @@ defmodule Thunks.FreerTest do
         FreerNumbers.number(10)
         |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
 
-      result =
-        fv
-        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
-        |> Freer.run()
+      result = fv |> run_numbers() |> Freer.run()
 
       # o = Freer.run(handled)
       assert {:number, 100} = result
@@ -176,10 +176,7 @@ defmodule Thunks.FreerTest do
           FreerNumbers.number(5) |> Freer.bind(fn z -> Freer.return(x * z) end)
         end)
 
-      result =
-        fv
-        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
-        |> Freer.run()
+      result = fv |> run_numbers() |> Freer.run()
 
       assert {:number, 60} = result
     end
@@ -263,10 +260,7 @@ defmodule Thunks.FreerTest do
           end
         end
 
-      result =
-        fv
-        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
-        |> Freer.run()
+      result = fv |> run_numbers() |> Freer.run()
 
       assert {:number, 8990} == result
     end
@@ -301,10 +295,7 @@ defmodule Thunks.FreerTest do
           end
         end
 
-      result =
-        fv
-        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
-        |> Freer.run()
+      result = fv |> run_numbers() |> Freer.run()
 
       assert {:error, err} = result
       assert err =~ ~r/divide by zero/
