@@ -321,7 +321,9 @@ defmodule Thunks.FreerTest do
 
       result = fv |> run_writer() |> run_reader(12) |> Freer.run()
 
-      # TODO why is the order of the writer monoid reversed from what I expected ?
+      # q: why is the order of the writer monoid reversed from what I expected ?
+      # a: because the handler calls the continuation and prepends the put value
+      # the continuation's output, so order is preserved
       assert {44, [22, 120]} = result
 
       # the order of the handlers should not matter for this combination of effects
