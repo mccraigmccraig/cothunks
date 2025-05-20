@@ -121,7 +121,12 @@ defmodule Thunks.FreerTest do
   end
 
   def run_numbers(fv) do
-    Freer.handle_relay(fv, [Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+    fv
+    |> Freer.handle_relay(
+      [Numbers],
+      &InterpretNumbers.ret/1,
+      &InterpretNumbers.handle/2
+    )
   end
 
   defmodule Reader do
@@ -133,9 +138,12 @@ defmodule Thunks.FreerTest do
   end
 
   def run_reader(fv, reader_val) do
-    Freer.handle_relay(fv, [Reader], &Freer.return/1, fn :get, k ->
-      k.(reader_val)
-    end)
+    fv
+    |> Freer.handle_relay(
+      [Reader],
+      &Freer.return/1,
+      fn :get, k -> k.(reader_val) end
+    )
   end
 
   describe "q_apply" do
