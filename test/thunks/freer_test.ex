@@ -353,6 +353,33 @@ defmodule Thunks.FreerTest do
       assert result == result2
     end
 
+    test "it can mix numbers with a reader and a writer" do
+      require Freer
+
+      fv =
+        Freer.con [Numbers, Reader, Writer] do
+          steps a <- number(10),
+                _aa <- put(a),
+                b <- get(),
+                _bb <- put(b),
+                c <- add(a, b),
+                _cc <- put(c),
+                d <- multiply(a, b),
+                _dd <- put(d) do
+            subtract(d, c)
+          end
+        end
+
+      result =
+        fv |> run_numbers() |> run_reader(12) |> run_writer() |> Freer.run()
+
+      assert {{:number, 98}, [10, 12, 22, 120]} == result
+
+      # handler order does matter with a Writer effect
+      result2 = fv |> run_writer |> run_reader(12) |> run_numbers() |> Freer.run()
+      assert {:number, {98, [10, 12, 22, 120]}} == result2
+    end
+
     test "it short circuits" do
       require Freer
 
