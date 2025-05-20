@@ -97,11 +97,15 @@ defmodule Thunks.FreerTest do
 
   # interpret the langauge with ret + handle functions
   defmodule InterpretNumbers do
+    # wrap a value in a Numbers structure
     def ret(n), do: {:number, n}
 
+    # interpret a Numbers structure and pass a value on to
+    # the continuation. The continuiation will return a Freer,
+    # so handle must return a Freer too if it doesn't call
+    # the continuation
     def handle({:number, n}, f), do: f.(n)
     def handle({:also_number, n}, f), do: f.(n)
-    def handle({:error, err}, _f), do: {:error, err}
     def handle({:add, a, b}, f), do: f.(a + b)
     def handle({:subtract, a, b}, f), do: f.(a - b)
     def handle({:multiply, a, b}, f), do: f.(a * b)
@@ -110,9 +114,11 @@ defmodule Thunks.FreerTest do
       if b != 0 do
         f.(a / b)
       else
-        {:error, "divide by zero: #{a}/#{b}"}
+        Freer.return({:error, "divide by zero: #{a}/#{b}"})
       end
     end
+
+    def handle({:error, err}, _f), do: Freer.return({:error, err})
   end
 
   describe "q_apply" do
@@ -232,59 +238,65 @@ defmodule Thunks.FreerTest do
   #   end
   # end
 
-  # describe "con" do
-  #   test "it provides a nice bind syntax sugar" do
-  #     require Freer
+  describe "con" do
+    test "it provides a nice bind syntax sugar" do
+      require Freer
 
-  #     v =
-  #       Freer.con FreerNumbers do
-  #         steps a <- number(10),
-  #               b <- number(1000),
-  #               c <- add(a, b),
-  #               d <- multiply(a, b) do
-  #           subtract(d, c)
-  #         end
-  #       end
+      fv =
+        Freer.con FreerNumbers do
+          steps a <- number(10),
+                b <- number(1000),
+                c <- add(a, b),
+                d <- multiply(a, b) do
+            subtract(d, c)
+          end
+        end
 
-  #     o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+      result =
+        fv
+        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+        |> Freer.run()
 
-  #     assert {:number, 8990} == o
-  #   end
+      assert {:number, 8990} == result
+    end
 
-  #   test "it can mix multiple ops modules" do
-  #     require Freer
+    # test "it can mix multiple ops modules" do
+    #   require Freer
 
-  #     v =
-  #       Freer.con [FreerNumbers, FreerAlsoNumbers] do
-  #         steps a <- number(10),
-  #               b <- also_number(1000),
-  #               c <- add(a, b),
-  #               d <- multiply(a, b) do
-  #           subtract(d, c)
-  #         end
-  #       end
+    #   v =
+    #     Freer.con [FreerNumbers, FreerAlsoNumbers] do
+    #       steps a <- number(10),
+    #             b <- also_number(1000),
+    #             c <- add(a, b),
+    #             d <- multiply(a, b) do
+    #         subtract(d, c)
+    #       end
+    #     end
 
-  #     o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+    #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
-  #     assert {:number, 8990} == o
-  #   end
+    #   assert {:number, 8990} == o
+    # end
 
-  #   test "it short circuits" do
-  #     require Freer
+    test "it short circuits" do
+      require Freer
 
-  #     v =
-  #       Freer.con FreerNumbers do
-  #         steps a <- number(10),
-  #               b <- number(1000),
-  #               c <- divide(a, 0) do
-  #           multiply(b, c)
-  #         end
-  #       end
+      fv =
+        Freer.con FreerNumbers do
+          steps a <- number(10),
+                b <- number(1000),
+                c <- divide(a, 0) do
+            multiply(b, c)
+          end
+        end
 
-  #     o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+      result =
+        fv
+        |> Freer.handle_relay([Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+        |> Freer.run()
 
-  #     assert {:error, err} = o
-  #     assert err =~ ~r/divide by zero/
-  #   end
-  # end
+      assert {:error, err} = result
+      assert err =~ ~r/divide by zero/
+    end
+  end
 end

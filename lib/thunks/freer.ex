@@ -108,6 +108,8 @@ defmodule Thunks.Freer do
   Aloows easy implementation of interpreters with `ret` and `h` functions
   """
   def handle_relay(%Pure{val: x}, _effs, ret, _h) do
+    # TODO not sure about this - should we be wrapping in %Pure{} here ?
+    # the output from handle_relay is not a Freer if we don't
     %Pure{val: ret.(x)}
   end
 
