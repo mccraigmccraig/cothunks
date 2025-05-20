@@ -146,6 +146,23 @@ defmodule Thunks.FreerTest do
     )
   end
 
+  defmodule Writer do
+    def put(o), do: {:put, o}
+  end
+
+  defmodule FreerWriter do
+    use FreerOps, ops: Writer
+  end
+
+  def run_writer(fv) do
+    fv
+    |> Freer.handle_relay(
+      [Writer],
+      fn x -> Freer.return({x, []}) end,
+      fn {:put, o}, k -> k.(nil) |> Freer.bind(fn {x, l} -> Freer.return({x, [o | l]}) end) end
+    )
+  end
+
   describe "q_apply" do
   end
 
@@ -273,7 +290,42 @@ defmodule Thunks.FreerTest do
       assert {:number, 8990} == result
     end
 
-    test "it can mix multiple ops modules" do
+    test "it can run a reader" do
+      require Freer
+
+      fv =
+        Freer.con FreerReader do
+          steps a <- Freer.return(10),
+                b <- get() do
+            Freer.return(a + b)
+          end
+        end
+
+      result = fv |> run_reader(12) |> Freer.run()
+
+      assert 22 = result
+    end
+
+    test "it can run a reader and a writer" do
+      require Freer
+
+      fv =
+        Freer.con [FreerReader, FreerWriter] do
+          steps a <- Freer.return(10),
+                b <- get(),
+                _c <- put(a + b),
+                _d <- put(a * b) do
+            Freer.return(2 * (a + b))
+          end
+        end
+
+      result = fv |> run_writer() |> run_reader(12) |> Freer.run()
+
+      # TODO why is the order of the writer monoid reversed from what I expected ?
+      assert {44, [22, 120]} = result
+    end
+
+    test "it can mix numbers with a reader" do
       require Freer
 
       fv =
