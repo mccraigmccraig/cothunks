@@ -109,7 +109,7 @@ defmodule Thunks.Freer do
   are like to `return` and `bind` for a particular grammar
   """
   def handle_relay(%Pure{val: x}, _effs, ret, _h) do
-    ret.(x)
+    %Pure{val: ret.(x)}
   end
 
   def handle_relay(%Impure{eff: eff, mval: u, q: q}, effs, ret, h) do

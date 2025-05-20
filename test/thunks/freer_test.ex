@@ -46,7 +46,7 @@ defmodule Thunks.FreerTest do
       assert %Pure{val: 25} = step_2_f.(20)
     end
 
-    test "it binds repeatedly with impoure expressions" do
+    test "it binds repeatedly with impure expressions" do
       assert %Impure{eff: EffectMod, mval: 10, q: [step_1, step_2, step_3]} =
                Freer.etaf(10, EffectMod)
                |> Freer.bind(fn x ->
@@ -95,18 +95,18 @@ defmodule Thunks.FreerTest do
     use FreerOps, ops: AlsoNumbers
   end
 
-  # interpret the langauge with unit + bind functions
+  # interpret the langauge with ret + handle functions
   defmodule InterpretNumbers do
-    def unit(n), do: {:number, n}
+    def ret(n), do: {:number, n}
 
-    def bind({:number, n}, f), do: f.(n)
-    def bind({:also_number, n}, f), do: f.(n)
-    def bind({:error, err}, _f), do: {:error, err}
-    def bind({:add, a, b}, f), do: f.(a + b)
-    def bind({:subtract, a, b}, f), do: f.(a - b)
-    def bind({:multiply, a, b}, f), do: f.(a * b)
+    def handle({:number, n}, f), do: f.(n)
+    def handle({:also_number, n}, f), do: f.(n)
+    def handle({:error, err}, _f), do: {:error, err}
+    def handle({:add, a, b}, f), do: f.(a + b)
+    def handle({:subtract, a, b}, f), do: f.(a - b)
+    def handle({:multiply, a, b}, f), do: f.(a * b)
 
-    def bind({:divide, a, b}, f) do
+    def handle({:divide, a, b}, f) do
       if b != 0 do
         f.(a / b)
       else
@@ -125,6 +125,12 @@ defmodule Thunks.FreerTest do
 
   describe "interpret" do
     test "it interprets a pure value" do
+      v = Freer.pure(10)
+
+      handled =
+        Freer.handle_relay(v, [Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+
+      assert {:number, 10} = Freer.run(handled)
     end
 
     test "it interprets a short sequence of operations" do
@@ -133,10 +139,26 @@ defmodule Thunks.FreerTest do
         |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
 
       handled =
-        Freer.handle_relay(v, [Numbers], &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+        Freer.handle_relay(v, [Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
 
       # o = Freer.run(handled)
-      assert {:number, 100} = handled
+      assert {:number, 100} = Freer.run(handled)
+    end
+
+    test "it interprets a more complex composition of operations" do
+      op =
+        FreerNumbers.number(10)
+        |> Freer.bind(fn x ->
+          FreerNumbers.number(2) |> Freer.bind(fn y -> Freer.return(x + y) end)
+        end)
+        |> Freer.bind(fn x ->
+          FreerNumbers.number(5) |> Freer.bind(fn z -> Freer.return(x * z) end)
+        end)
+
+      handled =
+        Freer.handle_relay(op, [Numbers], &InterpretNumbers.ret/1, &InterpretNumbers.handle/2)
+
+      assert {:number, 60} = Freer.run(handled)
     end
 
     # test "it interprets a slightly longer sequence of operations" do
