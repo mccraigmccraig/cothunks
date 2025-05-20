@@ -163,6 +163,28 @@ defmodule Thunks.FreerTest do
     )
   end
 
+  # an alternative Reader+Writer interpreter, which uses
+  # the Reader grammar to return the state value and the
+  # Writer grammar to set the state value... it can't
+  # be written with handle_relay, because it needs to
+  # pass updated state into the recursion
+  def run_state(%Pure{val: x}, s), do: Freer.return({x, s})
+
+  def run_state(%Impure{eff: eff, mval: u, q: q}, s) do
+    k = fn s -> Freer.q_comp(q, &run_state(&1, s)) end
+
+    case {eff, u} do
+      {Writer, {:put, o}} ->
+        k.(o).(nil)
+
+      {Reader, :get} ->
+        k.(s).(s)
+
+      _ ->
+        %Impure{eff: eff, mval: u, q: [k]}
+    end
+  end
+
   describe "q_apply" do
   end
 
@@ -382,6 +404,26 @@ defmodule Thunks.FreerTest do
       # handler order does matter with a Writer effect
       result2 = fv |> run_writer |> run_reader(12) |> run_numbers() |> Freer.run()
       assert {:number, {98, [10, 12, 22, 120]}} == result2
+    end
+
+    test "it can mix numbers with the state interpretation of Reader+Writer" do
+      require Freer
+
+      fv =
+        Freer.con [Numbers, Reader, Writer] do
+          steps a <- get(),
+                b <- number(10),
+                put(a + b),
+                c <- multiply(a, b),
+                d <- get() do
+            subtract(d, c)
+          end
+        end
+
+      result =
+        fv |> run_numbers() |> run_state(12) |> Freer.run()
+
+      assert {{:number, -98}, 22} == result
     end
 
     test "it short circuits" do
