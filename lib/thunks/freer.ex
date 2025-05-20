@@ -124,14 +124,15 @@ defmodule Thunks.Freer do
   end
 
   def handle_relay(%Impure{eff: eff, mval: u, q: q}, effs, ret, h) do
+    # a continuation including this handler
     k = q_comp(q, &handle_relay(&1, effs, ret, h))
 
     if Enum.member?(effs, eff) do
       # we can handle this effect
       h.(u, k)
     else
-      # we can't handle this particular effect: add this handler to the list,
-      # so it can handle its effects when they arise
+      # we can't handle this particular effect, just update the continuation
+      # with this handler
       %Impure{eff: eff, mval: u, q: [k]}
     end
   end
