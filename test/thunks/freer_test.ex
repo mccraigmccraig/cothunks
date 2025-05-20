@@ -265,23 +265,23 @@ defmodule Thunks.FreerTest do
       assert {:number, 8990} == result
     end
 
-    # test "it can mix multiple ops modules" do
-    #   require Freer
+    test "it can mix multiple ops modules" do
+      require Freer
 
-    #   v =
-    #     Freer.con [FreerNumbers, FreerAlsoNumbers] do
-    #       steps a <- number(10),
-    #             b <- also_number(1000),
-    #             c <- add(a, b),
-    #             d <- multiply(a, b) do
-    #         subtract(d, c)
-    #       end
-    #     end
+      fv =
+        Freer.con [FreerNumbers, FreerReader] do
+          steps a <- number(10),
+                b <- get(),
+                c <- add(a, b),
+                d <- multiply(a, b) do
+            subtract(d, c)
+          end
+        end
 
-    #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+      result = fv |> run_numbers() |> run_reader(12) |> Freer.run()
 
-    #   assert {:number, 8990} == o
-    # end
+      assert {:number, 98} == result
+    end
 
     test "it short circuits" do
       require Freer
