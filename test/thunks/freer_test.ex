@@ -288,7 +288,11 @@ defmodule Thunks.FreerTest do
 
       result = fv |> run_numbers() |> run_reader(12) |> Freer.run()
 
+      # handler order should not matter for these effects
+      result2 = fv |> run_reader(12) |> run_numbers() |> Freer.run()
+
       assert {:number, 98} == result
+      assert result == result2
     end
 
     test "it short circuits" do
