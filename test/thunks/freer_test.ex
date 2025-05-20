@@ -74,7 +74,7 @@ defmodule Thunks.FreerTest do
   # - subtract ooperation
   # - multiply operation
   # - divide operation
-  defmodule Numbers do
+  defmodule NumbersGrammar do
     def number(a), do: {:number, a}
     def error(e), do: {:error, e}
     def add(a, b), do: {:add, a, b}
@@ -83,8 +83,8 @@ defmodule Thunks.FreerTest do
     def divide(a, b), do: {:divide, a, b}
   end
 
-  defmodule FreerNumbers do
-    use FreerOps, ops: Numbers
+  defmodule Numbers do
+    use FreerOps, ops: NumbersGrammar
   end
 
   # interpret the Numbers langauge with ret + handle functions
@@ -129,12 +129,12 @@ defmodule Thunks.FreerTest do
     )
   end
 
-  defmodule Reader do
+  defmodule ReaderGrammar do
     def get(), do: :get
   end
 
-  defmodule FreerReader do
-    use FreerOps, ops: Reader
+  defmodule Reader do
+    use FreerOps, ops: ReaderGrammar
   end
 
   def run_reader(fv, reader_val) do
@@ -146,12 +146,12 @@ defmodule Thunks.FreerTest do
     )
   end
 
-  defmodule Writer do
+  defmodule WriterGrammar do
     def put(o), do: {:put, o}
   end
 
-  defmodule FreerWriter do
-    use FreerOps, ops: Writer
+  defmodule Writer do
+    use FreerOps, ops: WriterGrammar
   end
 
   def run_writer(fv) do
@@ -182,8 +182,8 @@ defmodule Thunks.FreerTest do
 
     test "it interprets a short sequence of operations" do
       fv =
-        FreerNumbers.number(10)
-        |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
+        Numbers.number(10)
+        |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
 
       result = fv |> run_numbers() |> Freer.run()
 
@@ -193,12 +193,12 @@ defmodule Thunks.FreerTest do
 
     test "it interprets a more complex composition of operations" do
       fv =
-        FreerNumbers.number(10)
+        Numbers.number(10)
         |> Freer.bind(fn x ->
-          FreerNumbers.number(2) |> Freer.bind(fn y -> Freer.return(x + y) end)
+          Numbers.number(2) |> Freer.bind(fn y -> Freer.return(x + y) end)
         end)
         |> Freer.bind(fn x ->
-          FreerNumbers.number(5) |> Freer.bind(fn z -> Freer.return(x * z) end)
+          Numbers.number(5) |> Freer.bind(fn z -> Freer.return(x * z) end)
         end)
 
       result = fv |> run_numbers() |> Freer.run()
@@ -208,11 +208,11 @@ defmodule Thunks.FreerTest do
 
     # test "it interprets a slightly longer sequence of operations" do
     #   v =
-    #     FreerNumbers.number(10)
-    #     |> Freer.bind(fn a -> FreerNumbers.multiply(a, 5) end)
-    #     |> Freer.bind(fn b -> FreerNumbers.add(b, 30) end)
-    #     |> Freer.bind(fn c -> FreerNumbers.divide(c, 20) end)
-    #     |> Freer.bind(fn d -> FreerNumbers.subtract(d, 8) end)
+    #     Numbers.number(10)
+    #     |> Freer.bind(fn a -> Numbers.multiply(a, 5) end)
+    #     |> Freer.bind(fn b -> Numbers.add(b, 30) end)
+    #     |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
+    #     |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
 
     #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
@@ -221,15 +221,15 @@ defmodule Thunks.FreerTest do
 
     # test "it interprets nested operations" do
     #   v =
-    #     FreerNumbers.number(10)
+    #     Numbers.number(10)
     #     |> Freer.bind(fn a ->
-    #       FreerNumbers.number(20)
+    #       Numbers.number(20)
     #       |> Freer.bind(fn b ->
-    #         FreerNumbers.number(5)
+    #         Numbers.number(5)
     #         |> Freer.bind(fn c ->
-    #           FreerNumbers.multiply(a, b)
+    #           Numbers.multiply(a, b)
     #           |> Freer.bind(fn d ->
-    #             FreerNumbers.add(c, d)
+    #             Numbers.add(c, d)
     #           end)
     #         end)
     #       end)
@@ -242,10 +242,10 @@ defmodule Thunks.FreerTest do
 
     # test "it short circuits on divide by zero" do
     #   v =
-    #     FreerNumbers.number(10)
-    #     |> Freer.bind(fn x -> FreerNumbers.multiply(x, 10) end)
-    #     |> Freer.bind(fn y -> FreerNumbers.divide(y, 0) end)
-    #     |> Freer.bind(fn z -> FreerNumbers.add(z, 10) end)
+    #     Numbers.number(10)
+    #     |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
+    #     |> Freer.bind(fn y -> Numbers.divide(y, 0) end)
+    #     |> Freer.bind(fn z -> Numbers.add(z, 10) end)
 
     #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
@@ -257,11 +257,11 @@ defmodule Thunks.FreerTest do
   # describe "interpreter" do
   #   test "it builds an interpreter" do
   #     v =
-  #       FreerNumbers.number(10)
-  #       |> Freer.bind(fn a -> FreerNumbers.multiply(a, 5) end)
-  #       |> Freer.bind(fn b -> FreerNumbers.add(b, 30) end)
-  #       |> Freer.bind(fn c -> FreerNumbers.divide(c, 20) end)
-  #       |> Freer.bind(fn d -> FreerNumbers.subtract(d, 8) end)
+  #       Numbers.number(10)
+  #       |> Freer.bind(fn a -> Numbers.multiply(a, 5) end)
+  #       |> Freer.bind(fn b -> Numbers.add(b, 30) end)
+  #       |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
+  #       |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
 
   #     interpreter = Freer.interpreter(&InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
 
@@ -276,7 +276,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con FreerNumbers do
+        Freer.con Numbers do
           steps a <- number(10),
                 b <- number(1000),
                 c <- add(a, b),
@@ -294,7 +294,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con FreerReader do
+        Freer.con Reader do
           steps a <- Freer.return(10),
                 b <- get() do
             Freer.return(a + b)
@@ -310,7 +310,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [FreerReader, FreerWriter] do
+        Freer.con [Reader, Writer] do
           steps a <- Freer.return(10),
                 b <- get(),
                 _c <- put(a + b),
@@ -333,7 +333,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [FreerNumbers, FreerReader] do
+        Freer.con [Numbers, Reader] do
           steps a <- number(10),
                 b <- get(),
                 c <- add(a, b),
@@ -355,7 +355,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con FreerNumbers do
+        Freer.con Numbers do
           steps a <- number(10),
                 b <- number(1000),
                 c <- divide(a, 0) do
