@@ -443,5 +443,24 @@ defmodule Thunks.FreerTest do
       assert {:error, err} = result
       assert err =~ ~r/divide by zero/
     end
+
+    test "it short circuits Numbes in combination with other effects" do
+      require Freer
+
+      fv =
+        Freer.con [Numbers, Reader, Writer] do
+          steps a <- get(),
+                b <- number(1000),
+                c <- divide(a, 0),
+                put(c) do
+            multiply(b, c)
+          end
+        end
+
+      result = fv |> run_numbers() |> run_state(10) |> Freer.run()
+
+      assert {{:error, err}, 10} = result
+      assert err =~ ~r/divide by zero/
+    end
   end
 end
