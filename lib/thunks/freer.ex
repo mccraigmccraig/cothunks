@@ -75,14 +75,20 @@ defmodule Thunks.Freer do
     defstruct eff: nil, mval: nil, q: []
   end
 
+  @type free() :: %Pure{} | %Impure{}
+
   # now the Freer functions
 
+  @spec pure(any) :: free()
   def pure(x), do: %Pure{val: x}
 
+  @spec etaf(any, atom) :: free()
   def etaf(fa, eff), do: %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
 
+  @spec return(any) :: free()
   def return(x), do: pure(x)
 
+  @spec bind(free(), (any -> free())) :: free()
   def bind(%Pure{val: x}, k), do: k.(x)
   def bind(%Impure{eff: eff, mval: u, q: q}, k), do: %Impure{eff: eff, mval: u, q: q_append(q, k)}
 
