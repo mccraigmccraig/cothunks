@@ -94,6 +94,9 @@ defmodule Thunks.Freer do
     Enum.concat(qa, qb)
   end
 
+  @doc """
+  apply value `x` to a queue `q` of continuations, returning a Freer value
+  """
   def q_apply(q, x) do
     case q do
       [f] -> f.(x)
@@ -101,13 +104,28 @@ defmodule Thunks.Freer do
     end
   end
 
+  @doc """
+  bind continuation queue `k` to Freer value `mx`, returning a new `Freer` value
+  with the continuatino queues concatenated
+  """
   def bindp(mx, k) do
     case mx do
-      %Pure{val: y} -> q_apply(k, y)
-      %Impure{eff: eff, mval: u, q: q} -> %Impure{eff: eff, mval: u, q: q_concat(q, k)}
+      %Pure{val: y} ->
+        # Logger.warning("Pure binding: #{inspect(y)}")
+
+        q_apply(k, y)
+
+      %Impure{eff: eff, mval: u, q: q} ->
+        # Logger.warning("Impure binding: #{inspect(u)}")
+
+        %Impure{eff: eff, mval: u, q: q_concat(q, k)}
     end
   end
 
+  @doc """
+  return a new contiuation ``x->Freer`` which composes the
+  continuation `h` onto the queue of continuations `g`
+  """
   def q_comp(g, h) do
     fn x ->
       q_apply(g, x) |> h.()
@@ -120,6 +138,7 @@ defmodule Thunks.Freer do
   handle_relay must return a Freer struct
   """
   def handle_relay(%Pure{val: x}, _effs, ret, _h) do
+    # Logger.warning("returning: #{inspect(x)}")
     ret.(x)
   end
 
@@ -128,9 +147,11 @@ defmodule Thunks.Freer do
     k = q_comp(q, &handle_relay(&1, effs, ret, h))
 
     if Enum.member?(effs, eff) do
+      # Logger.warning("handling: #{inspect(u)}")
       # we can handle this effect
       h.(u, k)
     else
+      # Logger.warning("NOT handling: #{inspect(u)}")
       # we can't handle this particular effect, just update the continuation
       # with this handler
       %Impure{eff: eff, mval: u, q: [k]}
@@ -146,3 +167,12 @@ defmodule Thunks.Freer do
     raise "unhandled effect: #{eff} - #{inspect(impure)}"
   end
 end
+
+# TODO
+# - some scoped effects
+#   - error
+#   - coroutine / yield+resume
+#   - syntax for scoped effects ?
+# - a testing approach
+#   - helpers for creating test handlers
+#   - and fuzzing/property-based-testing help
