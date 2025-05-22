@@ -231,70 +231,53 @@ defmodule Thunks.FreerTest do
       assert {:number, 60} = result
     end
 
-    # test "it interprets a slightly longer sequence of operations" do
-    #   v =
-    #     Numbers.number(10)
-    #     |> Freer.bind(fn a -> Numbers.multiply(a, 5) end)
-    #     |> Freer.bind(fn b -> Numbers.add(b, 30) end)
-    #     |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
-    #     |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
+    test "it interprets a slightly longer sequence of operations" do
+      fv =
+        Numbers.number(10)
+        |> Freer.bind(fn a -> Numbers.multiply(a, 5) end)
+        |> Freer.bind(fn b -> Numbers.add(b, 30) end)
+        |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
+        |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
 
-    #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+      result = fv |> run_numbers() |> Freer.run()
 
-    #   assert {:number, -4.0} = o
-    # end
+      assert {:number, -4.0} = result
+    end
 
-    # test "it interprets nested operations" do
-    #   v =
-    #     Numbers.number(10)
-    #     |> Freer.bind(fn a ->
-    #       Numbers.number(20)
-    #       |> Freer.bind(fn b ->
-    #         Numbers.number(5)
-    #         |> Freer.bind(fn c ->
-    #           Numbers.multiply(a, b)
-    #           |> Freer.bind(fn d ->
-    #             Numbers.add(c, d)
-    #           end)
-    #         end)
-    #       end)
-    #     end)
+    test "it interprets nested operations" do
+      fv =
+        Numbers.number(10)
+        |> Freer.bind(fn a ->
+          Numbers.number(20)
+          |> Freer.bind(fn b ->
+            Numbers.number(5)
+            |> Freer.bind(fn c ->
+              Numbers.multiply(a, b)
+              |> Freer.bind(fn d ->
+                Numbers.add(c, d)
+              end)
+            end)
+          end)
+        end)
 
-    #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+      result = fv |> run_numbers() |> Freer.run()
 
-    #   assert {:number, 205} = o
-    # end
+      assert {:number, 205} = result
+    end
 
-    # test "it short circuits on divide by zero" do
-    #   v =
-    #     Numbers.number(10)
-    #     |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
-    #     |> Freer.bind(fn y -> Numbers.divide(y, 0) end)
-    #     |> Freer.bind(fn z -> Numbers.add(z, 10) end)
+    test "it short circuits on divide by zero" do
+      fv =
+        Numbers.number(10)
+        |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
+        |> Freer.bind(fn y -> Numbers.divide(y, 0) end)
+        |> Freer.bind(fn z -> Numbers.add(z, 10) end)
 
-    #   o = Freer.interpret(v, &InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
+      result = fv |> run_numbers() |> Freer.run()
 
-    #   assert {:error, err} = o
-    #   assert err =~ ~r/divide by zero/
-    # end
+      assert {:error, err} = result
+      assert err =~ ~r/divide by zero/
+    end
   end
-
-  # describe "interpreter" do
-  #   test "it builds an interpreter" do
-  #     v =
-  #       Numbers.number(10)
-  #       |> Freer.bind(fn a -> Numbers.multiply(a, 5) end)
-  #       |> Freer.bind(fn b -> Numbers.add(b, 30) end)
-  #       |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
-  #       |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
-
-  #     interpreter = Freer.interpreter(&InterpretNumbers.unit/1, &InterpretNumbers.bind/2)
-
-  #     o = interpreter.(v)
-
-  #     assert {:number, -4.0} = o
-  #   end
-  # end
 
   describe "con" do
     test "it provides a nice bind syntax sugar" do
