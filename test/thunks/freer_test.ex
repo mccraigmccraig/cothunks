@@ -168,6 +168,9 @@ defmodule Thunks.FreerTest do
   # Writer grammar to set the state value... it can't
   # be written with handle_relay, because it needs to
   # pass updated state into the recursion
+  #
+  # impl translated directly from:
+  # https://okmij.org/ftp/Haskell/extensible/more.pdf
   def run_state(%Pure{val: x}, s), do: Freer.return({x, s})
 
   def run_state(%Impure{eff: eff, mval: u, q: q}, s) do
