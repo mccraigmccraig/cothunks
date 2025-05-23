@@ -110,6 +110,10 @@ defmodule Thunks.Freer do
 
   @doc """
   apply value `x` to a queue `q` of continuations, returning a Freer value
+
+  applies a value throught the list of continuations until it gets an %Impure{}
+  result, then adds any remaining continuations from `q` to the queue of
+  that %Impure{}
   """
   @spec q_apply([(any -> freer)], any) :: freer
   def q_apply(q, x) do
@@ -121,26 +125,26 @@ defmodule Thunks.Freer do
 
   @doc """
   bind continuation queue `k` to Freer value `mx`, returning a new `Freer` value
-  with the continuatino queues concatenated
+  with the continuation queues concatenated
   """
   @spec bindp(freer, [(any -> freer)]) :: freer
   def bindp(mx, k) do
     case mx do
       %Pure{val: y} ->
-        # Logger.warning("Pure binding: #{inspect(y)}")
+        # Logger.warning("Pure apply: #{inspect(y)}")
 
         q_apply(k, y)
 
       %Impure{eff: eff, mval: u, q: q} ->
-        # Logger.warning("Impure binding: #{inspect(u)}")
+        # Logger.warning("Impure apply: #{inspect(u)}")
 
         %Impure{eff: eff, mval: u, q: q_concat(q, k)}
     end
   end
 
   @doc """
-  return a new contiuation ``x->Freer`` which composes the
-  continuation `h` onto the queue of continuations `g`
+  return a new contiuation `x->Freer` which composes the
+  function `h` with the _application_ of the queue of continuations `g`
   """
   @spec q_comp([(any -> freer)], (freer -> freer)) :: (any -> freer)
   def q_comp(g, h) do
@@ -156,7 +160,7 @@ defmodule Thunks.Freer do
   """
   @spec handle_relay(freer, [atom], (any -> freer), (any, (any -> freer) -> freer)) :: freer
   def handle_relay(%Pure{val: x}, _effs, ret, _h) do
-    # Logger.warning("returning: #{inspect(x)}")
+    # Logger.warning("handle %Pure{}: #{inspect(x)}")
     ret.(x)
   end
 
@@ -165,11 +169,11 @@ defmodule Thunks.Freer do
     k = q_comp(q, &handle_relay(&1, effs, ret, h))
 
     if Enum.member?(effs, eff) do
-      # Logger.warning("handling: #{inspect(u)}")
+      # Logger.warning("handle %Impure{}: #{inspect(u)}")
       # we can handle this effect
       h.(u, k)
     else
-      # Logger.warning("NOT handling: #{inspect(u)}")
+      # Logger.warning("NOT handling %Impure{}: #{inspect(u)}")
       # we can't handle this particular effect, just update the continuation
       # with this handler
       %Impure{eff: eff, mval: u, q: [k]}
