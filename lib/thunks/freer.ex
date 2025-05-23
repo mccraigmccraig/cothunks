@@ -92,11 +92,17 @@ defmodule Thunks.Freer do
   def bind(%Pure{val: x}, k), do: k.(x)
   def bind(%Impure{eff: eff, mval: u, q: q}, k), do: %Impure{eff: eff, mval: u, q: q_append(q, k)}
 
+  @doc """
+  add a continuation `mf` to a queue of continuations `q`
+  """
   @spec q_append([(any -> freer)], (any -> freer)) :: [(any -> freer)]
   def q_append(q, mf) do
     Enum.concat(q, [mf])
   end
 
+  @doc """
+  concatenate two queues of continuations
+  """
   @spec q_concat([(any -> freer)], [(any -> freer)]) :: [(any -> freer)]
   def q_concat(qa, qb) do
     Enum.concat(qa, qb)
@@ -108,8 +114,8 @@ defmodule Thunks.Freer do
   @spec q_apply([(any -> freer)], any) :: freer
   def q_apply(q, x) do
     case q do
-      [f] -> f.(x)
-      [f | t] -> bindp(f.(x), t)
+      [k] -> k.(x)
+      [k | t] -> bindp(k.(x), t)
     end
   end
 
@@ -136,7 +142,7 @@ defmodule Thunks.Freer do
   return a new contiuation ``x->Freer`` which composes the
   continuation `h` onto the queue of continuations `g`
   """
-  @spec q_comp([(any -> freer)], (any -> freer)) :: (any -> freer)
+  @spec q_comp([(any -> freer)], (freer -> freer)) :: (any -> freer)
   def q_comp(g, h) do
     fn x ->
       q_apply(g, x) |> h.()
