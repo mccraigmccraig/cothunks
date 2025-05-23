@@ -75,27 +75,29 @@ defmodule Thunks.Freer do
     defstruct eff: nil, mval: nil, q: []
   end
 
-  @type free() :: %Pure{} | %Impure{}
+  @type freer() :: %Pure{} | %Impure{}
 
   # now the Freer functions
 
-  @spec pure(any) :: free()
+  @spec pure(any) :: freer
   def pure(x), do: %Pure{val: x}
 
-  @spec etaf(any, atom) :: free()
+  @spec etaf(any, atom) :: freer
   def etaf(fa, eff), do: %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
 
-  @spec return(any) :: free()
+  @spec return(any) :: freer
   def return(x), do: pure(x)
 
-  @spec bind(free(), (any -> free())) :: free()
+  @spec bind(freer, (any -> freer)) :: freer
   def bind(%Pure{val: x}, k), do: k.(x)
   def bind(%Impure{eff: eff, mval: u, q: q}, k), do: %Impure{eff: eff, mval: u, q: q_append(q, k)}
 
+  @spec q_append([(any -> freer)], (any -> freer)) :: [(any -> freer)]
   def q_append(q, mf) do
     Enum.concat(q, [mf])
   end
 
+  @spec q_concat([(any -> freer)], [(any -> freer)]) :: [(any -> freer)]
   def q_concat(qa, qb) do
     Enum.concat(qa, qb)
   end
@@ -103,6 +105,7 @@ defmodule Thunks.Freer do
   @doc """
   apply value `x` to a queue `q` of continuations, returning a Freer value
   """
+  @spec q_apply([(any -> freer)], any) :: freer
   def q_apply(q, x) do
     case q do
       [f] -> f.(x)
@@ -114,6 +117,7 @@ defmodule Thunks.Freer do
   bind continuation queue `k` to Freer value `mx`, returning a new `Freer` value
   with the continuatino queues concatenated
   """
+  @spec bindp(freer, [(any -> freer)]) :: freer
   def bindp(mx, k) do
     case mx do
       %Pure{val: y} ->
@@ -132,6 +136,7 @@ defmodule Thunks.Freer do
   return a new contiuation ``x->Freer`` which composes the
   continuation `h` onto the queue of continuations `g`
   """
+  @spec q_comp([(any -> freer)], (any -> freer)) :: (any -> freer)
   def q_comp(g, h) do
     fn x ->
       q_apply(g, x) |> h.()
@@ -143,6 +148,7 @@ defmodule Thunks.Freer do
 
   handle_relay must return a Freer struct
   """
+  @spec handle_relay(freer, [atom], (any -> freer), (any, (any -> freer) -> freer)) :: freer
   def handle_relay(%Pure{val: x}, _effs, ret, _h) do
     # Logger.warning("returning: #{inspect(x)}")
     ret.(x)
@@ -167,6 +173,7 @@ defmodule Thunks.Freer do
   @doc """
   after all effects are handled, only %Pure{} is left
   """
+  @spec run(freer) :: any
   def run(%Pure{val: x}), do: x
 
   def run(%Impure{eff: eff, mval: _u, q: _q} = impure) do
