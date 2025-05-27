@@ -199,7 +199,6 @@ end
 # TODO
 # - some scoped effects
 #   - error
-#   - coroutine / yield+resume
 #   - JSON serialisation of steps
 #     - each continuation in a queue is a step
 #     - we can capture inputs and outputs
