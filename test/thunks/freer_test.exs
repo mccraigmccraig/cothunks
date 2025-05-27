@@ -140,30 +140,7 @@ defmodule Thunks.FreerTest do
     Thunks.Writer.run(fv)
   end
 
-  # an alternative Reader+Writer interpreter, which uses
-  # the Reader grammar to return the state value and the
-  # Writer grammar to set the state value... it can't
-  # be written with handle_relay, because it needs to
-  # pass updated state into the recursion
-  #
-  # impl translated directly from:
-  # https://okmij.org/ftp/Haskell/extensible/more.pdf
-  def run_state(%Pure{val: x}, s), do: Freer.return({x, s})
-
-  def run_state(%Impure{eff: eff, mval: u, q: q}, s) do
-    k = fn s -> Freer.q_comp(q, &run_state(&1, s)) end
-
-    case {eff, u} do
-      {Thunks.Writer.Ops, {:put, o}} ->
-        k.(o).(nil)
-
-      {Thunks.Reader.Ops, :get} ->
-        k.(s).(s)
-
-      _ ->
-        %Impure{eff: eff, mval: u, q: [k]}
-    end
-  end
+  # State effect has been moved to its own module Thunks.State
 
   describe "q_apply" do
   end
@@ -384,7 +361,7 @@ defmodule Thunks.FreerTest do
         end
 
       result =
-        fv |> run_numbers() |> run_state(12) |> Freer.run()
+        fv |> run_numbers() |> Thunks.State.run(12) |> Freer.run()
 
       assert {{:number, -98}, 22} == result
     end
@@ -420,7 +397,7 @@ defmodule Thunks.FreerTest do
           end
         end
 
-      result = fv |> run_numbers() |> run_state(10) |> Freer.run()
+      result = fv |> run_numbers() |> Thunks.State.run(10) |> Freer.run()
 
       assert {{:error, err}, 10} = result
       assert err =~ ~r/divide by zero/
