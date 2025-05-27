@@ -129,38 +129,15 @@ defmodule Thunks.FreerTest do
     )
   end
 
-  defmodule ReaderGrammar do
-    def get(), do: :get
-  end
-
-  defmodule Reader do
-    use FreerOps, ops: ReaderGrammar
-  end
-
+  # Reader and Writer effects have been moved to their own modules
+  # Thunks.Reader and Thunks.Writer
+  
   def run_reader(fv, reader_val) do
-    fv
-    |> Freer.handle_relay(
-      [Reader],
-      &Freer.return/1,
-      fn :get, k -> k.(reader_val) end
-    )
-  end
-
-  defmodule WriterGrammar do
-    def put(o), do: {:put, o}
-  end
-
-  defmodule Writer do
-    use FreerOps, ops: WriterGrammar
+    Thunks.Reader.run(fv, reader_val)
   end
 
   def run_writer(fv) do
-    fv
-    |> Freer.handle_relay(
-      [Writer],
-      fn x -> Freer.return({x, []}) end,
-      fn {:put, o}, k -> k.(nil) |> Freer.bind(fn {x, l} -> Freer.return({x, [o | l]}) end) end
-    )
+    Thunks.Writer.run(fv)
   end
 
   # an alternative Reader+Writer interpreter, which uses
@@ -177,10 +154,10 @@ defmodule Thunks.FreerTest do
     k = fn s -> Freer.q_comp(q, &run_state(&1, s)) end
 
     case {eff, u} do
-      {Writer, {:put, o}} ->
+      {Thunks.Writer, {:put, o}} ->
         k.(o).(nil)
 
-      {Reader, :get} ->
+      {Thunks.Reader, :get} ->
         k.(s).(s)
 
       _ ->
@@ -302,7 +279,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con Reader do
+        Freer.con Thunks.Reader do
           steps a <- Freer.return(10),
                 b <- get() do
             Freer.return(a + b)
@@ -318,7 +295,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Reader, Writer] do
+        Freer.con [Thunks.Reader, Thunks.Writer] do
           steps a <- Freer.return(10),
                 b <- get(),
                 _c <- put(a + b),
@@ -343,7 +320,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader] do
+        Freer.con [Numbers, Thunks.Reader] do
           steps a <- number(10),
                 b <- get(),
                 c <- add(a, b),
@@ -365,7 +342,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freer.con [Numbers, Thunks.Reader, Thunks.Writer] do
           steps a <- number(10),
                 put(a),
                 b <- get(),
