@@ -111,33 +111,8 @@ defmodule Thunks.CoroutineTest do
     test "coroutine with state" do
       require Freer
 
-      # Define a simple state handler
-      defmodule State do
-        def run_state(computation, initial_state) do
-          # Handle coroutine results
-          case computation do
-            {:done, value} -> {:done, {value, initial_state}}
-            {:yielded, value, k} -> 
-              # Store the state with the continuation
-              {:yielded, value, fn resume_value -> 
-                run_state(k.(resume_value), initial_state) 
-              end}
-            _ ->
-              # Normal case - handle the Freer monad
-              computation
-              |> Freer.handle_relay(
-                [Thunks.Reader.Ops, Thunks.Writer.Ops],
-                fn x -> Freer.return({x, initial_state}) end,
-                fn
-                  {:put, new_state}, k -> k.(nil) |> Freer.bind(fn {x, _} -> Freer.return({x, new_state}) end)
-                  :get, k -> k.(initial_state)
-                end
-              )
-          end
-        end
-      end
-
-      # Create a simpler coroutine test that doesn't rely on complex state handling
+      # Create a simpler test that doesn't try to combine coroutines with state
+      # This avoids the complex interaction between the two effect systems
       computation =
         Freer.con Ops do
           steps _ <- Ops.yield("first"),
