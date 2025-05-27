@@ -12,8 +12,8 @@ defmodule Thunks.CoroutineTest do
       # Create a coroutine that yields a value and returns another
       computation =
         Freer.con Ops do
-          steps _ <- Ops.yield(42) do
-            Freer.return("finished")
+          steps a <- Ops.yield(42) do
+            Freer.return("finished: " <> a)
           end
         end
 
@@ -26,7 +26,7 @@ defmodule Thunks.CoroutineTest do
 
       # Resume with a value
       resumed = continuation.("resumed value")
-      assert {:done, "finished"} = Coroutine.run(resumed)
+      assert {:done, "finished: resumed value"} = Coroutine.run(resumed)
     end
 
     test "multiple yields" do
@@ -44,22 +44,21 @@ defmodule Thunks.CoroutineTest do
 
       # Let's trace the execution manually to understand what's happening
       {:yielded, 1, k1} = Coroutine.run(computation)
-      {:yielded, v2, k2} = Coroutine.run(k1.(10))
-      {:yielded, v3, k3} = Coroutine.run(k2.(10))
-      {:done, v4} = Coroutine.run(k3.(10))
-      IO.puts("Debug values: #{v2}, #{v3}, #{v4}")
+      {:yielded, v2, k2} = Coroutine.run(k1.(2))
+      {:yielded, v3, k3} = Coroutine.run(k2.(4))
+      {:done, v4} = Coroutine.run(k3.(8))
+      assert {v2, v3, v4} == {3, 5, 9}
 
-      # First yield
-      {:yielded, 1, k1} = Coroutine.run(computation)
+      # try resuming with some different values
 
       # Resume with 10
-      {:yielded, 11, k2} = Coroutine.run(k1.(10))
+      assert {:yielded, 11, _k2} = Coroutine.run(k1.(10))
 
       # Resume with 20
-      {:yielded, 21, k3} = Coroutine.run(k2.(20))
+      assert {:yielded, 21, _k3} = Coroutine.run(k2.(20))
 
       # Resume with 30 and get final result
-      {:done, 31} = Coroutine.run(k3.(30))
+      assert {:done, 31} = Coroutine.run(k3.(30))
     end
 
     test "run_collecting helper" do
@@ -70,17 +69,17 @@ defmodule Thunks.CoroutineTest do
           steps a <- Ops.yield(1),
                 b <- Ops.yield(a + 1),
                 c <- Ops.yield(b + 1) do
-            Freer.return(c + 1)
+            Freer.return(a + b + c + 1)
           end
         end
 
       # Run to completion, collecting all yields
       # Each yield gets the same resume value (10)
       {final, yields} =
-        Coroutine.run_collecting(computation, [], fn v, acc -> {10, [v | acc]} end)
+        Coroutine.run_collecting(computation, [], fn v, acc -> {v + 10, [v | acc]} end)
 
-      assert final == 11  # 1 + 10
-      assert yields == [1, 11, 11]
+      assert final == 1 + 11 + 22 + 33
+      assert yields == [1, 12, 23]
     end
 
     test "run_stream helper" do
@@ -99,11 +98,11 @@ defmodule Thunks.CoroutineTest do
       results = Coroutine.run_stream(computation) |> Enum.to_list()
 
       assert results == [
-        {:yielded, "first"},
-        {:yielded, "second"},
-        {:yielded, "third"},
-        {:result, "done"}
-      ]
+               {:yielded, "first"},
+               {:yielded, "second"},
+               {:yielded, "third"},
+               {:result, "done"}
+             ]
     end
   end
 
