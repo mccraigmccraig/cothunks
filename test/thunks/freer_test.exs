@@ -154,10 +154,10 @@ defmodule Thunks.FreerTest do
     k = fn s -> Freer.q_comp(q, &run_state(&1, s)) end
 
     case {eff, u} do
-      {Thunks.Writer, {:put, o}} ->
+      {Thunks.Writer.Ops, {:put, o}} ->
         k.(o).(nil)
 
-      {Thunks.Reader, :get} ->
+      {Thunks.Reader.Ops, :get} ->
         k.(s).(s)
 
       _ ->
@@ -279,7 +279,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con Thunks.Reader do
+        Freer.con Thunks.Reader.Ops do
           steps a <- Freer.return(10),
                 b <- get() do
             Freer.return(a + b)
@@ -295,7 +295,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Thunks.Reader, Thunks.Writer] do
+        Freer.con [Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- Freer.return(10),
                 b <- get(),
                 _c <- put(a + b),
@@ -320,7 +320,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Thunks.Reader] do
+        Freer.con [Numbers, Thunks.Reader.Ops] do
           steps a <- number(10),
                 b <- get(),
                 c <- add(a, b),
@@ -342,7 +342,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Thunks.Reader, Thunks.Writer] do
+        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- number(10),
                 put(a),
                 b <- get(),
@@ -373,7 +373,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- get(),
                 b <- number(10),
                 put(a + b),
@@ -411,7 +411,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- get(),
                 b <- number(1000),
                 c <- divide(a, 0),

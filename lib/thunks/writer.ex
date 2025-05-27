@@ -15,7 +15,9 @@ defmodule Thunks.Writer do
   end
 
   # Operations for the writer effect
-  use Thunks.FreerOps, ops: Grammar
+  defmodule Ops do
+    use Thunks.FreerOps, ops: Thunks.Writer.Grammar
+  end
 
   @doc """
   Run a writer computation, returning a tuple with the result and accumulated output
@@ -23,7 +25,7 @@ defmodule Thunks.Writer do
   def run(computation) do
     computation
     |> Freer.handle_relay(
-      [Thunks.Writer],
+      [Ops],
       fn x -> Freer.return({x, []}) end,
       fn {:put, o}, k -> k.(nil) |> Freer.bind(fn {x, l} -> Freer.return({x, [o | l]}) end) end
     )

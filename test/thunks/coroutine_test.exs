@@ -109,7 +109,7 @@ defmodule Thunks.CoroutineTest do
         def run_state(computation, initial_state) do
           computation
           |> Freer.handle_relay(
-            [Thunks.Reader, Thunks.Writer],
+            [Thunks.Reader.Ops, Thunks.Writer.Ops],
             fn x -> Freer.return({x, initial_state}) end,
             fn
               {:put, new_state}, k -> k.(nil) |> Freer.bind(fn {x, _} -> Freer.return({x, new_state}) end)
@@ -122,10 +122,10 @@ defmodule Thunks.CoroutineTest do
       # Create a coroutine that uses state
       computation =
         Freer.con [Ops, Thunks.Reader, Thunks.Writer] do
-          steps state <- Thunks.Reader.get(),
+          steps state <- Thunks.Reader.Ops.get(),
                 _ <- Ops.yield(state),
-                _ <- Thunks.Writer.put(state + 10),
-                new_state <- Thunks.Reader.get(),
+                _ <- Thunks.Writer.Ops.put(state + 10),
+                new_state <- Thunks.Reader.Ops.get(),
                 _ <- Ops.yield(new_state) do
             Freer.return("final")
           end

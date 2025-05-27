@@ -15,7 +15,9 @@ defmodule Thunks.Reader do
   end
 
   # Operations for the reader effect
-  use Thunks.FreerOps, ops: Grammar
+  defmodule Ops do
+    use Thunks.FreerOps, ops: Thunks.Reader.Grammar
+  end
 
   @doc """
   Run a reader computation with the given environment value
@@ -23,7 +25,7 @@ defmodule Thunks.Reader do
   def run(computation, reader_val) do
     computation
     |> Freer.handle_relay(
-      [Thunks.Reader],
+      [Ops],
       &Freer.return/1,
       fn :get, k -> k.(reader_val) end
     )
