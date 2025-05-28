@@ -12,7 +12,7 @@ defmodule Thunks.CoroutineTest do
       # Create a coroutine that yields a value and returns another
       computation =
         Freer.con Ops do
-          steps a <- Ops.yield(42) do
+          steps a <- yield(42) do
             Freer.return("finished: " <> a)
           end
         end
@@ -36,9 +36,9 @@ defmodule Thunks.CoroutineTest do
       # Create a coroutine that yields multiple values
       computation =
         Freer.con Ops do
-          steps a <- Ops.yield(1),
-                b <- Ops.yield(a + 1),
-                c <- Ops.yield(b + 1) do
+          steps a <- yield(1),
+                b <- yield(a + 1),
+                c <- yield(b + 1) do
             Freer.return(c + 1)
           end
         end
@@ -78,9 +78,9 @@ defmodule Thunks.CoroutineTest do
 
       computation =
         Freer.con Ops do
-          steps a <- Ops.yield(1),
-                b <- Ops.yield(a + 1),
-                c <- Ops.yield(b + 1) do
+          steps a <- yield(1),
+                b <- yield(a + 1),
+                c <- yield(b + 1) do
             Freer.return(a + b + c + 1)
           end
         end
@@ -100,9 +100,9 @@ defmodule Thunks.CoroutineTest do
 
       computation =
         Freer.con Ops do
-          steps _ <- Ops.yield("first"),
-                _ <- Ops.yield("second"),
-                _ <- Ops.yield("third") do
+          steps _ <- yield("first"),
+                _ <- yield("second"),
+                _ <- yield("third") do
             Freer.return("done")
           end
         end
@@ -127,11 +127,11 @@ defmodule Thunks.CoroutineTest do
       # This avoids the complex interaction between the two effect systems
       computation =
         Freer.con [Ops, Thunks.Reader.Ops, Thunks.Writer.Ops] do
-          steps state <- Thunks.Reader.Ops.get(),
-                _ <- Ops.yield("State is: #{state}"),
-                _ <- Thunks.Writer.Ops.put(state + 10),
-                new_state <- Thunks.Reader.Ops.get(),
-                _ <- Ops.yield("New state is: #{new_state}") do
+          steps state <- get(),
+                _ <- yield("State is: #{state}"),
+                _ <- put(state + 10),
+                new_state <- get(),
+                _ <- yield("New state is: #{new_state}") do
             Freer.return("Final state: #{new_state}")
           end
         end
@@ -151,9 +151,9 @@ defmodule Thunks.CoroutineTest do
       continuation_comp =
         Freer.con [Ops, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           # Set the state to what we expect
-          steps _ <- Thunks.Writer.Ops.put(15),
-                new_state <- Thunks.Reader.Ops.get(),
-                _ <- Ops.yield("New state is: #{new_state}") do
+          steps _ <- put(15),
+                new_state <- get(),
+                _ <- yield("New state is: #{new_state}") do
             Freer.return("Final state: #{new_state}")
           end
         end
@@ -186,8 +186,8 @@ defmodule Thunks.CoroutineTest do
       # Keep the simple test as well
       computation =
         Freer.con Ops do
-          steps _ <- Ops.yield("first"),
-                _ <- Ops.yield("second") do
+          steps _ <- yield("first"),
+                _ <- yield("second") do
             Freer.return("final")
           end
         end
