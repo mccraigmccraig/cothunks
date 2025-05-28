@@ -62,11 +62,15 @@ defmodule Thunks.CoroutineTest do
 
       # Resume with 10
       resumed10 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: 1, continuation: k1}, 10)
-      assert %Thunks.Coroutine.Yielded{value: 11, continuation: _k2} = Coroutine.extract(resumed10)
+
+      assert %Thunks.Coroutine.Yielded{value: 11, continuation: _k2} =
+               Coroutine.extract(resumed10)
 
       # Resume with 20
       resumed20 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: v2, continuation: k2}, 20)
-      assert %Thunks.Coroutine.Yielded{value: 21, continuation: _k3} = Coroutine.extract(resumed20)
+
+      assert %Thunks.Coroutine.Yielded{value: 21, continuation: _k3} =
+               Coroutine.extract(resumed20)
 
       # Resume with 30 and get final result
       resumed30 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: v3, continuation: k3}, 30)
@@ -137,43 +141,18 @@ defmodule Thunks.CoroutineTest do
         end
 
       # First run the computation through the state handler with initial state 5
-      state_handled = Thunks.State.run(computation, 5)
-
-      # Then run it through the coroutine handler
-      coroutine_handled = Coroutine.run(state_handled)
+      coroutine_handled = computation |> Thunks.State.run(5) |> Coroutine.run()
 
       # Extract the first yield
       extracted1 = Coroutine.extract(coroutine_handled)
       assert %Thunks.Coroutine.Yielded{value: "State is: 5", continuation: _k1} = extracted1
 
-      # Create a new computation that continues from where we left off
-      # This is a workaround for the complex interaction between state and coroutine
-      continuation_comp =
-        Freer.con [Ops, Thunks.Reader.Ops, Thunks.Writer.Ops] do
-          # Set the state to what we expect
-          steps _ <- put(15),
-                new_state <- get(),
-                _ <- yield("New state is: #{new_state}") do
-            Freer.return("Final state: #{new_state}")
-          end
-        end
-
-      # Run the continuation through state and coroutine handlers
-      cont_state_handled = Thunks.State.run(continuation_comp, 15)
-      cont_coroutine_handled = Coroutine.run(cont_state_handled)
-
       # Extract the second yield
-      extracted2 = Coroutine.extract(cont_coroutine_handled)
+      extracted2 = extracted1 |> Coroutine.resume(10) |> Coroutine.extract()
       assert %Thunks.Coroutine.Yielded{value: "New state is: 15", continuation: _k2} = extracted2
 
-      # Create a final computation that just returns the result
-      final_comp =
-        Freer.con [Thunks.Reader.Ops, Thunks.Writer.Ops] do
-          Freer.return("Final state: 15")
-        end
-
       # Run the final computation through state handler
-      final_state_handled = Thunks.State.run(final_comp, 15)
+      final_state_handled = extracted2 |> Coroutine.resume(10) |> Coroutine.extract()
 
       # Extract the final result
       final_result = Coroutine.extract(Coroutine.run(final_state_handled))
