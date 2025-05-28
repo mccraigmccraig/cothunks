@@ -61,6 +61,7 @@ defmodule Thunks.Coroutine do
         # Handle the case where there are continuations after the yield
         {:yielded, value,
          fn resume_value ->
+           # Make sure we return a proper Freer value that can be processed by run
            k.(resume_value) |> Freer.bindp(q)
          end}
     end
@@ -72,6 +73,7 @@ defmodule Thunks.Coroutine do
   Returns a new Freer value.
   """
   def resume({:yielded, _value, k}, resume_value) do
+    # Just return the result from the continuation
     k.(resume_value)
   end
 
