@@ -24,6 +24,10 @@ defmodule Thunks.Coroutine do
   @doc """
   Run a coroutine computation, handling the yield operations.
   Returns a Freer monad value that can be further processed by other effect handlers.
+
+  When a yield operation is encountered, it creates an Impure value with the
+  yielded value and continuation, allowing other effect handlers to process
+  the computation before it's resumed.
   """
   def run(computation) do
     # Only accept Freer monad values (Pure or Impure)
@@ -33,6 +37,7 @@ defmodule Thunks.Coroutine do
       &Freer.return/1,
       fn {:yield, value}, k ->
         # Create a special Freer value that represents a yielded computation
+        # Using etaf is appropriate here because we're introducing a new effect
         Freer.etaf({:yielded, value, k}, __MODULE__)
       end
     )
@@ -48,15 +53,16 @@ defmodule Thunks.Coroutine do
     case computation do
       %Freer.Pure{val: value} ->
         {:done, value}
-      
+
       %Freer.Impure{eff: __MODULE__, mval: {:yielded, value, k}, q: []} ->
         {:yielded, value, fn resume_value -> k.(resume_value) end}
-      
+
       %Freer.Impure{eff: __MODULE__, mval: {:yielded, value, k}, q: q} ->
         # Handle the case where there are continuations after the yield
-        {:yielded, value, fn resume_value -> 
-          k.(resume_value) |> Freer.bindp(q)
-        end}
+        {:yielded, value,
+         fn resume_value ->
+           k.(resume_value) |> Freer.bindp(q)
+         end}
     end
   end
 
@@ -79,7 +85,7 @@ defmodule Thunks.Coroutine do
   """
   def run_collecting(computation, acc \\ [], yield_fn \\ fn v, a -> {v, [v | a]} end) do
     computation = run(computation)
-    
+
     case extract(computation) do
       {:done, final_value} ->
         {final_value, Enum.reverse(acc)}
@@ -102,6 +108,7 @@ defmodule Thunks.Coroutine do
       fn
         {:start, comp} ->
           comp = run(comp)
+
           case extract(comp) do
             {:done, final_value} -> {[{:result, final_value}], :done}
             {:yielded, value, k} -> {[{:yielded, value}], {:suspended, k}}
@@ -111,7 +118,7 @@ defmodule Thunks.Coroutine do
           # Pass a nil value to resume the coroutine
           next = resume({:yielded, nil, k}, nil)
           next = run(next)
-          
+
           case extract(next) do
             {:done, final_value} -> {[{:result, final_value}], :done}
             {:yielded, value, new_k} -> {[{:yielded, value}], {:suspended, new_k}}

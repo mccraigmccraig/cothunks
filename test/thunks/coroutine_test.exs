@@ -46,16 +46,16 @@ defmodule Thunks.CoroutineTest do
       # Let's trace the execution manually to understand what's happening
       result = Coroutine.run(computation)
       {:yielded, 1, k1} = Coroutine.extract(result)
-      
+
       resumed1 = Coroutine.resume({:yielded, 1, k1}, 2)
       {:yielded, v2, k2} = Coroutine.extract(resumed1)
-      
+
       resumed2 = Coroutine.resume({:yielded, v2, k2}, 4)
       {:yielded, v3, k3} = Coroutine.extract(resumed2)
-      
+
       resumed3 = Coroutine.resume({:yielded, v3, k3}, 8)
       {:done, v4} = Coroutine.extract(resumed3)
-      
+
       assert {v2, v3, v4} == {3, 5, 9}
 
       # try resuming with some different values
