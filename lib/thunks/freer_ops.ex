@@ -23,51 +23,17 @@ defmodule Thunks.FreerOps do
   end
 
   def freer_op(ops_mod, f_atom, arity) do
-    # haven't managed to get the arg-quoting right on an any-arity version
-    # of this macro
-    # args =
-    #   Range.new(0, arity - 1, 1)
-    #   |> Enum.map(fn i -> "arg_#{i}" |> String.to_atom() end)
-    #   |> Enum.map(fn i -> var!(i) end)
+    # Generate argument variables dynamically based on arity
+    args =
+      for i <- 0..(arity - 1)//1 do
+        {String.to_atom("arg_#{i}"), [], Elixir}
+      end
 
-    case arity do
-      0 ->
-        quote do
-          def unquote(f_atom)() do
-            apply(unquote(ops_mod), unquote(f_atom), []) |> Thunks.Freer.etaf(__MODULE__)
-          end
-        end
-
-      1 ->
-        quote do
-          def unquote(f_atom)(a) do
-            apply(unquote(ops_mod), unquote(f_atom), [a]) |> Thunks.Freer.etaf(__MODULE__)
-          end
-        end
-
-      2 ->
-        quote do
-          def unquote(f_atom)(a, b) do
-            apply(unquote(ops_mod), unquote(f_atom), [a, b])
-            |> Thunks.Freer.etaf(__MODULE__)
-          end
-        end
-
-      3 ->
-        quote do
-          def unquote(f_atom)(a, b, c) do
-            apply(unquote(ops_mod), unquote(f_atom), [a, b, c])
-            |> Thunks.Freer.etaf(__MODULE__)
-          end
-        end
-
-      4 ->
-        quote do
-          def unquote(f_atom)(a, b, c, d) do
-            apply(unquote(ops_mod), unquote(f_atom), [a, b, c, d])
-            |> Thunks.Freer.etaf(__MODULE__)
-          end
-        end
+    quote do
+      def unquote(f_atom)(unquote_splicing(args)) do
+        apply(unquote(ops_mod), unquote(f_atom), unquote(args))
+        |> Thunks.Freer.etaf(__MODULE__)
+      end
     end
   end
 end
