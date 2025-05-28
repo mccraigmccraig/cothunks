@@ -22,12 +22,12 @@ defmodule Thunks.CoroutineTest do
       extracted = Coroutine.extract(result)
 
       # It should yield 42
-      assert {:yielded, 42, continuation} = extracted
+      assert %Thunks.Coroutine.Yielded{value: 42, continuation: continuation} = extracted
       assert is_function(continuation, 1)
 
       # Resume with a value
       resumed = Coroutine.resume(extracted, "resumed value")
-      assert {:done, "finished: resumed value"} = Coroutine.extract(resumed)
+      assert %Thunks.Coroutine.Done{value: "finished: resumed value"} = Coroutine.extract(resumed)
     end
 
     test "multiple yields" do
@@ -45,32 +45,32 @@ defmodule Thunks.CoroutineTest do
 
       # Let's trace the execution manually to understand what's happening
       result = Coroutine.run(computation)
-      {:yielded, 1, k1} = Coroutine.extract(result)
+      %Thunks.Coroutine.Yielded{value: 1, continuation: k1} = Coroutine.extract(result)
 
-      resumed1 = Coroutine.resume({:yielded, 1, k1}, 2)
-      {:yielded, v2, k2} = Coroutine.extract(resumed1)
+      resumed1 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: 1, continuation: k1}, 2)
+      %Thunks.Coroutine.Yielded{value: v2, continuation: k2} = Coroutine.extract(resumed1)
 
-      resumed2 = Coroutine.resume({:yielded, v2, k2}, 4)
-      {:yielded, v3, k3} = Coroutine.extract(resumed2)
+      resumed2 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: v2, continuation: k2}, 4)
+      %Thunks.Coroutine.Yielded{value: v3, continuation: k3} = Coroutine.extract(resumed2)
 
-      resumed3 = Coroutine.resume({:yielded, v3, k3}, 8)
-      {:done, v4} = Coroutine.extract(resumed3)
+      resumed3 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: v3, continuation: k3}, 8)
+      %Thunks.Coroutine.Done{value: v4} = Coroutine.extract(resumed3)
 
       assert {v2, v3, v4} == {3, 5, 9}
 
       # try resuming with some different values
 
       # Resume with 10
-      resumed10 = Coroutine.resume({:yielded, 1, k1}, 10)
-      assert {:yielded, 11, _k2} = Coroutine.extract(resumed10)
+      resumed10 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: 1, continuation: k1}, 10)
+      assert %Thunks.Coroutine.Yielded{value: 11, continuation: _k2} = Coroutine.extract(resumed10)
 
       # Resume with 20
-      resumed20 = Coroutine.resume({:yielded, v2, k2}, 20)
-      assert {:yielded, 21, _k3} = Coroutine.extract(resumed20)
+      resumed20 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: v2, continuation: k2}, 20)
+      assert %Thunks.Coroutine.Yielded{value: 21, continuation: _k3} = Coroutine.extract(resumed20)
 
       # Resume with 30 and get final result
-      resumed30 = Coroutine.resume({:yielded, v3, k3}, 30)
-      assert {:done, 31} = Coroutine.extract(resumed30)
+      resumed30 = Coroutine.resume(%Thunks.Coroutine.Yielded{value: v3, continuation: k3}, 30)
+      assert %Thunks.Coroutine.Done{value: 31} = Coroutine.extract(resumed30)
     end
 
     test "run_collecting helper" do
@@ -144,7 +144,7 @@ defmodule Thunks.CoroutineTest do
 
       # Extract the first yield
       extracted1 = Coroutine.extract(coroutine_handled)
-      assert {:yielded, "State is: 5", _k1} = extracted1
+      assert %Thunks.Coroutine.Yielded{value: "State is: 5", continuation: _k1} = extracted1
 
       # Create a new computation that continues from where we left off
       # This is a workaround for the complex interaction between state and coroutine
@@ -164,7 +164,7 @@ defmodule Thunks.CoroutineTest do
 
       # Extract the second yield
       extracted2 = Coroutine.extract(cont_coroutine_handled)
-      assert {:yielded, "New state is: 15", _k2} = extracted2
+      assert %Thunks.Coroutine.Yielded{value: "New state is: 15", continuation: _k2} = extracted2
 
       # Create a final computation that just returns the result
       final_comp =
@@ -177,7 +177,7 @@ defmodule Thunks.CoroutineTest do
 
       # Extract the final result
       final_result = Coroutine.extract(Coroutine.run(final_state_handled))
-      assert {:done, {"Final state: 15", 15}} = final_result
+      assert %Thunks.Coroutine.Done{value: {"Final state: 15", 15}} = final_result
     end
 
     test "simple coroutine" do
@@ -195,17 +195,17 @@ defmodule Thunks.CoroutineTest do
       # First yield
       result = Coroutine.run(computation)
       extracted = Coroutine.extract(result)
-      assert {:yielded, "first", _k1} = extracted
+      assert %Thunks.Coroutine.Yielded{value: "first", continuation: _k1} = extracted
 
       # Second yield
       resumed = Coroutine.resume(extracted, nil)
       extracted2 = Coroutine.extract(resumed)
-      assert {:yielded, "second", _k2} = extracted2
+      assert %Thunks.Coroutine.Yielded{value: "second", continuation: _k2} = extracted2
 
       # Final result
       resumed2 = Coroutine.resume(extracted2, nil)
       extracted3 = Coroutine.extract(resumed2)
-      assert {:done, "final"} = extracted3
+      assert %Thunks.Coroutine.Done{value: "final"} = extracted3
     end
   end
 end
