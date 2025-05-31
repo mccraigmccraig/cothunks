@@ -11,7 +11,7 @@ defmodule Thunks.Coroutine do
 
   # Define the Yield effect
   defmodule Yield do
-    defstruct [:value, :continuation]
+    defstruct [:value, :mapper]
   end
 
   # Define the Status type for coroutine state
@@ -27,7 +27,7 @@ defmodule Thunks.Coroutine do
 
   # Grammar for the coroutine effect
   defmodule Grammar do
-    def yield(value, continuation), do: %Yield{value: value, continuation: continuation}
+    def yield(value, mapper), do: %Yield{value: value, mapper: mapper}
   end
 
   # Operations for the coroutine effect
@@ -36,14 +36,18 @@ defmodule Thunks.Coroutine do
     Yield a value and receive an input to continue.
     """
     def yield(a) do
-      Thunks.Freer.etaf(%Yield{value: a, continuation: & &1}, __MODULE__)
+      Thunks.Freer.etaf(%Yield{value: a, mapper: & &1}, __MODULE__)
+    end
+
+    def yield(a, k) do
+      Thunks.Freer.etaf(%Yield{value: a, mapper: k}, __MODULE__)
     end
   end
 
   @doc """
   Reply to a coroutine effect by returning the Continue constructor.
   """
-  def reply_c(%Yield{value: a, continuation: k}, arr) do
+  def reply_c(%Yield{value: a, mapper: k}, arr) do
     Freer.return(%Status.Continue{
       value: a,
       continuation: fn b -> k.(b) |> arr.() end
