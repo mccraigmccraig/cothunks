@@ -46,7 +46,7 @@ defmodule Thunks.Coroutine do
   def reply_c(%Yield{value: a, continuation: k}, arr) do
     Freer.return(%Status.Continue{
       value: a,
-      continuation: fn b -> arr.(k.(b)) end
+      continuation: fn b -> k.(b) |> arr.() end
     })
   end
 

@@ -134,44 +134,39 @@ defmodule Thunks.CoroutineTest do
   end
 
   describe "combining with other effects" do
-    # test "coroutine with state" do
-    #   require Freer
+    test "coroutine with state" do
+      require Freer
 
-    #   # Create a simpler test that demonstrates coroutines with state
-    #   # This avoids the complex interaction between the two effect systems
-    #   computation =
-    #     Freer.con [Ops, Thunks.Reader.Ops, Thunks.Writer.Ops] do
-    #       steps state <- get(),
-    #             _ <- yield("State is: #{state}"),
-    #             _ <- put(state + 10),
-    #             new_state <- get(),
-    #             _ <- yield("New state is: #{new_state}") do
-    #         Freer.return("Final state: #{new_state}")
-    #       end
-    #     end
+      # Create a simpler test that demonstrates coroutines with state
+      # This avoids the complex interaction between the two effect systems
+      computation =
+        Freer.con [Ops, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+          steps state <- get(),
+                _ <- yield("State is: #{state}"),
+                _ <- put(state + 10),
+                new_state <- get(),
+                _ <- yield("New state is: #{new_state}") do
+            Freer.return("Final state: #{new_state}")
+          end
+        end
 
-    #   # First run the computation through the state handler with initial state 5
-    #   coroutine_handled = computation |> Thunks.State.run(5) |> Coroutine.run()
+      # First run the computation through the state handler with initial state 5
+      result1 = computation |> Thunks.State.run(5) |> Coroutine.run() |> Freer.run()
 
-    #   # Extract the first yield
-    #   extracted1 = coroutine_handled
+      assert %Thunks.Coroutine.Status.Continue{value: "State is: 5", continuation: _k1} = result1
 
-    #   assert %Thunks.Coroutine.Status.Continue{value: "State is: 5", continuation: _k1} =
-    #            Freer.run(extracted1)
+      # Extract the second yield
+      result2 = result1 |> Coroutine.resume(10) |> Freer.run()
 
-    #   # Extract the second yield
-    #   extracted2 = Coroutine.resume(Freer.run(extracted1), 10)
+      assert %Thunks.Coroutine.Status.Continue{value: "New state is: 15", continuation: _k2} =
+               result2
 
-    #   assert %Thunks.Coroutine.Status.Continue{value: "New state is: 15", continuation: _k2} =
-    #            Freer.run(extracted2)
+      # Run the final computation through state handler
+      result3 = result2 |> Coroutine.resume(10) |> Freer.run()
 
-    #   # Run the final computation through state handler
-    #   final_state_handled = Coroutine.resume(Freer.run(extracted2), 10)
-
-    #   # Extract the final result
-    #   final_result = Freer.run(final_state_handled)
-    #   assert %Thunks.Coroutine.Status.Done{value: {"Final state: 15", 15}} = final_result
-    # end
+      # Extract the final result
+      assert %Thunks.Coroutine.Status.Done{value: {"Final state: 15", 15}} = result3
+    end
 
     test "simple coroutine" do
       require Freer
