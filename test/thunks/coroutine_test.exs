@@ -30,6 +30,31 @@ defmodule Thunks.CoroutineTest do
       assert %Thunks.Coroutine.Status.Done{value: "finished: resumed value"} = Freer.run(resumed)
     end
 
+    test "multiple yields" do
+      require Freer
+
+      # Keep the simple test as well
+      computation =
+        Freer.con Ops do
+          steps a <- yield("first"),
+                b <- yield("second: #{a}") do
+            Freer.return("final: #{b}")
+          end
+        end
+
+      # First yield
+      result = computation |> Coroutine.run() |> Freer.run()
+      assert %Thunks.Coroutine.Status.Continue{value: "first", continuation: _k1} = result
+
+      # Second yield
+      result2 = result |> Coroutine.resume(10) |> Freer.run()
+      assert %Thunks.Coroutine.Status.Continue{value: "second: 10", continuation: _k2} = result2
+
+      # Final result
+      result3 = result2 |> Coroutine.resume(20) |> Freer.run()
+      assert %Thunks.Coroutine.Status.Done{value: "final: 20"} = result3
+    end
+
     # test "multiple yields" do
     #   require Freer
 
@@ -142,11 +167,11 @@ defmodule Thunks.CoroutineTest do
       computation =
         Freer.con [Ops, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps state <- get(),
-                _ <- yield("State is: #{state}"),
-                _ <- put(state + 10),
+                r1 <- yield("State is: #{state}"),
+                put(state + r1),
                 new_state <- get(),
-                _ <- yield("New state is: #{new_state}") do
-            Freer.return("Final state: #{new_state}")
+                r2 <- yield("New state is: #{new_state}") do
+            Freer.return("Final resume: #{r2}")
           end
         end
 
@@ -162,35 +187,10 @@ defmodule Thunks.CoroutineTest do
                result2
 
       # Run the final computation through state handler
-      result3 = result2 |> Coroutine.resume(10) |> Freer.run()
+      result3 = result2 |> Coroutine.resume(100) |> Freer.run()
 
       # Extract the final result
-      assert %Thunks.Coroutine.Status.Done{value: {"Final state: 15", 15}} = result3
-    end
-
-    test "simple coroutine" do
-      require Freer
-
-      # Keep the simple test as well
-      computation =
-        Freer.con Ops do
-          steps _ <- yield("first"),
-                _ <- yield("second") do
-            Freer.return("final")
-          end
-        end
-
-      # First yield
-      result = computation |> Coroutine.run() |> Freer.run()
-      assert %Thunks.Coroutine.Status.Continue{value: "first", continuation: _k1} = result
-
-      # Second yield
-      result2 = result |> Coroutine.resume(nil) |> Freer.run()
-      assert %Thunks.Coroutine.Status.Continue{value: "second", continuation: _k2} = result2
-
-      # Final result
-      result3 = result2 |> Coroutine.resume(nil) |> Freer.run()
-      assert %Thunks.Coroutine.Status.Done{value: "final"} = result3
+      assert %Thunks.Coroutine.Status.Done{value: {"Final resume: 100", 15}} = result3
     end
   end
 end
