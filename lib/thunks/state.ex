@@ -11,17 +11,17 @@ defmodule Thunks.State do
   @doc """
   Run a stateful computation with the given initial state.
   Returns a tuple with the result and final state.
-  
+
   This implementation uses Reader and Writer effects to manage state.
   The Reader effect is used to get the current state,
   and the Writer effect is used to update the state.
-  
+
   Implementation translated from:
   https://okmij.org/ftp/Haskell/extensible/more.pdf
   """
   def run(computation, initial_state) do
     case computation do
-      %Freer.Pure{val: x} -> 
+      %Freer.Pure{val: x} ->
         Freer.return({x, initial_state})
 
       %Freer.Impure{eff: eff, mval: u, q: q} ->
@@ -35,7 +35,7 @@ defmodule Thunks.State do
             k.(initial_state).(initial_state)
 
           _ ->
-            %Freer.Impure{eff: eff, mval: u, q: [k]}
+            %Freer.Impure{eff: eff, mval: u, q: [k.(initial_state)]}
         end
     end
   end
