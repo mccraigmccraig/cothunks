@@ -173,32 +173,29 @@ defmodule Thunks.CoroutineTest do
     #   assert %Thunks.Coroutine.Status.Done{value: {"Final state: 15", 15}} = final_result
     # end
 
-    # test "simple coroutine" do
-    #   require Freer
+    test "simple coroutine" do
+      require Freer
 
-    #   # Keep the simple test as well
-    #   computation =
-    #     Freer.con Ops do
-    #       steps _ <- yield("first"),
-    #             _ <- yield("second") do
-    #         Freer.return("final")
-    #       end
-    #     end
+      # Keep the simple test as well
+      computation =
+        Freer.con Ops do
+          steps _ <- yield("first"),
+                _ <- yield("second") do
+            Freer.return("final")
+          end
+        end
 
-    #   # First yield
-    #   result = Coroutine.run(computation)
-    #   extracted = Freer.run(result)
-    #   assert %Thunks.Coroutine.Status.Continue{value: "first", continuation: _k1} = extracted
+      # First yield
+      result = computation |> Coroutine.run() |> Freer.run()
+      assert %Thunks.Coroutine.Status.Continue{value: "first", continuation: _k1} = result
 
-    #   # Second yield
-    #   resumed = Coroutine.resume(extracted, nil)
-    #   extracted2 = Freer.run(resumed)
-    #   assert %Thunks.Coroutine.Status.Continue{value: "second", continuation: _k2} = extracted2
+      # Second yield
+      result2 = result |> Coroutine.resume(nil) |> Freer.run()
+      assert %Thunks.Coroutine.Status.Continue{value: "second", continuation: _k2} = result2
 
-    #   # Final result
-    #   resumed2 = Coroutine.resume(extracted2, nil)
-    #   extracted3 = Freer.run(resumed2)
-    #   assert %Thunks.Coroutine.Status.Done{value: "final"} = extracted3
-    # end
+      # Final result
+      result3 = result2 |> Coroutine.resume(nil) |> Freer.run()
+      assert %Thunks.Coroutine.Status.Done{value: "final"} = result3
+    end
   end
 end
