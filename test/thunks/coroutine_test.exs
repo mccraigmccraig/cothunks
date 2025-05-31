@@ -178,16 +178,13 @@ defmodule Thunks.CoroutineTest do
 
       assert %Thunks.Coroutine.Status.Continue{value: "State is: 5", continuation: _k1} = result1
 
-      # Extract the second yield
       result2 = result1 |> Coroutine.resume(10) |> Freer.run()
 
       assert %Thunks.Coroutine.Status.Continue{value: "New state is: 15", continuation: _k2} =
                result2
 
-      # Run the final computation through state handler
       result3 = result2 |> Coroutine.resume(100) |> Freer.run()
 
-      # Extract the final result
       assert %Thunks.Coroutine.Status.Done{value: {"Final resume: 100", 15}} = result3
     end
   end
