@@ -162,8 +162,6 @@ defmodule Thunks.CoroutineTest do
     test "coroutine with state" do
       require Freer
 
-      # Create a simpler test that demonstrates coroutines with state
-      # This avoids the complex interaction between the two effect systems
       computation =
         Freer.con [Ops, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps state <- get(),
