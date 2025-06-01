@@ -77,13 +77,20 @@ defmodule Thunks.Freer do
 
   @type freer() :: %Pure{} | %Impure{}
 
+  defp freer?(%Pure{}), do: true
+  defp freer?(%Impure{}), do: true
+  defp freer?(_), do: false
+
   # now the Freer functions
 
   @spec pure(any) :: freer
   def pure(x), do: %Pure{val: x}
 
   @spec etaf(any, atom) :: freer
-  def etaf(fa, eff), do: %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
+  def etaf(fa, eff) do
+    Logger.info("etaf: #{inspect(fa)}, #{inspect(eff)}")
+    %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
+  end
 
   @spec return(any) :: freer
   def return(x), do: pure(x)
@@ -144,7 +151,8 @@ defmodule Thunks.Freer do
 
   @doc """
   return a new contiuation `x->Freer` which composes the
-  function `h` with the _application_ of the queue of continuations `g`
+  `(freer -> freer)` function `h` with the _application_ of the
+  queue of continuations `g`
   """
   @spec q_comp([(any -> freer)], (freer -> freer)) :: (any -> freer)
   def q_comp(g, h) do
@@ -194,7 +202,9 @@ end
 # TODO
 # - some scoped effects
 #   - error
-#   - coroutine / yield+resume
+#   - JSON serialisation of steps
+#     - each continuation in a queue is a step
+#     - we can capture inputs and outputs
 #   - syntax for scoped effects ?
 # - a testing approach
 #   - helpers for creating test handlers

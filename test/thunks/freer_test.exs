@@ -129,64 +129,18 @@ defmodule Thunks.FreerTest do
     )
   end
 
-  defmodule ReaderGrammar do
-    def get(), do: :get
-  end
-
-  defmodule Reader do
-    use FreerOps, ops: ReaderGrammar
-  end
-
+  # Reader and Writer effects have been moved to their own modules
+  # Thunks.Reader and Thunks.Writer
+  
   def run_reader(fv, reader_val) do
-    fv
-    |> Freer.handle_relay(
-      [Reader],
-      &Freer.return/1,
-      fn :get, k -> k.(reader_val) end
-    )
-  end
-
-  defmodule WriterGrammar do
-    def put(o), do: {:put, o}
-  end
-
-  defmodule Writer do
-    use FreerOps, ops: WriterGrammar
+    Thunks.Reader.run(fv, reader_val)
   end
 
   def run_writer(fv) do
-    fv
-    |> Freer.handle_relay(
-      [Writer],
-      fn x -> Freer.return({x, []}) end,
-      fn {:put, o}, k -> k.(nil) |> Freer.bind(fn {x, l} -> Freer.return({x, [o | l]}) end) end
-    )
+    Thunks.Writer.run(fv)
   end
 
-  # an alternative Reader+Writer interpreter, which uses
-  # the Reader grammar to return the state value and the
-  # Writer grammar to set the state value... it can't
-  # be written with handle_relay, because it needs to
-  # pass updated state into the recursion
-  #
-  # impl translated directly from:
-  # https://okmij.org/ftp/Haskell/extensible/more.pdf
-  def run_state(%Pure{val: x}, s), do: Freer.return({x, s})
-
-  def run_state(%Impure{eff: eff, mval: u, q: q}, s) do
-    k = fn s -> Freer.q_comp(q, &run_state(&1, s)) end
-
-    case {eff, u} do
-      {Writer, {:put, o}} ->
-        k.(o).(nil)
-
-      {Reader, :get} ->
-        k.(s).(s)
-
-      _ ->
-        %Impure{eff: eff, mval: u, q: [k]}
-    end
-  end
+  # State effect has been moved to its own module Thunks.State
 
   describe "q_apply" do
   end
@@ -302,7 +256,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con Reader do
+        Freer.con Thunks.Reader.Ops do
           steps a <- Freer.return(10),
                 b <- get() do
             Freer.return(a + b)
@@ -318,7 +272,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Reader, Writer] do
+        Freer.con [Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- Freer.return(10),
                 b <- get(),
                 _c <- put(a + b),
@@ -343,7 +297,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader] do
+        Freer.con [Numbers, Thunks.Reader.Ops] do
           steps a <- number(10),
                 b <- get(),
                 c <- add(a, b),
@@ -365,7 +319,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- number(10),
                 put(a),
                 b <- get(),
@@ -396,7 +350,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- get(),
                 b <- number(10),
                 put(a + b),
@@ -407,7 +361,7 @@ defmodule Thunks.FreerTest do
         end
 
       result =
-        fv |> run_numbers() |> run_state(12) |> Freer.run()
+        fv |> run_numbers() |> Thunks.State.run(12) |> Freer.run()
 
       assert {{:number, -98}, 22} == result
     end
@@ -434,7 +388,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- get(),
                 b <- number(1000),
                 c <- divide(a, 0),
@@ -443,7 +397,7 @@ defmodule Thunks.FreerTest do
           end
         end
 
-      result = fv |> run_numbers() |> run_state(10) |> Freer.run()
+      result = fv |> run_numbers() |> Thunks.State.run(10) |> Freer.run()
 
       assert {{:error, err}, 10} = result
       assert err =~ ~r/divide by zero/
