@@ -87,7 +87,10 @@ defmodule Thunks.Freer do
   def pure(x), do: %Pure{val: x}
 
   @spec etaf(any, atom) :: freer
-  def etaf(fa, eff), do: %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
+  def etaf(fa, eff) do
+    Logger.info("etaf: #{inspect(fa)}, #{inspect(eff)}")
+    %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
+  end
 
   @spec return(any) :: freer
   def return(x), do: pure(x)
