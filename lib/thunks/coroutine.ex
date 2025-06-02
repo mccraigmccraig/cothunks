@@ -35,6 +35,7 @@ defmodule Thunks.Coroutine do
   defmodule Ops do
     use FreerOps, ops: Grammar
 
+    # 1-arity yield with identity mapper
     def yield(a) do
       yield(a, & &1)
     end
