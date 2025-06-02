@@ -8,6 +8,7 @@ defmodule Thunks.Coroutine do
   """
 
   alias Thunks.Freer
+  alias Thunks.FreerOps
 
   # Define the Yield effect
   defmodule Yield do
@@ -32,15 +33,10 @@ defmodule Thunks.Coroutine do
 
   # Operations for the coroutine effect
   defmodule Ops do
-    @doc """
-    Yield a value and receive an input to continue.
-    """
-    def yield(a) do
-      Thunks.Freer.etaf(%Yield{value: a, mapper: & &1}, __MODULE__)
-    end
+    use FreerOps, ops: Grammar
 
-    def yield(a, k) do
-      Thunks.Freer.etaf(%Yield{value: a, mapper: k}, __MODULE__)
+    def yield(a) do
+      yield(a, & &1)
     end
   end
 
