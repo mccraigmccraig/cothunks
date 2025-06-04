@@ -12,10 +12,10 @@ defmodule Thunks.FreerTest do
     end
   end
 
-  describe "etaf" do
+  describe "send" do
     test "it wraps values into the Freer Monad" do
       assert %Impure{eff: EffectMod, mval: :val, q: [&Freer.pure/1]} ==
-               Freer.etaf(:val, EffectMod)
+               Freer.send(:val, EffectMod)
     end
   end
 
@@ -28,7 +28,7 @@ defmodule Thunks.FreerTest do
   describe "bind" do
     test "it binds a value" do
       assert %Impure{eff: EffectMod, mval: 10, q: [pure_f, step_f]} =
-               Freer.etaf(10, EffectMod)
+               Freer.send(10, EffectMod)
                |> Freer.bind(fn x -> Freer.return(2 * x) end)
 
       assert %Pure{val: 10} == pure_f.(10)
@@ -37,7 +37,7 @@ defmodule Thunks.FreerTest do
 
     test "it binds repeatedly with pure expressions" do
       assert %Impure{eff: EffectMod, mval: 10, q: [pure_f, step_1_f, step_2_f]} =
-               Freer.etaf(10, EffectMod)
+               Freer.send(10, EffectMod)
                |> Freer.bind(fn x -> Freer.return(2 * x) end)
                |> Freer.bind(fn x -> Freer.return(5 + x) end)
 
@@ -48,12 +48,12 @@ defmodule Thunks.FreerTest do
 
     test "it binds repeatedly with impure expressions" do
       assert %Impure{eff: EffectMod, mval: 10, q: [step_1, step_2, step_3]} =
-               Freer.etaf(10, EffectMod)
+               Freer.send(10, EffectMod)
                |> Freer.bind(fn x ->
-                 x |> Freer.etaf(EffectMod) |> Freer.bind(fn y -> Freer.return(2 * y) end)
+                 x |> Freer.send(EffectMod) |> Freer.bind(fn y -> Freer.return(2 * y) end)
                end)
                |> Freer.bind(fn x ->
-                 x |> Freer.etaf(EffectMod) |> Freer.bind(fn y -> Freer.return(5 + y) end)
+                 x |> Freer.send(EffectMod) |> Freer.bind(fn y -> Freer.return(5 + y) end)
                end)
 
       # trace the steps manually, feeding values from one into the next - this
@@ -131,7 +131,7 @@ defmodule Thunks.FreerTest do
 
   # Reader and Writer effects have been moved to their own modules
   # Thunks.Reader and Thunks.Writer
-  
+
   def run_reader(fv, reader_val) do
     Thunks.Reader.run(fv, reader_val)
   end

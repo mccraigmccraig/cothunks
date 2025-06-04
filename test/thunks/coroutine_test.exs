@@ -1,7 +1,10 @@
 defmodule Thunks.CoroutineTest do
   use ExUnit.Case
 
+  require Logger
+
   alias Thunks.Freer
+  alias Thunks.State
   alias Thunks.Coroutine
   alias Thunks.Coroutine.Ops
 
@@ -186,6 +189,29 @@ defmodule Thunks.CoroutineTest do
       result3 = result2 |> Coroutine.resume(100) |> Freer.run()
 
       assert %Thunks.Coroutine.Status.Done{value: {"Final resume: 100", 15}} = result3
+    end
+  end
+
+  describe "trying the everything handler" do
+    test "everything handler" do
+      require Freer
+
+      computation =
+        Freer.con [Ops, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+          steps state <- get(),
+                r1 <- yield("State is: #{state}"),
+                put(state + r1),
+                new_state <- get(),
+                r2 <- yield("New state is: #{new_state}") do
+            Freer.return("Final resume: #{r2}")
+          end
+        end
+
+      result1 =
+        computation |> Freer.handle_all() |> State.run(5) |> Coroutine.run() |> Freer.run()
+
+      result2 = result1 |> Coroutine.resume(10) |> Freer.run()
+      result3 = result2 |> Coroutine.resume(100) |> Freer.run()
     end
   end
 end

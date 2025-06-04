@@ -86,9 +86,9 @@ defmodule Thunks.Freer do
   @spec pure(any) :: freer
   def pure(x), do: %Pure{val: x}
 
-  @spec etaf(any, atom) :: freer
-  def etaf(fa, eff) do
-    Logger.info("etaf: #{inspect(fa)}, #{inspect(eff)}")
+  @spec send(any, atom) :: freer
+  def send(fa, eff) do
+    Logger.info("send: #{inspect(fa)}, #{inspect(eff)}")
     %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
   end
 
@@ -199,6 +199,26 @@ defmodule Thunks.Freer do
   def run(%Impure{eff: eff, mval: _u, q: _q} = impure) do
     raise "unhandled effect: #{eff} - #{inspect(impure)}"
   end
+
+  ###############################
+  #
+
+  # trying out a handler which just logs and passes on
+  # to the next handler... maybe we could use such a handler
+  # to implement log/resume ?
+  def handle_all(%Freer.Pure{} = pure_val) do
+    Logger.warning("handle_all: #{inspect(pure_val)}")
+    pure_val
+  end
+
+  def handle_all(%Freer.Impure{eff: eff, mval: u, q: q} = impure_val) do
+    Logger.warning("handle_all: #{inspect(impure_val)}")
+
+    # a continuation including this handler
+    k = Freer.q_comp(q, &handle_all(&1))
+
+    %Freer.Impure{eff: eff, mval: u, q: [k]}
+  end
 end
 
 # TODO
@@ -211,3 +231,11 @@ end
 # - a testing approach
 #   - helpers for creating test handlers
 #   - and fuzzing/property-based-testing help
+# - can we construct a log/resume handler ?
+#   - a handler which records a de/seriializable statement/result log,
+#     and if there's already a log, and the statements match then
+#     short-circuits and returns the result directly
+#   - imposes the constraint that statements/results must be de/serializable
+#   - when "resuming", we must follow the continuation chain sufficienly well
+#     that the binds that need to happen (for expressions which aren't
+#     completely short-circuited) happen correctly
