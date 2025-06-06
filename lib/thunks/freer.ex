@@ -190,6 +190,10 @@ defmodule Thunks.Freer do
     end
   end
 
+  @doc """
+  Allows easy implementation of interpreters which maintain state - such as the
+  classical State effect. Adapted from the freer-simple implementation
+  """
   @spec handle_relay_s(freer, [atom], any, (any -> freer), (any, (any -> freer) -> freer)) ::
           freer
   def handle_relay_s(%Pure{val: x}, _effs, initial_state, ret, _h) do
