@@ -20,6 +20,25 @@ defmodule Thunks.State do
   https://okmij.org/ftp/Haskell/extensible/more.pdf
   """
   def run(computation, initial_state) do
+    Freer.handle_relay_s(
+      computation,
+      [Reader.Ops, Writer.Ops],
+      initial_state,
+      fn s -> fn x -> Freer.return({x, s}) end end,
+      fn s ->
+        fn u, k ->
+          case u do
+            {:put, o} -> k.(o).(nil)
+            :get -> k.(s).(s)
+          end
+        end
+      end
+    )
+  end
+
+  # implemented without the help of the handle_relay_s helper
+  # from the okmij papaer
+  def run_expanded(computation, initial_state) do
     case computation do
       %Freer.Pure{val: x} ->
         Freer.return({x, initial_state})

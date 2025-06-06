@@ -190,6 +190,28 @@ defmodule Thunks.Freer do
     end
   end
 
+  @spec handle_relay_s(freer, [atom], any, (any -> freer), (any, (any -> freer) -> freer)) ::
+          freer
+  def handle_relay_s(%Pure{val: x}, _effs, initial_state, ret, _h) do
+    ret.(initial_state).(x)
+  end
+
+  def handle_relay_s(%Impure{eff: eff, mval: u, q: q}, effs, initial_state, ret, h) do
+    # a continuation including this handler
+    k = fn s -> q_comp(q, &handle_relay_s(&1, effs, s, ret, h)) end
+
+    if Enum.member?(effs, eff) do
+      # Logger.warning("handle %Impure{}: #{inspect(u)}")
+      # we can handle this effect
+      h.(initial_state).(u, k)
+    else
+      # Logger.warning("NOT handling %Impure{}: #{inspect(u)}")
+      # we can't handle this particular effect, just update the continuation
+      # with this handler
+      %Impure{eff: eff, mval: u, q: [k.(initial_state)]}
+    end
+  end
+
   @doc """
   after all effects are handled, only %Pure{} is left
   """
