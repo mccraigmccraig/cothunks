@@ -180,16 +180,16 @@ defmodule Thunks.Freer do
   handle_relay must return a Freer struct
   """
   @spec handle_relay(freer, [atom], (any -> freer), (any, (any -> freer) -> freer)) :: freer
-  def handle_relay(%Pure{val: x}, _effs, ret, _h) do
+  def handle_relay(%Pure{val: x}, _effs_or_fn, ret, _h) do
     # Logger.warning("handle %Pure{}: #{inspect(x)}")
     ret.(x)
   end
 
-  def handle_relay(%Impure{eff: eff, mval: u, q: q}, effs, ret, h) do
+  def handle_relay(%Impure{eff: eff, mval: u, q: q}, effs_or_fn, ret, h) do
     # a continuation including this handler
-    k = q_comp(q, &handle_relay(&1, effs, ret, h))
+    k = q_comp(q, &handle_relay(&1, effs_or_fn, ret, h))
 
-    if handles?(effs, eff) do
+    if handles?(effs_or_fn, eff) do
       # Logger.warning("handle %Impure{}: #{inspect(u)}")
       # we can handle this effect
       h.(u, k)
@@ -207,15 +207,15 @@ defmodule Thunks.Freer do
   """
   @spec handle_relay_s(freer, [atom], any, (any -> freer), (any, (any -> freer) -> freer)) ::
           freer
-  def handle_relay_s(%Pure{val: x}, _effs, initial_state, ret, _h) do
+  def handle_relay_s(%Pure{val: x}, _effs_or_fn, initial_state, ret, _h) do
     ret.(initial_state).(x)
   end
 
-  def handle_relay_s(%Impure{eff: eff, mval: u, q: q}, effs, initial_state, ret, h) do
+  def handle_relay_s(%Impure{eff: eff, mval: u, q: q}, effs_or_fn, initial_state, ret, h) do
     # a continuation including this handler
-    k = fn s -> q_comp(q, &handle_relay_s(&1, effs, s, ret, h)) end
+    k = fn s -> q_comp(q, &handle_relay_s(&1, effs_or_fn, s, ret, h)) end
 
-    if handles?(effs, eff) do
+    if handles?(effs_or_fn, eff) do
       # Logger.warning("handle %Impure{}: #{inspect(u)}")
       # we can handle this effect
       h.(initial_state).(u, k)
