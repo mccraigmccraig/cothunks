@@ -211,7 +211,7 @@ defmodule Thunks.CoroutineTest do
         computation |> Freer.handle_all() |> State.run(5) |> Coroutine.run() |> Freer.run()
 
       result2 = result1 |> Coroutine.resume(10) |> Freer.run()
-      result3 = result2 |> Coroutine.resume(100) |> Freer.run()
+      _result3 = result2 |> Coroutine.resume(100) |> Freer.run()
     end
   end
 end

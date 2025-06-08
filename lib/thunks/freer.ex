@@ -77,9 +77,9 @@ defmodule Thunks.Freer do
 
   @type freer() :: %Pure{} | %Impure{}
 
-  defp freer?(%Pure{}), do: true
-  defp freer?(%Impure{}), do: true
-  defp freer?(_), do: false
+  # defp freer?(%Pure{}), do: true
+  # defp freer?(%Impure{}), do: true
+  # defp freer?(_), do: false
 
   # now the Freer functions
 
@@ -158,9 +158,20 @@ defmodule Thunks.Freer do
   """
   @spec q_comp([(any -> freer)], (freer -> freer)) :: (any -> freer)
   def q_comp(g, h) do
+    Logger.info("q_comp: #{inspect(g)} #{inspect(h)}")
+
     fn x ->
       q_apply(g, x) |> h.()
     end
+  end
+
+  # can the effect `eff` be handled ?
+  defp handles?(effs, eff) when is_list(effs) do
+    Enum.member?(effs, eff)
+  end
+
+  defp handles?(f, eff) when is_function(f, 1) do
+    f.(eff)
   end
 
   @doc """
@@ -178,7 +189,7 @@ defmodule Thunks.Freer do
     # a continuation including this handler
     k = q_comp(q, &handle_relay(&1, effs, ret, h))
 
-    if Enum.member?(effs, eff) do
+    if handles?(effs, eff) do
       # Logger.warning("handle %Impure{}: #{inspect(u)}")
       # we can handle this effect
       h.(u, k)
@@ -204,7 +215,7 @@ defmodule Thunks.Freer do
     # a continuation including this handler
     k = fn s -> q_comp(q, &handle_relay_s(&1, effs, s, ret, h)) end
 
-    if Enum.member?(effs, eff) do
+    if handles?(effs, eff) do
       # Logger.warning("handle %Impure{}: #{inspect(u)}")
       # we can handle this effect
       h.(initial_state).(u, k)
