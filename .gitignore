@@ -25,3 +25,5 @@ thunks-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 .aider*
+
+/freer-simple
