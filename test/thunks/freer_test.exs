@@ -403,4 +403,74 @@ defmodule Thunks.FreerTest do
       assert err =~ ~r/divide by zero/
     end
   end
+
+  describe "handle_all_s" do
+    test "it logs and threads state through pure computations" do
+      fv = Freer.pure(42)
+
+      result = fv |> Freer.handle_all_s("initial_state") |> Freer.run()
+
+      assert {42, "initial_state"} = result
+    end
+
+    test "it logs and threads state through effectful computations" do
+      require Freer
+
+      fv =
+        Freer.con Numbers do
+          steps a <- number(10),
+                b <- multiply(a, 5) do
+            add(a, b)
+          end
+        end
+
+      result = 
+        fv 
+        |> Freer.handle_all_s("debug_state") 
+        |> run_numbers() 
+        |> Freer.run()
+
+      assert {:number, {60, "debug_state"}} = result
+    end
+
+    test "it works with multiple effects and maintains state" do
+      require Freer
+
+      fv =
+        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+          steps a <- number(10),
+                b <- get(),  
+                put(a + b),
+                c <- multiply(a, b) do
+            add(a, c)
+          end
+        end
+
+      result = 
+        fv 
+        |> Freer.handle_all_s({:debug_info, 0})
+        |> run_numbers()
+        |> run_reader(5)
+        |> run_writer()
+        |> Freer.run()
+
+      assert {{:number, {60, {:debug_info, 0}}}, [15]} = result
+    end
+
+    test "it works with custom return function" do
+      fv = Freer.pure(100)
+
+      # Custom return function that modifies both value and state
+      custom_ret = fn state -> fn value -> 
+        Freer.return({value * 2, state <> "_processed"}) 
+      end end
+
+      result = 
+        fv 
+        |> Freer.handle_all_s("start", custom_ret) 
+        |> Freer.run()
+
+      assert {200, "start_processed"} = result
+    end
+  end
 end

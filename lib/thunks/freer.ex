@@ -261,7 +261,64 @@ defmodule Thunks.Freer do
 
     %Freer.Impure{eff: eff, mval: u, q: [k]}
   end
+
+  @doc """
+  A stateful version of handle_all that maintains state while logging all computations.
+  Similar to handle_relay_s but logs everything and passes all effects through unchanged.
+  The state is threaded through the computation but not used for interpretation.
+  """
+  @spec handle_all_s(freer, any, (any -> (any -> freer))) :: freer
+  def handle_all_s(%Freer.Pure{val: x} = pure_val, state, ret) do
+    Logger.warning("handle_all_s Pure: #{inspect(pure_val)}, state: #{inspect(state)}")
+    ret.(state).(x)
+  end
+
+  def handle_all_s(%Freer.Impure{eff: eff, mval: u, q: q} = impure_val, state, ret) do
+    Logger.warning("handle_all_s Impure: #{inspect(impure_val)}, state: #{inspect(state)}")
+
+    inspect_val_f = fn s -> fn x ->
+      Logger.warning("inspect_val_s: #{inspect(x)}, state: #{inspect(s)}")
+      Freer.return(x)
+    end end
+
+    # a continuation including this handler with state threading
+    k = fn s -> Freer.q_comp([inspect_val_f.(s) | q], &handle_all_s(&1, s, ret)) end
+
+    # Always pass the effect through unchanged, but thread the state
+    %Freer.Impure{eff: eff, mval: u, q: [k.(state)]}
+  end
+
+  @doc """
+  Convenience wrapper for handle_all_s with default return function.
+  Returns a tuple of {final_value, final_state}.
+  """
+  @spec handle_all_s(freer, any) :: freer
+  def handle_all_s(computation, initial_state) do
+    handle_all_s(computation, initial_state, fn s -> fn x -> Freer.return({x, s}) end end)
+  end
 end
+
+# Example usage of handle_all_s:
+#
+# require Freer
+# computation = 
+#   Freer.con [Numbers, Reader.Ops] do
+#     steps a <- number(10),
+#           b <- get(),
+#           c <- add(a, b) do
+#       multiply(a, c)
+#     end
+#   end
+#
+# result = 
+#   computation
+#   |> Freer.handle_all_s({debug: true, step: 0})  # Logs all steps with state
+#   |> run_numbers()                               # Interpret Numbers effects  
+#   |> run_reader(5)                              # Provide reader environment
+#   |> Freer.run()
+#
+# # Result: {:number, {150, {debug: true, step: 0}}}
+# # Logs show all intermediate steps with state information
 
 # TODO
 # - some scoped effects
