@@ -251,8 +251,13 @@ defmodule Thunks.Freer do
   def handle_all(%Freer.Impure{eff: eff, mval: u, q: q} = impure_val) do
     Logger.warning("handle_all: #{inspect(impure_val)}")
 
+    inspect_val_f = fn x ->
+      Logger.warning("inspect_val: #{inspect(x)}")
+      Freer.return(x)
+    end
+
     # a continuation including this handler
-    k = Freer.q_comp(q, &handle_all(&1))
+    k = Freer.q_comp([inspect_val_f | q], &handle_all(&1))
 
     %Freer.Impure{eff: eff, mval: u, q: [k]}
   end
