@@ -75,6 +75,176 @@ defmodule Thunks.Freer do
     defstruct eff: nil, mval: nil, q: []
   end
 
+  defmodule LogEntry do
+    @moduledoc """
+    Represents a single computation step in the structured log.
+    """
+    defstruct [
+      :step_id,
+      :timestamp,
+      :effect,
+      :input,
+      :output,
+      # :effect, :continuation, :pure, :error
+      :step_type,
+      :continuation_id,
+      :parent_step_id
+    ]
+  end
+
+  defmodule ComputationLog do
+    @moduledoc """
+    Structured log of computation steps for persistence and resumption.
+    """
+    defstruct [
+      # List of LogEntry
+      :steps,
+      # Current step counter
+      :current_step,
+      # :running, :completed, :yielded, :error
+      :status,
+      # Final computation result if completed
+      :final_result,
+      # Error info if computation failed
+      :error,
+      # Additional metadata
+      :metadata
+    ]
+
+    def new(metadata \\ %{}) do
+      %ComputationLog{
+        steps: [],
+        current_step: 0,
+        status: :running,
+        final_result: nil,
+        error: nil,
+        metadata: metadata
+      }
+    end
+
+    def add_step(log, step_entry) do
+      %{log | steps: [step_entry | log.steps], current_step: log.current_step + 1}
+    end
+
+    def complete(log, result) do
+      %{log | status: :completed, final_result: result}
+    end
+
+    def error(log, error_info) do
+      %{log | status: :error, error: error_info}
+    end
+
+    def yield(log, yield_info) do
+      %{log | status: :yielded, metadata: Map.put(log.metadata, :yield_info, yield_info)}
+    end
+
+    def to_json(log) do
+      # Convert to JSON-serializable format
+      serializable_log =
+        log
+        |> Map.from_struct()
+        |> Map.update!(:steps, fn steps ->
+          Enum.map(steps, fn step ->
+            step
+            |> Map.from_struct()
+            |> Map.update!(:input, fn
+              nil -> nil
+              input -> inspect(input)
+            end)
+            |> Map.update!(:output, fn
+              nil -> nil
+              output -> inspect(output)
+            end)
+          end)
+        end)
+        |> Map.update!(:final_result, fn
+          nil -> nil
+          # Convert to string for JSON compatibility
+          result -> inspect(result)
+        end)
+        |> Map.update!(:error, fn
+          nil -> nil
+          # Convert to string for JSON compatibility
+          error -> inspect(error)
+        end)
+        |> Map.update!(:metadata, fn
+          metadata -> Jason.encode!(metadata)
+        end)
+
+      Jason.encode(serializable_log)
+    end
+
+    def from_json(json_string) do
+      case Jason.decode(json_string) do
+        {:ok, data} ->
+          steps =
+            Enum.map(data["steps"] || [], fn step ->
+              struct!(LogEntry, %{
+                step_id: step["step_id"],
+                timestamp: step["timestamp"],
+                effect: if(step["effect"], do: String.to_atom(step["effect"]), else: nil),
+                input: step["input"],
+                output: step["output"],
+                step_type:
+                  if(step["step_type"], do: String.to_atom(step["step_type"]), else: nil),
+                continuation_id: step["continuation_id"],
+                parent_step_id: step["parent_step_id"]
+              })
+            end)
+
+          # Parse final_result and error from their string representations if needed
+          final_result =
+            case data["final_result"] do
+              nil ->
+                nil
+
+              str when is_binary(str) ->
+                # In a real implementation, you might want more sophisticated deserialization
+                str
+
+              other ->
+                other
+            end
+
+          error =
+            case data["error"] do
+              nil -> nil
+              str when is_binary(str) -> str
+              other -> other
+            end
+
+          # Parse metadata back from JSON string
+          metadata =
+            case data["metadata"] do
+              nil ->
+                %{}
+
+              str when is_binary(str) ->
+                case Jason.decode(str) do
+                  {:ok, parsed} -> parsed
+                  {:error, _} -> %{}
+                end
+
+              other ->
+                other
+            end
+
+          {:ok,
+           struct!(ComputationLog, %{
+             steps: steps,
+             current_step: data["current_step"] || 0,
+             status: String.to_atom(data["status"] || "running"),
+             final_result: final_result,
+             error: error,
+             metadata: metadata
+           })}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end
+  end
+
   @type freer() :: %Pure{} | %Impure{}
 
   # defp freer?(%Pure{}), do: true
@@ -86,9 +256,9 @@ defmodule Thunks.Freer do
   @spec pure(any) :: freer
   def pure(x), do: %Pure{val: x}
 
-  @spec send(any, atom) :: freer
-  def send(fa, eff) do
-    Logger.info("send: #{inspect(fa)}, #{inspect(eff)}")
+  @spec send_effect(any, atom) :: freer
+  def send_effect(fa, eff) do
+    Logger.info("send_effect: #{inspect(fa)}, #{inspect(eff)}")
     %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
   end
 
@@ -276,10 +446,12 @@ defmodule Thunks.Freer do
   def handle_all_s(%Freer.Impure{eff: eff, mval: u, q: q} = impure_val, state, ret) do
     Logger.warning("handle_all_s Impure: #{inspect(impure_val)}, state: #{inspect(state)}")
 
-    inspect_val_f = fn s -> fn x ->
-      Logger.warning("inspect_val_s: #{inspect(x)}, state: #{inspect(s)}")
-      Freer.return(x)
-    end end
+    inspect_val_f = fn s ->
+      fn x ->
+        Logger.warning("inspect_val_s: #{inspect(x)}, state: #{inspect(s)}")
+        Freer.return(x)
+      end
+    end
 
     # a continuation including this handler with state threading
     k = fn s -> Freer.q_comp([inspect_val_f.(s) | q], &handle_all_s(&1, s, ret)) end
@@ -296,12 +468,217 @@ defmodule Thunks.Freer do
   def handle_all_s(computation, initial_state) do
     handle_all_s(computation, initial_state, fn s -> fn x -> Freer.return({x, s}) end end)
   end
+
+  @doc """
+  Enhanced handler with structured logging for computation persistence and resumption.
+  Maintains a ComputationLog that tracks all intermediate values and effects.
+
+  Returns a tuple of {final_result, computation_log}.
+  """
+  @spec handle_with_log(freer, ComputationLog.t()) :: freer
+  def handle_with_log(computation, log \\ ComputationLog.new()) do
+    handle_with_log_and_state(computation, log, %{}, fn final_log ->
+      fn result -> Freer.return({result, final_log}) end
+    end)
+  end
+
+  @doc """
+  Enhanced handler with structured logging and state that supports resumption.
+  Can resume from a previous log if provided, avoiding recomputation of logged steps.
+
+  Returns a tuple of {final_result, final_log, final_state}.
+  """
+  @spec handle_with_log_and_state(freer, ComputationLog.t(), any, (ComputationLog.t() ->
+                                                                     (any -> freer))) :: freer
+  def handle_with_log_and_state(%Freer.Pure{val: x}, log, state, ret) do
+    timestamp = :os.system_time(:microsecond)
+
+    log_entry = %LogEntry{
+      step_id: log.current_step,
+      timestamp: timestamp,
+      effect: :pure,
+      input: nil,
+      output: x,
+      step_type: :pure,
+      continuation_id: nil,
+      parent_step_id: nil
+    }
+
+    final_log =
+      log
+      |> ComputationLog.add_step(log_entry)
+      |> ComputationLog.complete(x)
+
+    ret.(final_log).(x)
+  end
+
+  def handle_with_log_and_state(%Freer.Impure{eff: eff, mval: u, q: q}, log, state, ret) do
+    timestamp = :os.system_time(:microsecond)
+
+    # Check if we can resume from log
+    case try_resume_from_log(log, eff, u) do
+      {:resume, cached_result, updated_log} ->
+        # We have a cached result, continue with it
+        Logger.info("Resuming from log: effect #{eff}, cached result: #{inspect(cached_result)}")
+
+        q_apply(q, cached_result)
+        |> handle_with_log_and_state(updated_log, state, ret)
+
+      :continue ->
+        # No cached result, proceed normally
+        log_entry = %LogEntry{
+          step_id: log.current_step,
+          timestamp: timestamp,
+          effect: eff,
+          input: u,
+          # Will be filled when effect is resolved
+          output: nil,
+          step_type: :effect,
+          continuation_id: "cont_#{log.current_step}",
+          parent_step_id: nil
+        }
+
+        updated_log = ComputationLog.add_step(log, log_entry)
+
+        # Create a logging continuation that captures the result
+        logging_cont = fn result ->
+          result_timestamp = :os.system_time(:microsecond)
+
+          # Update the log entry with the result
+          result_entry = %LogEntry{
+            step_id: updated_log.current_step,
+            timestamp: result_timestamp,
+            effect: eff,
+            input: u,
+            output: result,
+            step_type: :continuation,
+            continuation_id: "cont_#{log.current_step}",
+            parent_step_id: log.current_step
+          }
+
+          result_log = ComputationLog.add_step(updated_log, result_entry)
+
+          Logger.info("Logged effect: #{eff}, input: #{inspect(u)}, result: #{inspect(result)}")
+
+          # Continue with the original computation
+          q_apply(q, result)
+          |> handle_with_log_and_state(result_log, state, ret)
+        end
+
+        # Return the impure computation with our logging continuation
+        %Freer.Impure{eff: eff, mval: u, q: [logging_cont]}
+    end
+  end
+
+  @spec try_resume_from_log(ComputationLog.t(), atom, any) ::
+          {:resume, any, ComputationLog.t()} | :continue
+  defp try_resume_from_log(log, eff, input) do
+    # Look for a matching step in the log
+    matching_step =
+      log.steps
+      # Process in chronological order
+      |> Enum.reverse()
+      |> Enum.find(fn step ->
+        step.effect == eff and step.input == input and step.step_type == :effect
+      end)
+
+    case matching_step do
+      nil ->
+        :continue
+
+      step ->
+        # Find the corresponding continuation result
+        result_step =
+          Enum.find(log.steps, fn s ->
+            s.parent_step_id == step.step_id and s.step_type == :continuation
+          end)
+
+        case result_step do
+          nil -> :continue
+          result -> {:resume, result.output, log}
+        end
+    end
+  end
+
+  @doc """
+  Resume a computation from a persisted log.
+  This allows continuing computation from where it left off.
+  """
+  @spec resume_computation(freer, ComputationLog.t()) :: freer
+  def resume_computation(computation, log) do
+    case log.status do
+      :completed ->
+        # Computation already completed, return the result
+        Freer.return({log.final_result, log})
+
+      :error ->
+        # Computation previously errored, could re-raise or handle differently
+        raise "Cannot resume errored computation: #{inspect(log.error)}"
+
+      :yielded ->
+        # Resume from yield point
+        Logger.info("Resuming yielded computation from step #{log.current_step}")
+
+        handle_with_log_and_state(computation, log, %{}, fn log ->
+          fn result -> Freer.return({result, log}) end
+        end)
+
+      :running ->
+        # Resume normal computation
+        Logger.info("Resuming computation from step #{log.current_step}")
+
+        handle_with_log_and_state(computation, log, %{}, fn log ->
+          fn result -> Freer.return({result, log}) end
+        end)
+    end
+  end
+
+  @doc """
+  Persist a computation log to JSON format for later resumption.
+  """
+  @spec persist_log(ComputationLog.t()) :: {:ok, String.t()} | {:error, any}
+  def persist_log(log) do
+    ComputationLog.to_json(log)
+  end
+
+  @doc """
+  Load a computation log from JSON format.
+  """
+  @spec load_log(String.t()) :: {:ok, ComputationLog.t()} | {:error, any}
+  def load_log(json_string) do
+    ComputationLog.from_json(json_string)
+  end
+
+  @doc """
+  Create a yield effect that can be resumed later.
+  """
+  @spec yield_computation(any) :: freer
+  def yield_computation(yield_value) do
+    send_effect({:yield, yield_value}, :yield)
+  end
+
+  @doc """
+  Handle yield effects by updating the log status.
+  """
+  @spec handle_yield(freer, ComputationLog.t()) :: freer
+  def handle_yield(computation, log \\ ComputationLog.new()) do
+    handle_relay(
+      computation,
+      [:yield],
+      fn result -> Freer.return({result, log}) end,
+      fn {:yield, value}, k ->
+        yielded_log = ComputationLog.yield(log, %{yield_value: value, continuation: k})
+        Logger.info("Computation yielded with value: #{inspect(value)}")
+        Freer.return({:yielded, yielded_log})
+      end
+    )
+  end
 end
 
 # Example usage of handle_all_s:
 #
 # require Freer
-# computation = 
+# computation =
 #   Freer.con [Numbers, Reader.Ops] do
 #     steps a <- number(10),
 #           b <- get(),
@@ -310,15 +687,70 @@ end
 #     end
 #   end
 #
-# result = 
+# result =
 #   computation
 #   |> Freer.handle_all_s({debug: true, step: 0})  # Logs all steps with state
-#   |> run_numbers()                               # Interpret Numbers effects  
+#   |> run_numbers()                               # Interpret Numbers effects
 #   |> run_reader(5)                              # Provide reader environment
 #   |> Freer.run()
 #
 # # Result: {:number, {150, {debug: true, step: 0}}}
 # # Logs show all intermediate steps with state information
+
+# Example usage of structured logging:
+#
+# # Basic logging
+# computation =
+#   Freer.con [Numbers] do
+#     steps a <- number(42),
+#           b <- number(8) do
+#       add(a, b)
+#     end
+#   end
+#
+# {result, log} =
+#   computation
+#   |> Freer.handle_with_log()
+#   |> run_numbers()
+#   |> Freer.run()
+#
+# # Persist log for later resumption
+# {:ok, json_log} = Freer.persist_log(log)
+# File.write!("computation.json", json_log)
+#
+# # Resume from persisted log
+# {:ok, loaded_log} = File.read!("computation.json") |> Freer.load_log()
+# resumed_result =
+#   computation
+#   |> Freer.resume_computation(loaded_log)
+#   |> run_numbers()
+#   |> Freer.run()
+#
+# # Handle yielding computations
+# yielding_computation =
+#   Freer.con [Numbers] do
+#     steps a <- number(10),
+#           _ <- yield_computation("checkpoint_1"),
+#           b <- number(20) do
+#       add(a, b)
+#     end
+#   end
+#
+# {status, yield_log} =
+#   yielding_computation
+#   |> Freer.handle_yield()
+#   |> run_numbers()
+#   |> Freer.run()
+#
+# # status will be :yielded, can resume later
+# case status do
+#   :yielded ->
+#     # Save yield_log and resume later
+#     resumed = Freer.resume_computation(yielding_computation, yield_log)
+#   result ->
+#     # Computation completed normally
+#     result
+# end
 
 # TODO
 # - some scoped effects

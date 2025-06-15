@@ -27,3 +27,5 @@ thunks-*.tar
 .aider*
 
 /freer-simple
+
+/.elixir-tools
