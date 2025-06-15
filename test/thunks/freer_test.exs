@@ -5,6 +5,7 @@ defmodule Thunks.FreerTest do
   alias Thunks.Freer
   alias Thunks.Freer.{Pure, Impure}
   alias Thunks.FreerOps
+  alias Thunks.State
 
   describe "pure" do
     test "it wraps a value" do
@@ -94,7 +95,7 @@ defmodule Thunks.FreerTest do
   # - ret : wrap a plain value in a Freer<Numbers>
   # - handle : interpret a Numbers statement, either
   #  passing a plain value on to the continuation, or
-  #  short-circuit returning a Freer<Numbers> 
+  #  short-circuit returning a Freer<Numbers>
   defmodule InterpretNumbers do
     # wrap a value in a Numbers structure
     def ret(n), do: Freer.return({:number, n})
@@ -424,10 +425,10 @@ defmodule Thunks.FreerTest do
           end
         end
 
-      result = 
-        fv 
-        |> Freer.handle_all_s("debug_state") 
-        |> run_numbers() 
+      result =
+        fv
+        |> Freer.handle_all_s("debug_state")
+        |> run_numbers()
         |> Freer.run()
 
       assert {:number, {60, "debug_state"}} = result
@@ -439,15 +440,15 @@ defmodule Thunks.FreerTest do
       fv =
         Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- number(10),
-                b <- get(),  
+                b <- get(),
                 put(a + b),
                 c <- multiply(a, b) do
             add(a, c)
           end
         end
 
-      result = 
-        fv 
+      result =
+        fv
         |> Freer.handle_all_s({:debug_info, 0})
         |> run_numbers()
         |> run_reader(5)
@@ -457,17 +458,43 @@ defmodule Thunks.FreerTest do
       assert {{:number, {60, {:debug_info, 0}}}, [15]} = result
     end
 
+    test "it works with multiple effects and maintains state - " <>
+           "with a different state interpreter and a different handler order" do
+      require Freer
+
+      fv =
+        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+          steps a <- number(10),
+                b <- get(),
+                put(a + b),
+                c <- multiply(a, b) do
+            add(a, c)
+          end
+        end
+
+      result =
+        fv
+        |> run_numbers()
+        |> State.run(5)
+        |> Freer.handle_all_s({:debug_info, 0})
+        |> Freer.run()
+
+      assert {{{:number, 60}, 15}, {:debug_info, 0}} = result
+    end
+
     test "it works with custom return function" do
       fv = Freer.pure(100)
 
       # Custom return function that modifies both value and state
-      custom_ret = fn state -> fn value -> 
-        Freer.return({value * 2, state <> "_processed"}) 
-      end end
+      custom_ret = fn state ->
+        fn value ->
+          Freer.return({value * 2, state <> "_processed"})
+        end
+      end
 
-      result = 
-        fv 
-        |> Freer.handle_all_s("start", custom_ret) 
+      result =
+        fv
+        |> Freer.handle_all_s("start", custom_ret)
         |> Freer.run()
 
       assert {200, "start_processed"} = result
