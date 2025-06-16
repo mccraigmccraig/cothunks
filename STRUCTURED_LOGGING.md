@@ -39,9 +39,8 @@ Maintains the complete computation history:
   steps: [%LogEntry{}, ...],     # List of computation steps
   current_step: 5,               # Current step counter
   status: :completed,            # :running, :completed, :yielded, :error
-  final_result: 42,              # Final computation result (if completed)
-  error: nil,                    # Error information (if failed)
-  metadata: %{session: "abc"}    # Additional metadata
+  result: 42,                    # Computation result (if completed)
+  error: nil                     # Error information (if failed)
 }
 ```
 
@@ -223,9 +222,9 @@ case status do
     save_workflow_state(log)
     schedule_continuation()
     
-  final_result ->
+  result ->
     # Workflow completed
-    handle_completion(final_result)
+    handle_completion(result)
 end
 ```
 
@@ -273,16 +272,12 @@ For distributed or cloud-based computations:
 
 ## Advanced Features
 
-### Custom Metadata
+### Custom Log Initialization
 
-Add application-specific metadata to logs:
+Initialize logs with custom settings:
 
 ```elixir
-log = ComputationLog.new(%{
-  session_id: "user-123",
-  request_id: "req-456",
-  environment: "production"
-})
+log = ComputationLog.new()
 
 {result, final_log} = 
   computation

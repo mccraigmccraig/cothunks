@@ -145,8 +145,8 @@ defmodule StructuredLoggingDemo do
     IO.puts("Resumed computation result: #{resumed_result}")
 
     case resumed_result do
-      {final_value, _log} when is_tuple(resumed_result) ->
-        IO.puts("Successfully resumed with final value: #{final_value}")
+      {result_value, _log} when is_tuple(resumed_result) ->
+        IO.puts("Successfully resumed with result value: #{result_value}")
 
       value ->
         IO.puts("Resumed computation returned: #{value}")
@@ -181,7 +181,7 @@ defmodule StructuredLoggingDemo do
 
     case status do
       :yielded ->
-        IO.puts("Computation yielded at: #{yield_log.metadata.yield_info.yield_value}")
+        IO.puts("Computation yielded at: #{yield_log.result.yield_value}")
         IO.puts("Can be resumed later...")
 
         # In a real scenario, you would save yield_log and resume later

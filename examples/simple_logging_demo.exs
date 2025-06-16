@@ -3,7 +3,6 @@
 
 defmodule SimpleLoggingDemo do
   alias Thunks.Freer
-  alias Thunks.Freer.{ComputationLog, LogEntry}
 
   # Simple effect functions
   def number(n), do: Freer.send_effect(n, :number)
@@ -137,7 +136,7 @@ defmodule SimpleLoggingDemo do
 
     case status do
       :yielded ->
-        IO.puts("Computation yielded at: #{yield_log.metadata.yield_info.yield_value}")
+        IO.puts("Computation yielded at: #{yield_log.result.yield_value}")
         IO.puts("Yield log has #{length(yield_log.steps)} steps")
 
       other ->

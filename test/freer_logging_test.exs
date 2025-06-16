@@ -44,15 +44,8 @@ defmodule Thunks.FreerLoggingTest do
       assert log.steps == []
       assert log.current_step == 0
       assert log.status == :running
-      assert log.final_result == nil
+      assert log.result == nil
       assert log.error == nil
-      assert log.metadata == %{}
-    end
-
-    test "creates new log with metadata" do
-      metadata = %{session_id: "test-123", user: "alice"}
-      log = ComputationLog.new(metadata)
-      assert log.metadata == metadata
     end
 
     test "adds steps to log" do
@@ -79,7 +72,7 @@ defmodule Thunks.FreerLoggingTest do
       completed_log = ComputationLog.complete(log, result)
 
       assert completed_log.status == :completed
-      assert completed_log.final_result == result
+      assert completed_log.result == result
     end
 
     test "marks log as errored" do
@@ -97,13 +90,13 @@ defmodule Thunks.FreerLoggingTest do
       yielded_log = ComputationLog.yield(log, yield_info)
 
       assert yielded_log.status == :yielded
-      assert yielded_log.metadata.yield_info == yield_info
+      assert yielded_log.result == yield_info
     end
   end
 
   describe "JSON serialization" do
     test "serializes and deserializes log correctly" do
-      log = ComputationLog.new(%{test: "data"})
+      log = ComputationLog.new()
 
       entry = %LogEntry{
         step_id: 0,
@@ -126,10 +119,8 @@ defmodule Thunks.FreerLoggingTest do
 
       assert deserialized_log.current_step == completed_log.current_step
       assert deserialized_log.status == completed_log.status
-      # final_result is converted to string for JSON compatibility
-      assert deserialized_log.final_result == "42"
-      # metadata gets converted to string keys during JSON serialization
-      assert deserialized_log.metadata == %{"test" => "data"}
+      # result is converted to string for JSON compatibility
+      assert deserialized_log.result == "42"
       assert length(deserialized_log.steps) == length(completed_log.steps)
     end
 
@@ -257,8 +248,8 @@ defmodule Thunks.FreerLoggingTest do
 
       assert loaded_log.current_step == log.current_step
       assert loaded_log.status == log.status
-      # final_result gets converted to string during JSON serialization
-      assert loaded_log.final_result == "12"
+      # result gets converted to string during JSON serialization
+      assert loaded_log.result == "12"
       assert length(loaded_log.steps) == length(log.steps)
     end
   end
@@ -285,7 +276,7 @@ defmodule Thunks.FreerLoggingTest do
 
       assert status == :yielded
       assert log.status == :yielded
-      assert log.metadata.yield_info.yield_value == "checkpoint"
+      assert log.result.yield_value == "checkpoint"
     end
   end
 
@@ -401,16 +392,10 @@ defmodule Thunks.FreerLoggingTest do
       assert log.status == :completed
     end
 
-    test "handles computation with metadata" do
+    test "handles computation with custom log" do
       import TestEffects
 
-      metadata = %{
-        session_id: "test-session-123",
-        user_id: "alice",
-        computation_type: "math_ops"
-      }
-
-      log = ComputationLog.new(metadata)
+      log = ComputationLog.new()
       computation = number(42)
 
       {_result, final_log} =
@@ -419,7 +404,8 @@ defmodule Thunks.FreerLoggingTest do
         |> TestHandlers.run_numbers()
         |> Freer.run()
 
-      assert final_log.metadata == metadata
+      assert final_log.status == :completed
+      assert final_log.result == 42
     end
   end
 end

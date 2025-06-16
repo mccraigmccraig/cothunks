@@ -86,7 +86,7 @@ defmodule Thunks.Freer do
       :input,
       :output,
       # :effect, :continuation, :pure, :error
-      :step_type,
+      :step_type, 
       :continuation_id,
       :parent_step_id
     ]
@@ -103,22 +103,19 @@ defmodule Thunks.Freer do
       :current_step,
       # :running, :completed, :yielded, :error
       :status,
-      # Final computation result if completed
-      :final_result,
+      # Computation result if completed
+      :result,
       # Error info if computation failed
-      :error,
-      # Additional metadata
-      :metadata
+      :error
     ]
 
-    def new(metadata \\ %{}) do
+    def new do
       %ComputationLog{
         steps: [],
         current_step: 0,
         status: :running,
-        final_result: nil,
-        error: nil,
-        metadata: metadata
+        result: nil,
+        error: nil
       }
     end
 
@@ -127,7 +124,7 @@ defmodule Thunks.Freer do
     end
 
     def complete(log, result) do
-      %{log | status: :completed, final_result: result}
+      %{log | status: :completed, result: result}
     end
 
     def error(log, error_info) do
@@ -135,7 +132,7 @@ defmodule Thunks.Freer do
     end
 
     def yield(log, yield_info) do
-      %{log | status: :yielded, metadata: Map.put(log.metadata, :yield_info, yield_info)}
+      %{log | status: :yielded, result: yield_info}
     end
 
     def to_json(log) do
@@ -157,7 +154,7 @@ defmodule Thunks.Freer do
             end)
           end)
         end)
-        |> Map.update!(:final_result, fn
+        |> Map.update!(:result, fn
           nil -> nil
           # Convert to string for JSON compatibility
           result -> inspect(result)
@@ -166,9 +163,6 @@ defmodule Thunks.Freer do
           nil -> nil
           # Convert to string for JSON compatibility
           error -> inspect(error)
-        end)
-        |> Map.update!(:metadata, fn
-          metadata -> Jason.encode!(metadata)
         end)
 
       Jason.encode(serializable_log)
@@ -192,9 +186,9 @@ defmodule Thunks.Freer do
               })
             end)
 
-          # Parse final_result and error from their string representations if needed
-          final_result =
-            case data["final_result"] do
+          # Parse result and error from their string representations if needed
+          result =
+            case data["result"] do
               nil ->
                 nil
 
@@ -213,30 +207,13 @@ defmodule Thunks.Freer do
               other -> other
             end
 
-          # Parse metadata back from JSON string
-          metadata =
-            case data["metadata"] do
-              nil ->
-                %{}
-
-              str when is_binary(str) ->
-                case Jason.decode(str) do
-                  {:ok, parsed} -> parsed
-                  {:error, _} -> %{}
-                end
-
-              other ->
-                other
-            end
-
           {:ok,
            struct!(ComputationLog, %{
              steps: steps,
              current_step: data["current_step"] || 0,
              status: String.to_atom(data["status"] || "running"),
-             final_result: final_result,
-             error: error,
-             metadata: metadata
+             result: result,
+             error: error
            })}
 
         {:error, reason} ->
@@ -473,7 +450,7 @@ defmodule Thunks.Freer do
   Enhanced handler with structured logging for computation persistence and resumption.
   Maintains a ComputationLog that tracks all intermediate values and effects.
 
-  Returns a tuple of {final_result, computation_log}.
+  Returns a tuple of {result, computation_log}.
   """
   @spec handle_with_log(freer, ComputationLog.t()) :: freer
   def handle_with_log(computation, log \\ ComputationLog.new()) do
@@ -486,7 +463,7 @@ defmodule Thunks.Freer do
   Enhanced handler with structured logging and state that supports resumption.
   Can resume from a previous log if provided, avoiding recomputation of logged steps.
 
-  Returns a tuple of {final_result, final_log, final_state}.
+  Returns a tuple of {result, final_log, final_state}.
   """
   @spec handle_with_log_and_state(freer, ComputationLog.t(), any, (ComputationLog.t() ->
                                                                      (any -> freer))) :: freer
@@ -609,7 +586,7 @@ defmodule Thunks.Freer do
     case log.status do
       :completed ->
         # Computation already completed, return the result
-        Freer.return({log.final_result, log})
+        Freer.return({log.result, log})
 
       :error ->
         # Computation previously errored, could re-raise or handle differently

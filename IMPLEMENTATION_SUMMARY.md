@@ -25,9 +25,8 @@ This document summarizes the comprehensive structured logging system that has be
   - `steps`: Chronological list of LogEntry records
   - `current_step`: Step counter for unique IDs
   - `status`: Computation state (running, completed, yielded, error)
-  - `final_result`: Final computation result when completed
+  - `result`: Computation result when completed
   - `error`: Error information for failed computations
-  - `metadata`: Extensible custom data storage
 
 ### 2. Logging Functions
 
@@ -48,7 +47,7 @@ This document summarizes the comprehensive structured logging system that has be
 - `persist_log/1`: Converts ComputationLog to JSON format
 - `load_log/1`: Reconstructs ComputationLog from JSON
 - **Smart Serialization**: Handles complex Elixir data types via `inspect/1`
-- **Metadata Preservation**: Custom metadata survives serialization round-trips
+- **Result Preservation**: Computation results survive serialization round-trips
 
 #### Benefits
 - **Platform Independence**: JSON format enables cross-system compatibility
@@ -64,7 +63,7 @@ This document summarizes the comprehensive structured logging system that has be
 - **State Consistency**: Maintains computation state across resume sessions
 
 #### Resume Scenarios
-- **Completed Computations**: Returns cached final results immediately
+- **Completed Computations**: Returns cached results immediately
 - **Interrupted Computations**: Continues from last successful step
 - **Error Recovery**: Can be extended to handle partial failure scenarios
 
@@ -73,7 +72,7 @@ This document summarizes the comprehensive structured logging system that has be
 #### Yield Support
 - `yield_computation/1`: Creates resumable checkpoint in computations
 - `handle_yield/2`: Manages yielding computations with log integration
-- **Checkpoint Metadata**: Preserves yield context and continuation information
+- **Checkpoint Information**: Preserves yield context and continuation information
 
 #### Use Cases
 - **Long-Running Processes**: Break work into manageable chunks
@@ -118,7 +117,7 @@ This document summarizes the comprehensive structured logging system that has be
 
 #### JSON Serialization Strategy
 - **Type Conversion**: Complex types converted to strings via `inspect/1`
-- **Metadata Handling**: Nested JSON for extensible metadata storage
+- **Result Handling**: Computation results properly serialized
 - **Error Handling**: Graceful degradation for serialization failures
 
 ## Testing and Validation
