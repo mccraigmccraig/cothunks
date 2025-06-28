@@ -310,7 +310,7 @@ defmodule Thunks.Freer do
   """
   @spec handle_with_log(freer, ComputationLog.t()) :: freer
   def handle_with_log(computation, log \\ ComputationLog.new()) do
-    handle_with_log_and_state(computation, log, fn final_log ->
+    handle_with_log_impl(computation, log, fn final_log ->
       fn result -> Freer.return({result, final_log}) end
     end)
   end
@@ -321,9 +321,9 @@ defmodule Thunks.Freer do
 
   Returns a tuple of {result, final_log}.
   """
-  @spec handle_with_log_and_state(freer, ComputationLog.t(), (ComputationLog.t() ->
-                                                                (any -> freer))) :: freer
-  def handle_with_log_and_state(%Freer.Pure{val: x}, log, ret) do
+  @spec handle_with_log_impl(freer, ComputationLog.t(), (ComputationLog.t() ->
+                                                           (any -> freer))) :: freer
+  def handle_with_log_impl(%Freer.Pure{val: x}, log, ret) do
     timestamp = :os.system_time(:microsecond)
 
     log_entry = %LogEntry{
@@ -345,7 +345,7 @@ defmodule Thunks.Freer do
     ret.(final_log).(x)
   end
 
-  def handle_with_log_and_state(%Freer.Impure{eff: eff, mval: u, q: q}, log, ret) do
+  def handle_with_log_impl(%Freer.Impure{eff: eff, mval: u, q: q}, log, ret) do
     timestamp = :os.system_time(:microsecond)
 
     # Check if we can resume from log
@@ -355,7 +355,7 @@ defmodule Thunks.Freer do
         Logger.info("Resuming from log: effect #{eff}, cached result: #{inspect(cached_result)}")
 
         q_apply(q, cached_result)
-        |> handle_with_log_and_state(updated_log, ret)
+        |> handle_with_log_impl(updated_log, ret)
 
       :continue ->
         # No cached result, proceed normally
@@ -395,7 +395,7 @@ defmodule Thunks.Freer do
 
           # Continue with the original computation
           q_apply(q, result)
-          |> handle_with_log_and_state(result_log, ret)
+          |> handle_with_log_impl(result_log, ret)
         end
 
         # Return the impure computation with our logging continuation
@@ -452,7 +452,7 @@ defmodule Thunks.Freer do
         # Resume from yield point
         Logger.info("Resuming yielded computation from step #{log.current_step}")
 
-        handle_with_log_and_state(computation, log, fn log ->
+        handle_with_log_impl(computation, log, fn log ->
           fn result -> Freer.return({result, log}) end
         end)
 
@@ -460,7 +460,7 @@ defmodule Thunks.Freer do
         # Resume normal computation
         Logger.info("Resuming computation from step #{log.current_step}")
 
-        handle_with_log_and_state(computation, log, fn log ->
+        handle_with_log_impl(computation, log, fn log ->
           fn result -> Freer.return({result, log}) end
         end)
     end
