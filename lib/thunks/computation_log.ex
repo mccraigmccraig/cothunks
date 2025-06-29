@@ -13,6 +13,17 @@ defmodule Thunks.ComputationLog.LogEntry do
     :continuation_id,
     :parent_step_id
   ]
+
+  @type t :: %__MODULE__{
+          step_id: non_neg_integer() | nil,
+          timestamp: non_neg_integer() | nil,
+          effect: atom() | nil,
+          input: any(),
+          output: any(),
+          step_type: :effect | :continuation | :pure | :error | nil,
+          continuation_id: String.t() | nil,
+          parent_step_id: non_neg_integer() | nil
+        }
 end
 
 defmodule Thunks.ComputationLog do
@@ -34,6 +45,14 @@ defmodule Thunks.ComputationLog do
     # Error info if computation failed
     :error
   ]
+
+  @type t :: %__MODULE__{
+          steps: list(LogEntry.t()),
+          current_step: non_neg_integer(),
+          status: :running | :completed | :yielded | :error,
+          result: any(),
+          error: any()
+        }
 
   def new do
     %__MODULE__{
@@ -144,5 +163,21 @@ defmodule Thunks.ComputationLog do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @doc """
+  Persist a computation log to JSON format for later resumption.
+  """
+  @spec persist(t()) :: {:ok, String.t()} | {:error, any}
+  def persist(log) do
+    to_json(log)
+  end
+
+  @doc """
+  Load a computation log from JSON format.
+  """
+  @spec load(String.t()) :: {:ok, t()} | {:error, any}
+  def load(json_string) do
+    from_json(json_string)
   end
 end

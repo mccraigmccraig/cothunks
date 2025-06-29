@@ -467,22 +467,6 @@ defmodule Thunks.Freer do
   end
 
   @doc """
-  Persist a computation log to JSON format for later resumption.
-  """
-  @spec persist_log(ComputationLog.t()) :: {:ok, String.t()} | {:error, any}
-  def persist_log(log) do
-    ComputationLog.to_json(log)
-  end
-
-  @doc """
-  Load a computation log from JSON format.
-  """
-  @spec load_log(String.t()) :: {:ok, ComputationLog.t()} | {:error, any}
-  def load_log(json_string) do
-    ComputationLog.from_json(json_string)
-  end
-
-  @doc """
   Create a yield effect that can be resumed later.
   """
   @spec yield_computation(any) :: freer
@@ -548,11 +532,11 @@ end
 #   |> Freer.run()
 #
 # # Persist log for later resumption
-# {:ok, json_log} = Freer.persist_log(log)
+# {:ok, json_log} = ComputationLog.persist(log)
 # File.write!("computation.json", json_log)
 #
 # # Resume from persisted log
-# {:ok, loaded_log} = File.read!("computation.json") |> Freer.load_log()
+# {:ok, loaded_log} = File.read!("computation.json") |> ComputationLog.load()
 # resumed_result =
 #   computation
 #   |> Freer.resume_computation(loaded_log)
