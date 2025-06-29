@@ -1,7 +1,7 @@
 defmodule Thunks.FreerOps do
   @moduledoc """
   wrap all the data-constructors in a provided module
-  with Freer.send() - resulting in a module of operations
+  with Freer.send_effect() - resulting in a module of operations
   for use with Freer
   """
   defmacro __using__(opts) do
@@ -32,7 +32,7 @@ defmodule Thunks.FreerOps do
     quote do
       def unquote(f_atom)(unquote_splicing(args)) do
         apply(unquote(ops_mod), unquote(f_atom), unquote(args))
-        |> Thunks.Freer.send(__MODULE__)
+        |> Thunks.Freer.send_effect(__MODULE__)
       end
     end
   end
