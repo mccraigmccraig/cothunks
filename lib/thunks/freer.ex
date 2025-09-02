@@ -89,6 +89,7 @@ defmodule Thunks.Freer do
   @spec pure(any) :: freer
   def pure(x), do: %Pure{val: x}
 
+  # aka etaf
   @spec send_effect(any, atom) :: freer
   def send_effect(fa, eff) do
     Logger.info("send_effect: #{inspect(fa)}, #{inspect(eff)}")
@@ -157,14 +158,14 @@ defmodule Thunks.Freer do
   @doc """
   return a new contiuation `x->Freer` which composes the
   `(freer -> freer)` function `h` with the _application_ of the
-  queue of continuations `g`
+  queue of continuations `q`
   """
   @spec q_comp([(any -> freer)], (freer -> freer)) :: (any -> freer)
-  def q_comp(g, h) do
-    Logger.info("q_comp: #{inspect(g)} #{inspect(h)}")
+  def q_comp(q, h) do
+    Logger.info("q_comp: #{inspect(q)} #{inspect(h)}")
 
     fn x ->
-      q_apply(g, x) |> h.()
+      q_apply(q, x) |> h.()
     end
   end
 
