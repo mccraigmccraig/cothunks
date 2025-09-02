@@ -279,6 +279,10 @@ defmodule Thunks.Freer do
   def handle_all_s(%Freer.Impure{eff: eff, mval: u, q: q} = impure_val, state, ret) do
     Logger.warning("handle_all_s Impure: #{inspect(impure_val)}, state: #{inspect(state)}")
 
+    # to log a value from the inpect_val_f we can return an effect, for this handler
+    # which will then handle just this effect and continue to pass on all
+    # other effects
+
     inspect_val_f = fn s ->
       fn x ->
         Logger.warning("inspect_val_s: #{inspect(x)}, state: #{inspect(s)}")
@@ -297,9 +301,9 @@ defmodule Thunks.Freer do
   Convenience wrapper for handle_all_s with default return function.
   Returns a tuple of {final_value, final_state}.
   """
-  @spec handle_all_s(freer, any) :: freer
-  def handle_all_s(computation, initial_state) do
-    handle_all_s(computation, initial_state, fn s -> fn x -> Freer.return({x, s}) end end)
+  @spec handle_all_s(freer) :: freer
+  def handle_all_s(computation) do
+    handle_all_s(computation, [], fn s -> fn x -> Freer.return({x, s}) end end)
   end
 
   @doc """
@@ -587,3 +591,7 @@ end
 #   - when "resuming", we must follow the continuation chain sufficienly well
 #     that the binds that need to happen (for expressions which aren't
 #     completely short-circuited) happen correctly
+# - can we use Elixir structs to represent effect values - we currently have the
+#    eff atom and some arbitrary data... but a struct would impose an extra constraint
+#    we might use for runtime correctness checking... could even add a function requirement
+#    to the struct module, so we know it's an Ops struct
