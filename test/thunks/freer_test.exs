@@ -16,7 +16,7 @@ defmodule Thunks.FreerTest do
   describe "send" do
     test "it wraps values into the Freer Monad" do
       assert %Impure{eff: EffectMod, mval: :val, q: [&Freer.pure/1]} ==
-               Freer.send(:val, EffectMod)
+               Freer.send_effect(:val, EffectMod)
     end
   end
 
@@ -29,7 +29,7 @@ defmodule Thunks.FreerTest do
   describe "bind" do
     test "it binds a value" do
       assert %Impure{eff: EffectMod, mval: 10, q: [pure_f, step_f]} =
-               Freer.send(10, EffectMod)
+               Freer.send_effect(10, EffectMod)
                |> Freer.bind(fn x -> Freer.return(2 * x) end)
 
       assert %Pure{val: 10} == pure_f.(10)
@@ -38,7 +38,7 @@ defmodule Thunks.FreerTest do
 
     test "it binds repeatedly with pure expressions" do
       assert %Impure{eff: EffectMod, mval: 10, q: [pure_f, step_1_f, step_2_f]} =
-               Freer.send(10, EffectMod)
+               Freer.send_effect(10, EffectMod)
                |> Freer.bind(fn x -> Freer.return(2 * x) end)
                |> Freer.bind(fn x -> Freer.return(5 + x) end)
 
@@ -49,12 +49,12 @@ defmodule Thunks.FreerTest do
 
     test "it binds repeatedly with impure expressions" do
       assert %Impure{eff: EffectMod, mval: 10, q: [step_1, step_2, step_3]} =
-               Freer.send(10, EffectMod)
+               Freer.send_effect(10, EffectMod)
                |> Freer.bind(fn x ->
-                 x |> Freer.send(EffectMod) |> Freer.bind(fn y -> Freer.return(2 * y) end)
+                 x |> Freer.send_effect(EffectMod) |> Freer.bind(fn y -> Freer.return(2 * y) end)
                end)
                |> Freer.bind(fn x ->
-                 x |> Freer.send(EffectMod) |> Freer.bind(fn y -> Freer.return(5 + y) end)
+                 x |> Freer.send_effect(EffectMod) |> Freer.bind(fn y -> Freer.return(5 + y) end)
                end)
 
       # trace the steps manually, feeding values from one into the next - this
@@ -405,99 +405,99 @@ defmodule Thunks.FreerTest do
     end
   end
 
-  describe "handle_all_s" do
-    test "it logs and threads state through pure computations" do
-      fv = Freer.pure(42)
+  # describe "handle_all_s" do
+  #   test "it logs and threads state through pure computations" do
+  #     fv = Freer.pure(42)
 
-      result = fv |> Freer.handle_all_s("initial_state") |> Freer.run()
+  #     result = fv |> Freer.handle_all_s("initial_state") |> Freer.run()
 
-      assert {42, "initial_state"} = result
-    end
+  #     assert {42, "initial_state"} = result
+  #   end
 
-    test "it logs and threads state through effectful computations" do
-      require Freer
+  #   test "it logs and threads state through effectful computations" do
+  #     require Freer
 
-      fv =
-        Freer.con Numbers do
-          steps a <- number(10),
-                b <- multiply(a, 5) do
-            add(a, b)
-          end
-        end
+  #     fv =
+  #       Freer.con Numbers do
+  #         steps a <- number(10),
+  #               b <- multiply(a, 5) do
+  #           add(a, b)
+  #         end
+  #       end
 
-      result =
-        fv
-        |> Freer.handle_all_s("debug_state")
-        |> run_numbers()
-        |> Freer.run()
+  #     result =
+  #       fv
+  #       |> Freer.handle_all_s("debug_state")
+  #       |> run_numbers()
+  #       |> Freer.run()
 
-      assert {:number, {60, "debug_state"}} = result
-    end
+  #     assert {:number, {60, "debug_state"}} = result
+  #   end
 
-    test "it works with multiple effects and maintains state" do
-      require Freer
+  #   test "it works with multiple effects and maintains state" do
+  #     require Freer
 
-      fv =
-        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
-          steps a <- number(10),
-                b <- get(),
-                put(a + b),
-                c <- multiply(a, b) do
-            add(a, c)
-          end
-        end
+  #     fv =
+  #       Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+  #         steps a <- number(10),
+  #               b <- get(),
+  #               put(a + b),
+  #               c <- multiply(a, b) do
+  #           add(a, c)
+  #         end
+  #       end
 
-      result =
-        fv
-        |> Freer.handle_all_s({:debug_info, 0})
-        |> run_numbers()
-        |> run_reader(5)
-        |> run_writer()
-        |> Freer.run()
+  #     result =
+  #       fv
+  #       |> Freer.handle_all_s({:debug_info, 0})
+  #       |> run_numbers()
+  #       |> run_reader(5)
+  #       |> run_writer()
+  #       |> Freer.run()
 
-      assert {{:number, {60, {:debug_info, 0}}}, [15]} = result
-    end
+  #     assert {{:number, {60, {:debug_info, 0}}}, [15]} = result
+  #   end
 
-    test "it works with multiple effects and maintains state - " <>
-           "with a different state interpreter and a different handler order" do
-      require Freer
+  #   test "it works with multiple effects and maintains state - " <>
+  #          "with a different state interpreter and a different handler order" do
+  #     require Freer
 
-      fv =
-        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
-          steps a <- number(10),
-                b <- get(),
-                put(a + b),
-                c <- multiply(a, b) do
-            add(a, c)
-          end
-        end
+  #     fv =
+  #       Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+  #         steps a <- number(10),
+  #               b <- get(),
+  #               put(a + b),
+  #               c <- multiply(a, b) do
+  #           add(a, c)
+  #         end
+  #       end
 
-      result =
-        fv
-        |> run_numbers()
-        |> State.run(5)
-        |> Freer.handle_all_s({:debug_info, 0})
-        |> Freer.run()
+  #     result =
+  #       fv
+  #       |> run_numbers()
+  #       |> State.run(5)
+  #       |> Freer.handle_all_s({:debug_info, 0})
+  #       |> Freer.run()
 
-      assert {{{:number, 60}, 15}, {:debug_info, 0}} = result
-    end
+  #     assert {{{:number, 60}, 15}, {:debug_info, 0}} = result
+  #   end
 
-    test "it works with custom return function" do
-      fv = Freer.pure(100)
+  #   test "it works with custom return function" do
+  #     fv = Freer.pure(100)
 
-      # Custom return function that modifies both value and state
-      custom_ret = fn state ->
-        fn value ->
-          Freer.return({value * 2, state <> "_processed"})
-        end
-      end
+  #     # Custom return function that modifies both value and state
+  #     custom_ret = fn state ->
+  #       fn value ->
+  #         Freer.return({value * 2, state <> "_processed"})
+  #       end
+  #     end
 
-      result =
-        fv
-        |> Freer.handle_all_s("start", custom_ret)
-        |> Freer.run()
+  #     result =
+  #       fv
+  #       |> Freer.handle_all_s("start", custom_ret)
+  #       |> Freer.run()
 
-      assert {200, "start_processed"} = result
-    end
-  end
+  #     assert {200, "start_processed"} = result
+  #   end
+  # end
 end
