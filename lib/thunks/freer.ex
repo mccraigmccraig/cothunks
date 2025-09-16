@@ -92,7 +92,7 @@ defmodule Thunks.Freer do
   # aka etaf
   @spec send_effect(any, atom) :: freer
   def send_effect(fa, eff) do
-    Logger.info("send_effect: #{inspect(fa)}, #{inspect(eff)}")
+    # Logger.info("send_effect: #{inspect(fa)}, #{inspect(eff)}")
     %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
   end
 
@@ -136,7 +136,7 @@ defmodule Thunks.Freer do
   """
   @spec q_apply([(any -> freer)], any) :: freer
   def q_apply(q, x) do
-    Logger.info("q_apply: #{inspect(x)}")
+    # Logger.info("q_apply: #{inspect(x)}")
 
     case q do
       [k] -> k.(x)
@@ -170,7 +170,7 @@ defmodule Thunks.Freer do
   """
   @spec q_comp([(any -> freer)], (freer -> freer)) :: (any -> freer)
   def q_comp(q, h) do
-    Logger.info("q_comp: #{inspect(q)} #{inspect(h)}")
+    # Logger.info("q_comp: #{inspect(q)} #{inspect(h)}")
 
     fn x ->
       q_apply(q, x) |> h.()

@@ -128,7 +128,7 @@ defmodule Thunks.EffectLogger do
   end
 
   def run_logger(computation, %Log{} = log) do
-    Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
+    # Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
 
     case computation do
       %Pure{val: x} ->
@@ -137,14 +137,14 @@ defmodule Thunks.EffectLogger do
       %Impure{eff: eff, mval: u, q: q} ->
         case {eff, u} do
           {Ops, {:log_effect_value, val}} ->
-            Logger.error("#{__MODULE__}.run_logger handling")
+            # Logger.error("#{__MODULE__}.run_logger handling")
             # capturing the value of an executed effect
             updated_log = Log.log_effect_value(log, val)
             k = Freer.q_comp(q, &run_logger(&1, updated_log))
             Freer.q_apply([k], val)
 
           _ ->
-            Logger.error("#{__MODULE__}.run_logger log_or_resume")
+            # Logger.error("#{__MODULE__}.run_logger log_or_resume")
             log_or_resume(computation, log)
         end
     end
