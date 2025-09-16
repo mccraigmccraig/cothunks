@@ -78,7 +78,8 @@ defmodule Thunks.LoggerTest do
         Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
           steps a <- get(),
                 b <- number(10),
-                put(a + b),
+                x <- Freer.return(12),
+                put(a + b + x),
                 c <- multiply(a, b),
                 d <- get() do
             subtract(d, c)
