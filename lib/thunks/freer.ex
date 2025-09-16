@@ -112,6 +112,14 @@ defmodule Thunks.Freer do
   end
 
   @doc """
+  prepend a continuation `mf` to a queue of continuations `q`
+  """
+  @spec q_prepend([(any -> freer)], (any -> freer)) :: [(any -> freer)]
+  def q_prepend(q, mf) do
+    [mf | q]
+  end
+
+  @doc """
   concatenate two queues of continuations
   """
   @spec q_concat([(any -> freer)], [(any -> freer)]) :: [(any -> freer)]
