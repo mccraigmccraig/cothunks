@@ -3,10 +3,8 @@ defmodule Thunks.LoggerTest do
 
   require Logger
   alias Thunks.Freer
-  alias Thunks.Freer.{Pure, Impure}
   alias Thunks.FreerOps
   alias Thunks.EffectLogger
-  alias Thunks.State
 
   # define constructors for a simple language with
   # - number

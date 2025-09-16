@@ -191,3 +191,13 @@ defmodule Thunks.EffectLogger do
     end
   end
 end
+
+# ok, this seems to work pretty well... the qeustion now is
+# how to deal with the log
+#
+# the EffectLogger needs to be the first effect in the chain,
+# otherwise it doesn't see the other effects
+#
+# which also means that the log is deeply nested in the result
+#
+# maybe need something to take apart the result ?

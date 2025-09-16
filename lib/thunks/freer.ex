@@ -1,6 +1,4 @@
 defmodule Thunks.Freer do
-  alias Thunks.ComputationLog
-  alias Thunks.ComputationLog.LogEntry
 
   @moduledoc """
   A Freer Monad with extensible effects, based on the paper:
@@ -316,83 +314,6 @@ defmodule Thunks.Freer do
   end
 end
 
-# Example usage of handle_all_s:
-#
-# require Freer
-# computation =
-#   Freer.con [Numbers, Reader.Ops] do
-#     steps a <- number(10),
-#           b <- get(),
-#           c <- add(a, b) do
-#       multiply(a, c)
-#     end
-#   end
-#
-# result =
-#   computation
-#   |> Freer.handle_all_s({debug: true, step: 0})  # Logs all steps with state
-#   |> run_numbers()                               # Interpret Numbers effects
-#   |> run_reader(5)                              # Provide reader environment
-#   |> Freer.run()
-#
-# # Result: {:number, {150, {debug: true, step: 0}}}
-# # Logs show all intermediate steps with state information
-
-# Example usage of structured logging:
-#
-# # Basic logging
-# computation =
-#   Freer.con [Numbers] do
-#     steps a <- number(42),
-#           b <- number(8) do
-#       add(a, b)
-#     end
-#   end
-#
-# {result, log} =
-#   computation
-#   |> Freer.handle_with_log()
-#   |> run_numbers()
-#   |> Freer.run()
-#
-# # Persist log for later resumption
-# {:ok, json_log} = ComputationLog.persist(log)
-# File.write!("computation.json", json_log)
-#
-# # Resume from persisted log
-# {:ok, loaded_log} = File.read!("computation.json") |> ComputationLog.load()
-# resumed_result =
-#   computation
-#   |> Freer.resume_computation(loaded_log)
-#   |> run_numbers()
-#   |> Freer.run()
-#
-# # Handle yielding computations
-# yielding_computation =
-#   Freer.con [Numbers] do
-#     steps a <- number(10),
-#           _ <- yield_computation("checkpoint_1"),
-#           b <- number(20) do
-#       add(a, b)
-#     end
-#   end
-#
-# {status, yield_log} =
-#   yielding_computation
-#   |> Freer.handle_yield()
-#   |> run_numbers()
-#   |> Freer.run()
-#
-# # status will be :yielded, can resume later
-# case status do
-#   :yielded ->
-#     # Save yield_log and resume later
-#     resumed = Freer.resume_computation(yielding_computation, yield_log)
-#   result ->
-#     # Computation completed normally
-#     result
-# end
-
 # TODO
 # - some scoped effects
 #   - error
@@ -414,4 +335,5 @@ end
 # - can we use Elixir structs to represent effect values - we currently have the
 #    eff atom and some arbitrary data... but a struct would impose an extra constraint
 #    we might use for runtime correctness checking... could even add a function requirement
-#    to the struct module, so we know it's an Ops struct
+#    to the struct module, so we know it's an Ops struct, or use a Protocol to get
+#    what we need from the struct
