@@ -1,5 +1,6 @@
 defmodule Thunks.Logger do
   alias Thunks.Freer
+  alias Thunks.FreerOps
   alias Thunks.Freer.Pure
   alias Thunks.Freer.Impure
 
@@ -33,9 +34,62 @@ defmodule Thunks.Logger do
             stack: list(LogEntry.t()),
             queue: list(LogEntry.t())
           }
+
+    def log_effect(%__MODULE__{} = log, effect) do
+      case log.queue do
+        [] ->
+          %{log | queue: [LogEntry.new(effect)]}
+
+        _ ->
+          raise ArgumentError, message: "unexpected effect: #{inspect(effect, pretty: true)}"
+      end
+    end
+
+    def log_effect_value(%__MODULE__{} = log, effect_value) do
+      case log.queue do
+        [%{awaiting_value: true} = log_entry] ->
+          %{
+            log
+            | stack: [LogEntry.set_value(log_entry, effect_value) | log.stack],
+              queue: []
+          }
+
+        _ ->
+          raise ArgumentError, message: "unexpected effect value: #{inspect(log, pretty: true)}"
+      end
+    end
+
+    def consume_log_entry(%__MODULE__{} = log) do
+      case log.queue do
+        [%LogEntry{} = log_entry | rest] ->
+          %{
+            log
+            | stack: [log_entry | log.stack],
+              queue: rest
+          }
+      end
+    end
   end
 
-  def run(_computation) do
+  defmodule LoggedComputation do
+    defstruct result: nil, log: nil
+
+    @type t :: %__MODULE__{
+            result: any,
+            log: Log.t()
+          }
+
+    def new(result, %Log{} = log) do
+      %__MODULE__{result: result, log: log}
+    end
+  end
+
+  defmodule OpsGrammar do
+    def log_effect_value(v), do: {:log_effect_value, v}
+  end
+
+  defmodule Ops do
+    use FreerOps, ops: OpsGrammar
   end
 
   # logger captures effects in log-queue/log-stack, and avoids repeat work
@@ -59,28 +113,45 @@ defmodule Thunks.Logger do
   #   - reverse the stack and set it as the queue
   #
   # - how do logs compose ?
-  def run(%Pure{val: val} = _computation, %Log{} = log) do
-    ret(log).(val)
+
+  def run_logger(computation, %Log{} = log) do
+    case computation do
+      %Pure{val: x} ->
+        Freer.return(LoggedComputation.new(x, log))
+
+      %Impure{eff: eff, mval: u, q: q} ->
+        case {eff, u} do
+          {Ops, {:log_effect_value, val}} ->
+            # capturing the value of an executed effect
+            updated_log = Log.log_effect_value(log, val)
+            k = Freer.q_comp(q, &run_logger(&1, updated_log))
+
+            %Impure{eff: eff, mval: u, q: [k]}
+
+          _ ->
+            log_or_resume(computation, log)
+        end
+    end
   end
 
-  def run(%Impure{eff: eff, mval: u, q: q} = _computation, %Log{} = log) do
+  def log_or_resume(%Impure{eff: eff, mval: u, q: q} = _computation, %Log{} = log) do
     {action, updated_log, value} =
       case log.queue do
         [] ->
-          # first seen
-          {:execute_effect, %{log | queue: [LogEntry.new(u)]}, nil}
+          # a new effect LogEntry
+          {:execute_effect, Log.log_effect(log, u), nil}
 
         [
           %LogEntry{
             effect: log_entry_effect,
             awaiting_value: false,
             value: value
-          } = log_entry
-          | rest
+          } = _log_entry
+          | _rest
         ]
         when eff == log_entry_effect ->
           # resumed computation
-          {:resume_effect, %{log | stack: [log_entry | log.stack], queue: rest}, value}
+          {:resume_effect, Log.consume_log_entry(log), value}
 
         _ ->
           raise ArgumentError, message: "Effect diverged from log: #{inspect(log, pretty: true)}"
@@ -88,51 +159,22 @@ defmodule Thunks.Logger do
 
     case action do
       :execute_effect ->
-        # pass
-        # k = fn log -> Freer.q_comp(q, &run(&1, log)) end
-        # handle(updated_log).(u, store_result_k)
-        nil
+        # pass the effect on to another interpreter, preparing to
+        # log the interpreted value
+        capture_k = fn v -> Ops.log_effect_value(v) end
+
+        k =
+          q
+          |> Freer.q_prepend(capture_k)
+          |> Freer.q_comp(&run_logger(&1, updated_log))
+
+        %Freer.Impure{eff: eff, mval: u, q: [k]}
 
       :resume_effect ->
-        # use the logged value to feed the next continuation
-        Freer.q_apply(q, value)
-    end
-  end
-
-  defp ret(log) do
-    fn x ->
-      updated_log =
-        case log.queue do
-          # there's an effect with no value at the head of the queue. now
-          # we have the value. complete the LogEntry and move it to the stack
-          [%LogEntry{awaiting_value: awaiting_value} = log_entry | rest]
-          when awaiting_value ->
-            %{
-              stack: [LogEntry.set_value(log_entry, x) | log.stack],
-              queue: rest
-            }
-
-          _ ->
-            raise ArgumentError, message: "unexpected Pure: #{inspect(log, pretty: true)}"
-        end
-
-      Freer.return({x, updated_log})
-    end
-  end
-
-  defp handle(log) do
-    fn u, _k ->
-      {_action, _updated_log} =
-        case log.queue do
-          [] ->
-            {:execute_effect, %{log | queue: [LogEntry.new(u)]}}
-
-          [%LogEntry{effect: _effect, awaiting_value: false, value: _value} = log_entry | rest] ->
-            {:short_circuit_effect, %{log | stack: [log_entry | log.stack], queue: rest}}
-
-          _ ->
-            raise ArgumentError, message: "unexpected Effect: #{inspect(log, pretty: true)}"
-        end
+        # no need to execute the effect - use the logged value to feed the next
+        # continuation
+        k = Freer.q_comp(q, &run_logger(&1, updated_log))
+        Freer.q_apply([k], value)
     end
   end
 end
