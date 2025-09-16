@@ -5,6 +5,7 @@ defmodule Thunks.LoggerTest do
   alias Thunks.Freer
   alias Thunks.Freer.{Pure, Impure}
   alias Thunks.FreerOps
+  alias Thunks.EffectLogger
   alias Thunks.State
 
   # define constructors for a simple language with
@@ -85,8 +86,13 @@ defmodule Thunks.LoggerTest do
         end
 
       result =
-        fv |> run_numbers() |> Thunks.State.run(12) |> Freer.run()
+        fv
+        |> EffectLogger.run_logger()
+        |> run_numbers()
+        |> Thunks.State.run_expanded(12)
+        |> Freer.run()
 
+      Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")
       assert {{:number, -98}, 22} == result
     end
   end

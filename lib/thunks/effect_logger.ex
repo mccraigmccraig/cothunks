@@ -1,4 +1,6 @@
-defmodule Thunks.Logger do
+defmodule Thunks.EffectLogger do
+  require Logger
+
   alias Thunks.Freer
   alias Thunks.FreerOps
   alias Thunks.Freer.Pure
@@ -34,6 +36,13 @@ defmodule Thunks.Logger do
             stack: list(LogEntry.t()),
             queue: list(LogEntry.t())
           }
+
+    def new() do
+      %__MODULE__{
+        stack: [],
+        queue: []
+      }
+    end
 
     def log_effect(%__MODULE__{} = log, effect) do
       case log.queue do
@@ -114,7 +123,13 @@ defmodule Thunks.Logger do
   #
   # - how do logs compose ?
 
+  def run_logger(computation) do
+    run_logger(computation, Log.new())
+  end
+
   def run_logger(computation, %Log{} = log) do
+    Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
+
     case computation do
       %Pure{val: x} ->
         Freer.return(LoggedComputation.new(x, log))
@@ -122,13 +137,14 @@ defmodule Thunks.Logger do
       %Impure{eff: eff, mval: u, q: q} ->
         case {eff, u} do
           {Ops, {:log_effect_value, val}} ->
+            Logger.error("#{__MODULE__}.run_logger handling")
             # capturing the value of an executed effect
             updated_log = Log.log_effect_value(log, val)
             k = Freer.q_comp(q, &run_logger(&1, updated_log))
-
-            %Impure{eff: eff, mval: u, q: [k]}
+            Freer.q_apply([k], val)
 
           _ ->
+            Logger.error("#{__MODULE__}.run_logger log_or_resume")
             log_or_resume(computation, log)
         end
     end
