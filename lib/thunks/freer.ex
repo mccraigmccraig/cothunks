@@ -136,7 +136,7 @@ defmodule Thunks.Freer do
   """
   @spec q_apply([(any -> freer)], any) :: freer
   def q_apply(q, x) do
-    Logger.info("apply: #{inspect(x)}")
+    Logger.info("q_apply: #{inspect(x)}")
 
     case q do
       [k] -> k.(x)
