@@ -6,25 +6,32 @@ defmodule Thunks.EffectLogger do
   alias Thunks.Freer.Pure
   alias Thunks.Freer.Impure
 
-  defmodule LogEntry do
-    defstruct effect: nil, awaiting_value: true, value: nil
+  defmodule InterpretedEffectLogEntry do
+    defstruct effect: nil, value: nil
 
     @type t :: %__MODULE__{
             effect: any,
-            awaiting_value: boolean,
+            value: any
+          }
+  end
+
+  defmodule EffectLogEntry do
+    defstruct effect: nil, value: nil
+
+    @type t :: %__MODULE__{
+            effect: any,
             value: any
           }
 
     def new(effect) do
       %__MODULE__{
         effect: effect,
-        awaiting_value: true,
         value: nil
       }
     end
 
-    def set_value(%__MODULE__{awaiting_value: true} = log_entry, value) do
-      %{log_entry | awaiting_value: false, value: value}
+    def set_value(%EffectLogEntry{} = log_entry, value) do
+      %InterpretedEffectLogEntry{effect: log_entry.effect, value: value}
     end
   end
 
@@ -33,8 +40,8 @@ defmodule Thunks.EffectLogger do
     defstruct stack: [], queue: []
 
     @type t :: %__MODULE__{
-            stack: list(LogEntry.t()),
-            queue: list(LogEntry.t())
+            stack: list(InterpretedEffectLogEntry.t()),
+            queue: list(LogEntry.t() | InterpretedEffectLogEntry.t())
           }
 
     def new() do
@@ -47,7 +54,7 @@ defmodule Thunks.EffectLogger do
     def log_effect(%__MODULE__{} = log, effect) do
       case log.queue do
         [] ->
-          %{log | queue: [LogEntry.new(effect)]}
+          %{log | queue: [EffectLogEntry.new(effect)]}
 
         _ ->
           raise ArgumentError, message: "unexpected effect: #{inspect(effect, pretty: true)}"
@@ -56,10 +63,10 @@ defmodule Thunks.EffectLogger do
 
     def log_effect_value(%__MODULE__{} = log, effect_value) do
       case log.queue do
-        [%{awaiting_value: true} = log_entry] ->
+        [%EffectLogEntry{} = log_entry] ->
           %{
             log
-            | stack: [LogEntry.set_value(log_entry, effect_value) | log.stack],
+            | stack: [EffectLogEntry.set_value(log_entry, effect_value) | log.stack],
               queue: []
           }
 
@@ -70,7 +77,7 @@ defmodule Thunks.EffectLogger do
 
     def consume_log_entry(%__MODULE__{} = log) do
       case log.queue do
-        [%LogEntry{} = log_entry | rest] ->
+        [%InterpretedEffectLogEntry{} = log_entry | rest] ->
           %{
             log
             | stack: [log_entry | log.stack],
@@ -158,9 +165,8 @@ defmodule Thunks.EffectLogger do
           {:execute_effect, Log.log_effect(log, u), nil}
 
         [
-          %LogEntry{
+          %InterpretedEffectLogEntry{
             effect: log_entry_effect,
-            awaiting_value: false,
             value: value
           } = _log_entry
           | _rest
