@@ -6,29 +6,20 @@ defmodule Thunks.EffectLogger do
   alias Thunks.Freer.Pure
   alias Thunks.Freer.Impure
 
+  defmodule EffectLogEntry do
+    defstruct effect: nil
+
+    @type t :: %__MODULE__{effect: any}
+
+    def new(effect) do
+      %__MODULE__{effect: effect}
+    end
+  end
+
   defmodule InterpretedEffectLogEntry do
     defstruct effect: nil, value: nil
 
-    @type t :: %__MODULE__{
-            effect: any,
-            value: any
-          }
-  end
-
-  defmodule EffectLogEntry do
-    defstruct effect: nil, value: nil
-
-    @type t :: %__MODULE__{
-            effect: any,
-            value: any
-          }
-
-    def new(effect) do
-      %__MODULE__{
-        effect: effect,
-        value: nil
-      }
-    end
+    @type t :: %__MODULE__{effect: any, value: any}
 
     def set_value(%EffectLogEntry{} = log_entry, value) do
       %InterpretedEffectLogEntry{effect: log_entry.effect, value: value}
@@ -66,7 +57,7 @@ defmodule Thunks.EffectLogger do
         [%EffectLogEntry{} = log_entry] ->
           %{
             log
-            | stack: [EffectLogEntry.set_value(log_entry, effect_value) | log.stack],
+            | stack: [InterpretedEffectLogEntry.set_value(log_entry, effect_value) | log.stack],
               queue: []
           }
 
