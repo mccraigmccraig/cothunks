@@ -36,7 +36,7 @@ defmodule Freya.LoggerTest do
   #  short-circuit returning a Freer<Numbers>
   defmodule InterpretNumbers do
     # wrap a value in a Numbers structure
-    def ret(n), do: Freer.return({:number, n})
+    def ret(n), do: Freer.return(Freya.Result.ensure(n))
 
     # interpret a Numbers structure and pass a value on to
     # the continuation. The continuiation will return a Freer,
@@ -52,7 +52,7 @@ defmodule Freya.LoggerTest do
       if b != 0 do
         k.(a / b)
       else
-        Freer.return({:error, "divide by zero: #{a}/#{b}"})
+        Freer.return(Freya.Result.ensure({:error, "divide by zero: #{a}/#{b}"}))
       end
     end
 
@@ -92,7 +92,7 @@ defmodule Freya.LoggerTest do
         |> Freer.run()
 
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")
-      assert {{:number, -98}, 22} == result
+      assert %Freya.Result{value: -86, outputs: %{state: 34, logged_computation: %_{} }} = result
     end
   end
 end

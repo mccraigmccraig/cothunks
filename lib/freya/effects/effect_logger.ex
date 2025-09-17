@@ -130,7 +130,8 @@ defmodule Freya.Effects.EffectLogger do
 
     case computation do
       %Pure{val: x} ->
-        Freer.return(LoggedComputation.new(x, log))
+        r = Freya.Result.ensure(x) |> Freya.Result.put(:logged_computation, LoggedComputation.new(x, log))
+        Freer.return(r)
 
       %Impure{sig: eff, data: u, q: q} ->
         case {eff, u} do

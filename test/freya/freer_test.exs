@@ -97,7 +97,7 @@ defmodule Freya.FreerTest do
   #  short-circuit returning a Freer<Numbers>
   defmodule InterpretNumbers do
     # wrap a value in a Numbers structure
-    def ret(n), do: Freer.return({:number, n})
+    def ret(n), do: Freer.return(Freya.Result.ensure(n))
 
     # interpret a Numbers structure and pass a value on to
     # the continuation. The continuiation will return a Freer,
@@ -113,7 +113,7 @@ defmodule Freya.FreerTest do
       if b != 0 do
         k.(a / b)
       else
-        Freer.return({:error, "divide by zero: #{a}/#{b}"})
+        Freer.return(Freya.Result.ensure({:error, "divide by zero: #{a}/#{b}"}))
       end
     end
 
@@ -154,9 +154,9 @@ defmodule Freya.FreerTest do
     test "it interprets a pure value" do
       fv = Freer.pure(10)
 
-      result = fv |> run_numbers() |> Freer.run()
-
-      assert {:number, 10} = result
+      %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> Freer.run()
+      assert v == 10
+      assert out == %{}
     end
 
     test "it interprets a short sequence of operations" do
@@ -164,10 +164,9 @@ defmodule Freya.FreerTest do
         Numbers.number(10)
         |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
 
-      result = fv |> run_numbers() |> Freer.run()
-
-      # o = Freer.run(handled)
-      assert {:number, 100} = result
+      %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> Freer.run()
+      assert v == 100
+      assert out == %{}
     end
 
     test "it interprets a more complex composition of operations" do
@@ -180,9 +179,9 @@ defmodule Freya.FreerTest do
           Numbers.number(5) |> Freer.bind(fn z -> Freer.return(x * z) end)
         end)
 
-      result = fv |> run_numbers() |> Freer.run()
-
-      assert {:number, 60} = result
+      %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> Freer.run()
+      assert v == 60
+      assert out == %{}
     end
 
     test "it interprets a slightly longer sequence of operations" do
@@ -193,9 +192,9 @@ defmodule Freya.FreerTest do
         |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
         |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
 
-      result = fv |> run_numbers() |> Freer.run()
-
-      assert {:number, -4.0} = result
+      %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> Freer.run()
+      assert v == -4.0
+      assert out == %{}
     end
 
     test "it interprets nested operations" do
@@ -214,9 +213,9 @@ defmodule Freya.FreerTest do
           end)
         end)
 
-      result = fv |> run_numbers() |> Freer.run()
-
-      assert {:number, 205} = result
+      %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> Freer.run()
+      assert v == 205
+      assert out == %{}
     end
 
     test "it short circuits on divide by zero" do
@@ -226,10 +225,10 @@ defmodule Freya.FreerTest do
         |> Freer.bind(fn y -> Numbers.divide(y, 0) end)
         |> Freer.bind(fn z -> Numbers.add(z, 10) end)
 
-      result = fv |> run_numbers() |> Freer.run()
-
-      assert {:error, err} = result
+      %Freya.Result{value: res, outputs: out} = fv |> run_numbers() |> Freer.run()
+      assert {:error, err} = res
       assert err =~ ~r/divide by zero/
+      assert out == %{}
     end
   end
 
@@ -247,9 +246,9 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result = fv |> run_numbers() |> Freer.run()
-
-      assert {:number, 8990} == result
+      %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> Freer.run()
+      assert v == 8990
+      assert out == %{}
     end
 
     test "it can run a reader" do
@@ -263,9 +262,9 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result = fv |> run_reader(12) |> Freer.run()
-
-      assert 22 = result
+      %Freya.Result{value: v, outputs: out} = fv |> run_reader(12) |> Freer.run()
+      assert v == 22
+      assert out == %{}
     end
 
     test "it can run a reader and a writer" do
@@ -281,16 +280,14 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result = fv |> run_writer() |> run_reader(12) |> Freer.run()
-
-      # q: why is the order of the writer monoid reversed from what I expected ?
-      # a: because the handler calls the continuation and prepends the put value
-      # the continuation's output, so order is preserved
-      assert {44, [22, 120]} = result
+      %Freya.Result{value: v, outputs: out} = fv |> run_writer() |> run_reader(12) |> Freer.run()
+      assert v == 44
+      assert out.writer == [22, 120]
 
       # the order of the handlers should not matter for this combination of effects
-      result2 = fv |> run_reader(12) |> run_writer() |> Freer.run()
-      assert result2 == result
+      %Freya.Result{value: v2, outputs: out2} = fv |> run_reader(12) |> run_writer() |> Freer.run()
+      assert v2 == v
+      assert out2.writer == out.writer
     end
 
     test "it can mix numbers with a reader" do
@@ -306,13 +303,12 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result = fv |> run_numbers() |> run_reader(12) |> Freer.run()
-
-      # handler order should not matter for these effects
-      result2 = fv |> run_reader(12) |> run_numbers() |> Freer.run()
-
-      assert {:number, 98} == result
-      assert result == result2
+      %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> run_reader(12) |> Freer.run()
+      %Freya.Result{value: v2, outputs: out2} = fv |> run_reader(12) |> run_numbers() |> Freer.run()
+      assert v == 98
+      assert v2 == 98
+      assert out == %{}
+      assert out2 == %{}
     end
 
     test "it can mix numbers with a reader and a writer" do
@@ -336,14 +332,14 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result =
+      %Freya.Result{value: v, outputs: out} =
         fv |> run_numbers() |> run_reader(12) |> run_writer() |> Freer.run()
+      assert v == 98
+      assert out.writer == [10, 12, 22, 120]
 
-      assert {{:number, 98}, [10, 12, 22, 120]} == result
-
-      # handler order does matter with a Writer effect
-      result2 = fv |> run_writer |> run_reader(12) |> run_numbers() |> Freer.run()
-      assert {:number, {98, [10, 12, 22, 120]}} == result2
+      %Freya.Result{value: v3, outputs: out3} = fv |> run_writer |> run_reader(12) |> run_numbers() |> Freer.run()
+      assert v3 == 98
+      assert out3.writer == [10, 12, 22, 120]
     end
 
     test "it can mix numbers with the state interpretation of Reader+Writer" do
@@ -360,10 +356,10 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result =
+      %Freya.Result{value: v, outputs: out} =
         fv |> run_numbers() |> Freya.Effects.State.run(12) |> Freer.run()
-
-      assert {{:number, -98}, 22} == result
+      assert v == -98
+      assert out.state == 22
     end
 
     test "it short circuits" do
@@ -378,10 +374,10 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result = fv |> run_numbers() |> Freer.run()
-
-      assert {:error, err} = result
-      assert err =~ ~r/divide by zero/
+      %Freya.Result{value: res, outputs: out} = fv |> run_numbers() |> Freer.run()
+      assert {:error, msg} = res
+      assert out == %{}
+      assert msg =~ ~r/divide by zero/
     end
 
     test "it short circuits Numbes in combination with other effects" do
@@ -397,10 +393,10 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result = fv |> run_numbers() |> Freya.Effects.State.run(10) |> Freer.run()
-
-      assert {{:error, err}, 10} = result
-      assert err =~ ~r/divide by zero/
+      %Freya.Result{value: res2, outputs: out2} = fv |> run_numbers() |> Freya.Effects.State.run(10) |> Freer.run()
+      assert {:error, msg2} = res2
+      assert out2.state == 10
+      assert msg2 =~ ~r/divide by zero/
     end
   end
 

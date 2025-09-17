@@ -24,7 +24,7 @@ defmodule Freya.Effects.State do
       computation,
       [Reader.Ops, Writer.Ops],
       initial_state,
-      fn s -> fn x -> Freer.return({x, s}) end end,
+      fn s -> fn x -> Freya.Result.ensure(x) |> Freya.Result.put(:state, s) |> Freer.return end end,
       fn s ->
         fn u, k ->
           case u do
@@ -41,7 +41,7 @@ defmodule Freya.Effects.State do
   def run_expanded(computation, initial_state) do
     case computation do
       %Freer.Pure{val: x} ->
-        Freer.return({x, initial_state})
+        Freer.return(Freya.Result.ensure(x) |> Freya.Result.put(:state, initial_state))
 
       %Freer.Impure{sig: eff, data: u, q: q} ->
         k = fn s -> Freer.q_comp(q, &run(&1, s)) end

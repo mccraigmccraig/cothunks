@@ -26,8 +26,14 @@ defmodule Freya.Effects.Writer do
     computation
     |> Freer.handle_relay(
       [Ops],
-      fn x -> Freer.return({x, []}) end,
-      fn {:put, o}, k -> k.(nil) |> Freer.bind(fn {x, l} -> Freer.return({x, [o | l]}) end) end
+      fn x -> Freya.Result.ensure(x) |> Freer.return end,
+      fn {:put, o}, k ->
+        k.(nil)
+        |> Freer.bind(fn %Freya.Result{} = r ->
+          list = Map.get(r.outputs, :writer, [])
+          r |> Freya.Result.put(:writer, [o | list]) |> Freer.return
+        end)
+      end
     )
   end
 end

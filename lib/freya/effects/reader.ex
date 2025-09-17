@@ -26,7 +26,7 @@ defmodule Freya.Effects.Reader do
     computation
     |> Freer.handle_relay(
       [Ops],
-      &Freer.return/1,
+      fn x -> Freya.Result.ensure(x) |> Freer.return end,
       fn :get, k -> k.(reader_val) end
     )
   end
