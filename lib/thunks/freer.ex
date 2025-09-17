@@ -1,5 +1,4 @@
 defmodule Thunks.Freer do
-
   @moduledoc """
   A Freer Monad with extensible effects, based on the paper:
   https://okmij.org/ftp/Haskell/extensible/more.pdf
@@ -254,12 +253,12 @@ defmodule Thunks.Freer do
   # to the next handler... maybe we could use such a handler
   # to implement log/resume ?
   def handle_all(%Freer.Pure{} = pure_val) do
-    Logger.warning("handle_all: #{inspect(pure_val)}")
+    # Logger.warning("handle_all: #{inspect(pure_val)}")
     pure_val
   end
 
-  def handle_all(%Freer.Impure{eff: eff, mval: u, q: q} = impure_val) do
-    Logger.warning("handle_all: #{inspect(impure_val)}")
+  def handle_all(%Freer.Impure{eff: eff, mval: u, q: q} = _impure_val) do
+    # Logger.warning("handle_all: #{inspect(impure_val)}")
 
     inspect_val_f = fn x ->
       Logger.warning("inspect_val: #{inspect(x)}")
@@ -278,21 +277,21 @@ defmodule Thunks.Freer do
   The state is threaded through the computation but not used for interpretation.
   """
   @spec handle_all_s(freer, any, (any -> (any -> freer))) :: freer
-  def handle_all_s(%Freer.Pure{val: x} = pure_val, state, ret) do
-    Logger.warning("handle_all_s Pure: #{inspect(pure_val)}, state: #{inspect(state)}")
+  def handle_all_s(%Freer.Pure{val: x} = _pure_val, state, ret) do
+    # Logger.warning("handle_all_s Pure: #{inspect(pure_val)}, state: #{inspect(state)}")
     ret.(state).(x)
   end
 
-  def handle_all_s(%Freer.Impure{eff: eff, mval: u, q: q} = impure_val, state, ret) do
-    Logger.warning("handle_all_s Impure: #{inspect(impure_val)}, state: #{inspect(state)}")
+  def handle_all_s(%Freer.Impure{eff: eff, mval: u, q: q} = _impure_val, state, ret) do
+    # Logger.warning("handle_all_s Impure: #{inspect(impure_val)}, state: #{inspect(state)}")
 
     # to log a value from the inpect_val_f we can return an effect, for this handler
     # which will then handle just this effect and continue to pass on all
     # other effects
 
-    inspect_val_f = fn s ->
+    inspect_val_f = fn _s ->
       fn x ->
-        Logger.warning("inspect_val_s: #{inspect(x)}, state: #{inspect(s)}")
+        # Logger.warning("inspect_val_s: #{inspect(x)}, state: #{inspect(s)}")
         Freer.return(x)
       end
     end

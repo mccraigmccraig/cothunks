@@ -5,7 +5,6 @@ defmodule Thunks.FreerTest do
   alias Thunks.Freer
   alias Thunks.Freer.{Pure, Impure}
   alias Thunks.FreerOps
-  alias Thunks.State
 
   describe "pure" do
     test "it wraps a value" do
