@@ -1,4 +1,35 @@
+# Define the Yield effect
+defmodule Freya.Effects.Coroutine.Yield do
+  defstruct [:value, :mapper]
+end
+
+# Define the Status type for coroutine state
+defmodule Freya.Effects.Coroutine.Status do
+  defmodule Done do
+    defstruct [:value]
+  end
+
+  defmodule Continue do
+    defstruct [:value, :continuation]
+  end
+end
+
+# Grammar for the coroutine effect
+defmodule Freya.Effects.Coroutine.Grammar do
+  def yield(value, mapper), do: %Freya.Effects.Coroutine.Yield{value: value, mapper: mapper}
+end
+
+# Operations for the coroutine effect
 defmodule Freya.Effects.Coroutine do
+  use Freya.FreerOps, ops: Freya.Effects.Coroutine.Grammar
+
+  # 1-arity yield with identity mapper
+  def yield(a) do
+    yield(a, & &1)
+  end
+end
+
+defmodule Freya.Effects.CoroutineHandler do
   @moduledoc """
   A coroutine effect implementation using the Freer monad.
   Provides yield operation that suspends computation and returns a value to the caller.
@@ -8,38 +39,8 @@ defmodule Freya.Effects.Coroutine do
   """
 
   alias Freya.Freer
-  alias Freya.FreerOps
-
-  # Define the Yield effect
-  defmodule Yield do
-    defstruct [:value, :mapper]
-  end
-
-  # Define the Status type for coroutine state
-  defmodule Status do
-    defmodule Done do
-      defstruct [:value]
-    end
-
-    defmodule Continue do
-      defstruct [:value, :continuation]
-    end
-  end
-
-  # Grammar for the coroutine effect
-  defmodule Grammar do
-    def yield(value, mapper), do: %Yield{value: value, mapper: mapper}
-  end
-
-  # Operations for the coroutine effect
-  defmodule Ops do
-    use FreerOps, ops: Grammar
-
-    # 1-arity yield with identity mapper
-    def yield(a) do
-      yield(a, & &1)
-    end
-  end
+  alias Freya.Effects.Coroutine.Yield
+  alias Freya.Effects.Coroutine.Status
 
   @doc """
   Reply to a coroutine effect by returning the Continue constructor.
@@ -57,7 +58,7 @@ defmodule Freya.Effects.Coroutine do
   def run(computation) do
     computation
     |> Freer.handle_relay(
-      [Ops],
+      [Freya.Effects.Coroutine],
       fn x -> Freer.return(%Status.Done{value: x}) end,
       fn %Yield{} = y, k -> reply_c(y, k) end
     )
