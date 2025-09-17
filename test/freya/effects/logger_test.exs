@@ -74,14 +74,13 @@ defmodule Freya.LoggerTest do
 
       fv =
         Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
-          steps a <- get(),
-                b <- number(10),
-                x <- Freer.return(12),
-                put(a + b + x),
-                c <- multiply(a, b),
-                d <- get() do
-            subtract(d, c)
-          end
+          a <- get()
+          b <- number(10)
+          x <- Freer.return(12)
+          put(a + b + x)
+          c <- multiply(a, b)
+          d <- get()
+          subtract(d, c)
         end
 
       result =

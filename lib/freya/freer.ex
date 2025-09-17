@@ -14,12 +14,12 @@ defmodule Freya.Freer do
   @doc """
   con - profitable cheating - and `with` in Spanish
   """
-  defmacro con(mod_or_mods, do: body) do
+  defmacro con(mod_or_mods, do: block) do
     imports = expand_imports(mod_or_mods)
 
     quote do
       unquote_splicing(imports)
-      unquote(Macro.postwalk(body, &steps/1))
+      unquote(rewrite_block(block))
     end
   end
 
@@ -36,27 +36,20 @@ defmodule Freya.Freer do
     expand_imports([mod])
   end
 
-  defp steps({:steps, ctx, [{:<-, _ctx, [lhs, rhs]} | exprs]}) do
-    binder(lhs, rhs, steps({:steps, ctx, exprs}))
+  defp rewrite_block({:__block__, _, exprs}), do: rewrite_exprs(exprs)
+  defp rewrite_block(expr), do: rewrite_exprs([expr])
+
+  defp rewrite_exprs([last]) do
+    last
   end
 
-  defp steps({:steps, _ctx, [[do: expr] | []]}) do
-    quote do
-      unquote(expr)
-    end
+  defp rewrite_exprs([{:<-, _m, [lhs, rhs]} | rest]) do
+    binder(lhs, rhs, rewrite_exprs(rest))
   end
 
-  defp steps({:steps, ctx, [expr | exprs]}) do
-    binder(
-      quote do
-        _
-      end,
-      expr,
-      steps({:steps, ctx, exprs})
-    )
+  defp rewrite_exprs([expr | rest]) do
+    binder(quote(do: _), expr, rewrite_exprs(rest))
   end
-
-  defp steps(x), do: x
 
   defp binder(lhs, rhs, body) do
     quote do

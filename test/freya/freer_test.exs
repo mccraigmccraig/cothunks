@@ -238,12 +238,11 @@ defmodule Freya.FreerTest do
 
       fv =
         Freer.con Numbers do
-          steps a <- number(10),
-                b <- number(1000),
-                c <- add(a, b),
-                d <- multiply(a, b) do
-            subtract(d, c)
-          end
+          a <- number(10)
+          b <- number(1000)
+          c <- add(a, b)
+          d <- multiply(a, b)
+          subtract(d, c)
         end
 
       %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> Freer.run()
@@ -256,10 +255,9 @@ defmodule Freya.FreerTest do
 
       fv =
         Freer.con Freya.Effects.Reader.Ops do
-          steps a <- Freer.return(10),
-                b <- get() do
-            Freer.return(a + b)
-          end
+          a <- Freer.return(10)
+          b <- get()
+          Freer.return(a + b)
         end
 
       %Freya.Result{value: v, outputs: out} = fv |> run_reader(12) |> Freer.run()
@@ -272,12 +270,11 @@ defmodule Freya.FreerTest do
 
       fv =
         Freer.con [Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
-          steps a <- Freer.return(10),
-                b <- get(),
-                _c <- put(a + b),
-                _d <- put(a * b) do
-            Freer.return(2 * (a + b))
-          end
+          a <- Freer.return(10)
+          b <- get()
+          _c <- put(a + b)
+          _d <- put(a * b)
+          Freer.return(2 * (a + b))
         end
 
       %Freya.Result{value: v, outputs: out} = fv |> run_writer() |> run_reader(12) |> Freer.run()
@@ -295,12 +292,11 @@ defmodule Freya.FreerTest do
 
       fv =
         Freer.con [Numbers, Freya.Effects.Reader.Ops] do
-          steps a <- number(10),
-                b <- get(),
-                c <- add(a, b),
-                d <- multiply(a, b) do
-            subtract(d, c)
-          end
+          a <- number(10)
+          b <- get()
+          c <- add(a, b)
+          d <- multiply(a, b)
+          subtract(d, c)
         end
 
       %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> run_reader(12) |> Freer.run()
@@ -316,20 +312,14 @@ defmodule Freya.FreerTest do
 
       fv =
         Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
-          steps a <- number(10),
-                put(a),
-                b <- get(),
-                put(b),
-                c <- add(a, b),
-                put(c),
-                d <- multiply(a, b) do
-            # you can use the grammar constructs inside the do block, but
-            # you have to sequence them manually
-            put(d)
-            |> Freer.bind(fn _ ->
-              subtract(d, c)
-            end)
-          end
+          a <- number(10)
+          put(a)
+          b <- get()
+          put(b)
+          c <- add(a, b)
+          put(c)
+          d <- multiply(a, b)
+          put(d) |> Freer.bind(fn _ -> subtract(d, c) end)
         end
 
       %Freya.Result{value: v, outputs: out} =
@@ -347,13 +337,12 @@ defmodule Freya.FreerTest do
 
       fv =
         Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
-          steps a <- get(),
-                b <- number(10),
-                put(a + b),
-                c <- multiply(a, b),
-                d <- get() do
-            subtract(d, c)
-          end
+          a <- get()
+          b <- number(10)
+          put(a + b)
+          c <- multiply(a, b)
+          d <- get()
+          subtract(d, c)
         end
 
       %Freya.Result{value: v, outputs: out} =
@@ -367,11 +356,10 @@ defmodule Freya.FreerTest do
 
       fv =
         Freer.con Numbers do
-          steps a <- number(10),
-                b <- number(1000),
-                c <- divide(a, 0) do
-            multiply(b, c)
-          end
+          a <- number(10)
+          b <- number(1000)
+          c <- divide(a, 0)
+          multiply(b, c)
         end
 
       %Freya.Result{value: res, outputs: out} = fv |> run_numbers() |> Freer.run()
@@ -385,12 +373,11 @@ defmodule Freya.FreerTest do
 
       fv =
         Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
-          steps a <- get(),
-                b <- number(1000),
-                c <- divide(a, 0),
-                put(c) do
-            multiply(b, c)
-          end
+          a <- get()
+          b <- number(1000)
+          c <- divide(a, 0)
+          put(c)
+          multiply(b, c)
         end
 
       %Freya.Result{value: res2, outputs: out2} = fv |> run_numbers() |> Freya.Effects.State.run(10) |> Freer.run()

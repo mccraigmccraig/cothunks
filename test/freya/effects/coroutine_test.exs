@@ -15,9 +15,8 @@ defmodule Freya.Effects.CoroutineTest do
       # Create a coroutine that yields a value and returns another
       computation =
         Freer.con Ops do
-          steps a <- yield(42) do
-            Freer.return("finished: " <> a)
-          end
+          a <- yield(42)
+          Freer.return("finished: " <> a)
         end
 
       # Run the coroutine
@@ -42,10 +41,9 @@ defmodule Freya.Effects.CoroutineTest do
       # Keep the simple test as well
       computation =
         Freer.con Ops do
-          steps a <- yield("first"),
-                b <- yield("second: #{a}") do
-            Freer.return("final: #{b}")
-          end
+          a <- yield("first")
+          b <- yield("second: #{a}")
+          Freer.return("final: #{b}")
         end
 
       # First yield
@@ -172,13 +170,12 @@ defmodule Freya.Effects.CoroutineTest do
 
       computation =
         Freer.con [Ops, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
-          steps state <- get(),
-                r1 <- yield("State is: #{state}"),
-                put(state + r1),
-                new_state <- get(),
-                r2 <- yield("New state is: #{new_state}") do
-            Freer.return("Final resume: #{r2}")
-          end
+          state <- get()
+          r1 <- yield("State is: #{state}")
+          put(state + r1)
+          new_state <- get()
+          r2 <- yield("New state is: #{new_state}")
+          Freer.return("Final resume: #{r2}")
         end
 
       # First run the computation through the state handler with initial state 5
@@ -207,13 +204,12 @@ defmodule Freya.Effects.CoroutineTest do
 
       computation =
         Freer.con [Ops, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
-          steps state <- get(),
-                r1 <- yield("State is: #{state}"),
-                put(state + r1),
-                new_state <- get(),
-                r2 <- yield("New state is: #{new_state}") do
-            Freer.return("Final resume: #{r2}")
-          end
+          state <- get()
+          r1 <- yield("State is: #{state}")
+          put(state + r1)
+          new_state <- get()
+          r2 <- yield("New state is: #{new_state}")
+          Freer.return("Final resume: #{r2}")
         end
 
       result1 =
