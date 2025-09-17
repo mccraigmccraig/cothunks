@@ -74,12 +74,12 @@ defmodule Freya.LoggerTest do
 
       fv =
         Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
-          a <- get()
+          {:foo, a} <- get()
           b <- number(10)
           x <- Freer.return(12)
-          put(a + b + x)
+          put({:bar, a + b + x})
           c <- multiply(a, b)
-          d <- get()
+          {:bar, d} <- get()
           subtract(d, c)
         end
 
@@ -87,7 +87,7 @@ defmodule Freya.LoggerTest do
         fv
         |> EffectLogger.run_logger()
         |> run_numbers()
-        |> Freya.Effects.State.run_expanded(12)
+        |> Freya.Effects.State.run_expanded({:foo, 12})
         |> Freer.run()
 
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")
@@ -95,7 +95,7 @@ defmodule Freya.LoggerTest do
       assert %Freya.Result{
                value: -86,
                outputs: %{
-                 state: 34,
+                 state: {:bar, 34},
                  logged_computation: %_{}
                }
              } = result
