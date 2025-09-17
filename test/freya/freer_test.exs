@@ -14,7 +14,7 @@ defmodule Freya.FreerTest do
 
   describe "send" do
     test "it wraps values into the Freer Monad" do
-      assert %Impure{eff: EffectMod, mval: :val, q: [&Freer.pure/1]} ==
+      assert %Impure{sig: EffectMod, data: :val, q: [&Freer.pure/1]} ==
                Freer.send_effect(:val, EffectMod)
     end
   end
@@ -27,7 +27,7 @@ defmodule Freya.FreerTest do
 
   describe "bind" do
     test "it binds a value" do
-      assert %Impure{eff: EffectMod, mval: 10, q: [pure_f, step_f]} =
+      assert %Impure{sig: EffectMod, data: 10, q: [pure_f, step_f]} =
                Freer.send_effect(10, EffectMod)
                |> Freer.bind(fn x -> Freer.return(2 * x) end)
 
@@ -36,7 +36,7 @@ defmodule Freya.FreerTest do
     end
 
     test "it binds repeatedly with pure expressions" do
-      assert %Impure{eff: EffectMod, mval: 10, q: [pure_f, step_1_f, step_2_f]} =
+      assert %Impure{sig: EffectMod, data: 10, q: [pure_f, step_1_f, step_2_f]} =
                Freer.send_effect(10, EffectMod)
                |> Freer.bind(fn x -> Freer.return(2 * x) end)
                |> Freer.bind(fn x -> Freer.return(5 + x) end)
@@ -47,7 +47,7 @@ defmodule Freya.FreerTest do
     end
 
     test "it binds repeatedly with impure expressions" do
-      assert %Impure{eff: EffectMod, mval: 10, q: [step_1, step_2, step_3]} =
+      assert %Impure{sig: EffectMod, data: 10, q: [step_1, step_2, step_3]} =
                Freer.send_effect(10, EffectMod)
                |> Freer.bind(fn x ->
                  x |> Freer.send_effect(EffectMod) |> Freer.bind(fn y -> Freer.return(2 * y) end)
@@ -60,9 +60,9 @@ defmodule Freya.FreerTest do
       # is exactly what an interpreter for the identity effect would do
       pure = &Freer.pure/1
       assert %Pure{val: 10} = step_1.(10)
-      assert %Impure{eff: EffectMod, mval: 10, q: [^pure, step_2_2]} = step_2.(10)
+      assert %Impure{sig: EffectMod, data: 10, q: [^pure, step_2_2]} = step_2.(10)
       assert %Pure{val: 20} = step_2_2.(10)
-      assert %Impure{eff: EffectMod, mval: 20, q: [^pure, step_3_2]} = step_3.(20)
+      assert %Impure{sig: EffectMod, data: 20, q: [^pure, step_3_2]} = step_3.(20)
       assert %Pure{val: 25} = step_3_2.(20)
     end
   end

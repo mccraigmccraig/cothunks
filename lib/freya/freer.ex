@@ -72,7 +72,7 @@ defmodule Freya.Freer do
   end
 
   defmodule Impure do
-    defstruct eff: nil, mval: nil, q: []
+    defstruct sig: nil, data: nil, q: []
   end
 
   @type freer() :: %Pure{} | %Impure{}
@@ -89,8 +89,7 @@ defmodule Freya.Freer do
   # aka etaf
   @spec send_effect(any, atom) :: freer
   def send_effect(fa, eff) do
-    # Logger.info("send_effect: #{inspect(fa)}, #{inspect(eff)}")
-    %Impure{eff: eff, mval: fa, q: [&Freer.pure/1]}
+    %Impure{sig: eff, data: fa, q: [&Freer.pure/1]}
   end
 
   @spec return(any) :: freer
@@ -98,7 +97,7 @@ defmodule Freya.Freer do
 
   @spec bind(freer, (any -> freer)) :: freer
   def bind(%Pure{val: x}, k), do: k.(x)
-  def bind(%Impure{eff: eff, mval: u, q: q}, k), do: %Impure{eff: eff, mval: u, q: q_append(q, k)}
+  def bind(%Impure{sig: sig, data: u, q: q}, k), do: %Impure{sig: sig, data: u, q: q_append(q, k)}
 
   @doc """
   add a continuation `mf` to a queue of continuations `q`
@@ -153,10 +152,8 @@ defmodule Freya.Freer do
 
         q_apply(k, y)
 
-      %Impure{eff: eff, mval: u, q: q} ->
-        # Logger.warning("Impure apply: #{inspect(u)}")
-
-        %Impure{eff: eff, mval: u, q: q_concat(q, k)}
+      %Impure{sig: sig, data: u, q: q} ->
+        %Impure{sig: sig, data: u, q: q_concat(q, k)}
     end
   end
 
@@ -194,11 +191,11 @@ defmodule Freya.Freer do
     ret.(x)
   end
 
-  def handle_relay(%Impure{eff: eff, mval: u, q: q}, effs_or_fn, ret, h) do
+  def handle_relay(%Impure{sig: sig, data: u, q: q}, effs_or_fn, ret, h) do
     # a continuation including this handler
     k = q_comp(q, &handle_relay(&1, effs_or_fn, ret, h))
 
-    if handles?(effs_or_fn, eff) do
+    if handles?(effs_or_fn, sig) do
       # Logger.warning("handle %Impure{}: #{inspect(u)}")
       # we can handle this effect
       h.(u, k)
@@ -206,7 +203,7 @@ defmodule Freya.Freer do
       # Logger.warning("NOT handling %Impure{}: #{inspect(u)}")
       # we can't handle this particular effect, just update the continuation
       # with this handler
-      %Impure{eff: eff, mval: u, q: [k]}
+      %Impure{sig: sig, data: u, q: [k]}
     end
   end
 
@@ -220,11 +217,11 @@ defmodule Freya.Freer do
     ret.(initial_state).(x)
   end
 
-  def handle_relay_s(%Impure{eff: eff, mval: u, q: q}, effs_or_fn, initial_state, ret, h) do
+  def handle_relay_s(%Impure{sig: sig, data: u, q: q}, effs_or_fn, initial_state, ret, h) do
     # a continuation including this handler
     k = fn s -> q_comp(q, &handle_relay_s(&1, effs_or_fn, s, ret, h)) end
 
-    if handles?(effs_or_fn, eff) do
+    if handles?(effs_or_fn, sig) do
       # Logger.warning("handle %Impure{}: #{inspect(u)}")
       # we can handle this effect
       h.(initial_state).(u, k)
@@ -232,7 +229,7 @@ defmodule Freya.Freer do
       # Logger.warning("NOT handling %Impure{}: #{inspect(u)}")
       # we can't handle this particular effect, just update the continuation
       # with this handler
-      %Impure{eff: eff, mval: u, q: [k.(initial_state)]}
+      %Impure{sig: sig, data: u, q: [k.(initial_state)]}
     end
   end
 
@@ -242,8 +239,63 @@ defmodule Freya.Freer do
   @spec run(freer) :: any
   def run(%Pure{val: x}), do: x
 
-  def run(%Impure{eff: eff, mval: _u, q: _q} = impure) do
-    raise "unhandled effect: #{eff} - #{inspect(impure)}"
+  def run(%Impure{sig: sig, data: _u, q: _q} = impure) do
+    raise "unhandled effect: #{sig} - #{inspect(impure)}"
+  end
+
+  ###############################
+  #
+
+  # trying out a handler which just logs and passes on
+  # to the next handler... maybe we could use such a handler
+  # to implement log/resume ?
+  def handle_all(%Freer.Pure{} = pure_val) do
+    pure_val
+  end
+
+  def handle_all(%Freer.Impure{sig: eff, data: u, q: q} = _impure_val) do
+    inspect_val_f = fn x ->
+      # Logger.warning("inspect_val: #{inspect(x)}")
+      Freer.return(x)
+    end
+
+    # a continuation including this handler
+    k = Freer.q_comp([inspect_val_f | q], &handle_all(&1))
+
+    %Freer.Impure{sig: eff, data: u, q: [k]}
+  end
+
+  @doc """
+  A stateful version of handle_all that maintains state while logging all computations.
+  Similar to handle_relay_s but logs everything and passes all effects through unchanged.
+  The state is threaded through the computation but not used for interpretation.
+  """
+  @spec handle_all_s(freer, any, (any -> (any -> freer))) :: freer
+  def handle_all_s(%Freer.Pure{val: x} = _pure_val, state, ret) do
+    ret.(state).(x)
+  end
+
+  def handle_all_s(%Freer.Impure{sig: eff, data: u, q: q} = _impure_val, state, ret) do
+    inspect_val_f = fn _s ->
+      fn x ->
+        Freer.return(x)
+      end
+    end
+
+    # a continuation including this handler with state threading
+    k = fn s -> Freer.q_comp([inspect_val_f.(s) | q], &handle_all_s(&1, s, ret)) end
+
+    # Always pass the effect through unchanged, but thread the state
+    %Freer.Impure{sig: eff, data: u, q: [k.(state)]}
+  end
+
+  @doc """
+  Convenience wrapper for handle_all_s with default return function.
+  Returns a tuple of {final_value, final_state}.
+  """
+  @spec handle_all_s(freer) :: freer
+  def handle_all_s(computation) do
+    handle_all_s(computation, [], fn s -> fn x -> Freer.return({x, s}) end end)
   end
 end
 

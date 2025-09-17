@@ -43,7 +43,7 @@ defmodule Freya.Effects.State do
       %Freer.Pure{val: x} ->
         Freer.return({x, initial_state})
 
-      %Freer.Impure{eff: eff, mval: u, q: q} ->
+      %Freer.Impure{sig: eff, data: u, q: q} ->
         k = fn s -> Freer.q_comp(q, &run(&1, s)) end
 
         case {eff, u} do
@@ -54,7 +54,7 @@ defmodule Freya.Effects.State do
             k.(initial_state).(initial_state)
 
           _ ->
-            %Freer.Impure{eff: eff, mval: u, q: [k.(initial_state)]}
+            %Freer.Impure{sig: eff, data: u, q: [k.(initial_state)]}
         end
     end
   end

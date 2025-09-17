@@ -132,7 +132,7 @@ defmodule Freya.Effects.EffectLogger do
       %Pure{val: x} ->
         Freer.return(LoggedComputation.new(x, log))
 
-      %Impure{eff: eff, mval: u, q: q} ->
+      %Impure{sig: eff, data: u, q: q} ->
         case {eff, u} do
           {Ops, {:log_effect_value, val}} ->
             # Logger.error("#{__MODULE__}.run_logger handling")
@@ -148,7 +148,7 @@ defmodule Freya.Effects.EffectLogger do
     end
   end
 
-  def log_or_resume(%Impure{eff: eff, mval: u, q: q} = _computation, %Log{} = log) do
+  def log_or_resume(%Impure{sig: eff, data: u, q: q} = _computation, %Log{} = log) do
     {action, updated_log, value} =
       case log.queue do
         [] ->
@@ -181,7 +181,7 @@ defmodule Freya.Effects.EffectLogger do
           |> Freer.q_prepend(capture_k)
           |> Freer.q_comp(&run_logger(&1, updated_log))
 
-        %Freer.Impure{eff: eff, mval: u, q: [k]}
+        %Freer.Impure{sig: eff, data: u, q: [k]}
 
       :resume_effect ->
         # no need to execute the effect - use the logged value to feed the next
