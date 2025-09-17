@@ -1,4 +1,4 @@
-defmodule Freya.Coroutine do
+defmodule Freya.Effects.Coroutine do
   @moduledoc """
   A coroutine effect implementation using the Freer monad.
   Provides yield operation that suspends computation and returns a value to the caller.

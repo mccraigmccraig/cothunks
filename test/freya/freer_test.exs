@@ -133,11 +133,11 @@ defmodule Freya.FreerTest do
   # Freya.Reader and Freya.Writer
 
   def run_reader(fv, reader_val) do
-    Freya.Reader.run(fv, reader_val)
+    Freya.Effects.Reader.run(fv, reader_val)
   end
 
   def run_writer(fv) do
-    Freya.Writer.run(fv)
+    Freya.Effects.Writer.run(fv)
   end
 
   # State effect has been moved to its own module Freya.State
@@ -256,7 +256,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con Freya.Reader.Ops do
+        Freer.con Freya.Effects.Reader.Ops do
           steps a <- Freer.return(10),
                 b <- get() do
             Freer.return(a + b)
@@ -272,7 +272,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Freya.Reader.Ops, Freya.Writer.Ops] do
+        Freer.con [Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
           steps a <- Freer.return(10),
                 b <- get(),
                 _c <- put(a + b),
@@ -297,7 +297,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Reader.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader.Ops] do
           steps a <- number(10),
                 b <- get(),
                 c <- add(a, b),
@@ -319,7 +319,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Reader.Ops, Freya.Writer.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
           steps a <- number(10),
                 put(a),
                 b <- get(),
@@ -350,7 +350,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Reader.Ops, Freya.Writer.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
           steps a <- get(),
                 b <- number(10),
                 put(a + b),
@@ -361,7 +361,7 @@ defmodule Freya.FreerTest do
         end
 
       result =
-        fv |> run_numbers() |> Freya.State.run(12) |> Freer.run()
+        fv |> run_numbers() |> Freya.Effects.State.run(12) |> Freer.run()
 
       assert {{:number, -98}, 22} == result
     end
@@ -388,7 +388,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Reader.Ops, Freya.Writer.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
           steps a <- get(),
                 b <- number(1000),
                 c <- divide(a, 0),
@@ -397,7 +397,7 @@ defmodule Freya.FreerTest do
           end
         end
 
-      result = fv |> run_numbers() |> Freya.State.run(10) |> Freer.run()
+      result = fv |> run_numbers() |> Freya.Effects.State.run(10) |> Freer.run()
 
       assert {{:error, err}, 10} = result
       assert err =~ ~r/divide by zero/

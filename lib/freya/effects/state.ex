@@ -1,12 +1,12 @@
-defmodule Freya.State do
+defmodule Freya.Effects.State do
   @moduledoc """
   A State effect implementation using the Freer monad.
   Combines Reader and Writer effects to provide stateful computations.
   """
 
   alias Freya.Freer
-  alias Freya.Reader
-  alias Freya.Writer
+  alias Freya.Effects.Reader
+  alias Freya.Effects.Writer
 
   @doc """
   Run a stateful computation with the given initial state.

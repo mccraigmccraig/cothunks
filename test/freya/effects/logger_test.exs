@@ -4,7 +4,7 @@ defmodule Freya.LoggerTest do
   require Logger
   alias Freya.Freer
   alias Freya.FreerOps
-  alias Freya.EffectLogger
+  alias Freya.Effects.EffectLogger
 
   # define constructors for a simple language with
   # - number
@@ -73,7 +73,7 @@ defmodule Freya.LoggerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Reader.Ops, Freya.Writer.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
           steps a <- get(),
                 b <- number(10),
                 x <- Freer.return(12),
@@ -88,7 +88,7 @@ defmodule Freya.LoggerTest do
         fv
         |> EffectLogger.run_logger()
         |> run_numbers()
-        |> Freya.State.run_expanded(12)
+        |> Freya.Effects.State.run_expanded(12)
         |> Freer.run()
 
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")

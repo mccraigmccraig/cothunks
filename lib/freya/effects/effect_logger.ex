@@ -1,4 +1,4 @@
-defmodule Freya.EffectLogger do
+defmodule Freya.Effects.EffectLogger do
   require Logger
 
   alias Freya.Freer

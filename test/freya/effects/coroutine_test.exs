@@ -1,12 +1,12 @@
-defmodule Freya.CoroutineTest do
+defmodule Freya.Effects.CoroutineTest do
   use ExUnit.Case
 
   require Logger
 
   alias Freya.Freer
-  alias Freya.State
-  alias Freya.Coroutine
-  alias Freya.Coroutine.Ops
+  alias Freya.Effects.State
+  alias Freya.Effects.Coroutine
+  alias Freya.Effects.Coroutine.Ops
 
   describe "basic coroutine operations" do
     test "simple yield and resume" do
@@ -24,13 +24,16 @@ defmodule Freya.CoroutineTest do
       result = computation |> Coroutine.run() |> Freer.run()
 
       # It should yield 42
-      assert %Freya.Coroutine.Status.Continue{value: 42, continuation: continuation} = result
+      assert %Freya.Effects.Coroutine.Status.Continue{value: 42, continuation: continuation} =
+               result
 
       assert is_function(continuation, 1)
 
       # Resume with a value
       resumed = Coroutine.resume(result, "resumed value")
-      assert %Freya.Coroutine.Status.Done{value: "finished: resumed value"} = Freer.run(resumed)
+
+      assert %Freya.Effects.Coroutine.Status.Done{value: "finished: resumed value"} =
+               Freer.run(resumed)
     end
 
     test "multiple yields" do
@@ -47,15 +50,17 @@ defmodule Freya.CoroutineTest do
 
       # First yield
       result = computation |> Coroutine.run() |> Freer.run()
-      assert %Freya.Coroutine.Status.Continue{value: "first", continuation: _k1} = result
+      assert %Freya.Effects.Coroutine.Status.Continue{value: "first", continuation: _k1} = result
 
       # Second yield
       result2 = result |> Coroutine.resume(10) |> Freer.run()
-      assert %Freya.Coroutine.Status.Continue{value: "second: 10", continuation: _k2} = result2
+
+      assert %Freya.Effects.Coroutine.Status.Continue{value: "second: 10", continuation: _k2} =
+               result2
 
       # Final result
       result3 = result2 |> Coroutine.resume(20) |> Freer.run()
-      assert %Freya.Coroutine.Status.Done{value: "final: 20"} = result3
+      assert %Freya.Effects.Coroutine.Status.Done{value: "final: 20"} = result3
     end
 
     # test "multiple yields" do
@@ -166,7 +171,7 @@ defmodule Freya.CoroutineTest do
       require Freer
 
       computation =
-        Freer.con [Ops, Freya.Reader.Ops, Freya.Writer.Ops] do
+        Freer.con [Ops, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
           steps state <- get(),
                 r1 <- yield("State is: #{state}"),
                 put(state + r1),
@@ -177,18 +182,22 @@ defmodule Freya.CoroutineTest do
         end
 
       # First run the computation through the state handler with initial state 5
-      result1 = computation |> Freya.State.run(5) |> Coroutine.run() |> Freer.run()
+      result1 = computation |> Freya.Effects.State.run(5) |> Coroutine.run() |> Freer.run()
 
-      assert %Freya.Coroutine.Status.Continue{value: "State is: 5", continuation: _k1} = result1
+      assert %Freya.Effects.Coroutine.Status.Continue{value: "State is: 5", continuation: _k1} =
+               result1
 
       result2 = result1 |> Coroutine.resume(10) |> Freer.run()
 
-      assert %Freya.Coroutine.Status.Continue{value: "New state is: 15", continuation: _k2} =
+      assert %Freya.Effects.Coroutine.Status.Continue{
+               value: "New state is: 15",
+               continuation: _k2
+             } =
                result2
 
       result3 = result2 |> Coroutine.resume(100) |> Freer.run()
 
-      assert %Freya.Coroutine.Status.Done{value: {"Final resume: 100", 15}} = result3
+      assert %Freya.Effects.Coroutine.Status.Done{value: {"Final resume: 100", 15}} = result3
     end
   end
 
@@ -197,7 +206,7 @@ defmodule Freya.CoroutineTest do
       require Freer
 
       computation =
-        Freer.con [Ops, Freya.Reader.Ops, Freya.Writer.Ops] do
+        Freer.con [Ops, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
           steps state <- get(),
                 r1 <- yield("State is: #{state}"),
                 put(state + r1),

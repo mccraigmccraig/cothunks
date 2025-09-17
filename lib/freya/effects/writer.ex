@@ -1,4 +1,4 @@
-defmodule Freya.Writer do
+defmodule Freya.Effects.Writer do
   @moduledoc """
   A Writer effect implementation using the Freer monad.
   Provides a way to accumulate output.
@@ -16,7 +16,7 @@ defmodule Freya.Writer do
 
   # Operations for the writer effect
   defmodule Ops do
-    use Freya.FreerOps, ops: Freya.Writer.Grammar
+    use Freya.FreerOps, ops: Freya.Effects.Writer.Grammar
   end
 
   @doc """

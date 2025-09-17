@@ -1,4 +1,4 @@
-defmodule Freya.Reader do
+defmodule Freya.Effects.Reader do
   @moduledoc """
   A Reader effect implementation using the Freer monad.
   Provides a way to read from an environment.
@@ -16,7 +16,7 @@ defmodule Freya.Reader do
 
   # Operations for the reader effect
   defmodule Ops do
-    use Freya.FreerOps, ops: Freya.Reader.Grammar
+    use Freya.FreerOps, ops: Freya.Effects.Reader.Grammar
   end
 
   @doc """
