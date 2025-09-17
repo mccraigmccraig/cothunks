@@ -32,7 +32,7 @@ defmodule Thunks.EffectLogger do
 
     @type t :: %__MODULE__{
             stack: list(InterpretedEffectLogEntry.t()),
-            queue: list(LogEntry.t() | InterpretedEffectLogEntry.t())
+            queue: list(EffectLogEntry.t() | InterpretedEffectLogEntry.t())
           }
 
     def new() do
@@ -162,7 +162,7 @@ defmodule Thunks.EffectLogger do
           } = _log_entry
           | _rest
         ]
-        when eff == log_entry_effect ->
+        when u == log_entry_effect ->
           # resumed computation
           {:resume_effect, Log.consume_log_entry(log), value}
 
