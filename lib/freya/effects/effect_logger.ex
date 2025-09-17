@@ -76,6 +76,13 @@ defmodule Freya.Effects.EffectLogger do
           }
       end
     end
+
+    def prepare_for_resume(%__MODULE__{} = log) do
+      %Log{
+        stack: [],
+        queue: Enum.reverse(log.stack) ++ log.queue
+      }
+    end
   end
 
   defmodule LoggedComputation do
@@ -87,7 +94,7 @@ defmodule Freya.Effects.EffectLogger do
           }
 
     def new(result, %Log{} = log) do
-      %__MODULE__{result: result, log: log}
+      %__MODULE__{result: result, log: Log.prepare_for_resume(log)}
     end
   end
 
@@ -130,7 +137,10 @@ defmodule Freya.Effects.EffectLogger do
 
     case computation do
       %Pure{val: x} ->
-        r = Freya.Result.ensure(x) |> Freya.Result.put(:logged_computation, LoggedComputation.new(x, log))
+        r =
+          Freya.Result.ensure(x)
+          |> Freya.Result.put(:logged_computation, LoggedComputation.new(x, log))
+
         Freer.return(r)
 
       %Impure{sig: eff, data: u, q: q} ->
