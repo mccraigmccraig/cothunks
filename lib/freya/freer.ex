@@ -130,12 +130,10 @@ defmodule Freya.Freer do
     end
   end
 
-  @doc """
-  bind continuation queue `k` to Freer value `mx`, returning a new `Freer` value
-  with the continuation queues concatenated
-  """
+  # bind continuation queue `k` to Freer value `mx`, returning a new `Freer` value
+  # with the continuation queues concatenated
   @spec bindp(freer, [(any -> freer)]) :: freer
-  def bindp(mx, k) do
+  defp bindp(mx, k) do
     case mx do
       %Pure{val: y} ->
         # Logger.warning("Pure apply: #{inspect(y)}")
@@ -231,61 +229,6 @@ defmodule Freya.Freer do
 
   def run(%Impure{sig: sig, data: _u, q: _q} = impure) do
     raise "unhandled effect: #{sig} - #{inspect(impure)}"
-  end
-
-  ###############################
-  #
-
-  # trying out a handler which just logs and passes on
-  # to the next handler... maybe we could use such a handler
-  # to implement log/resume ?
-  def handle_all(%Freer.Pure{} = pure_val) do
-    pure_val
-  end
-
-  def handle_all(%Freer.Impure{sig: eff, data: u, q: q} = _impure_val) do
-    inspect_val_f = fn x ->
-      # Logger.warning("inspect_val: #{inspect(x)}")
-      Freer.return(x)
-    end
-
-    # a continuation including this handler
-    k = Freer.q_comp([inspect_val_f | q], &handle_all(&1))
-
-    %Freer.Impure{sig: eff, data: u, q: [k]}
-  end
-
-  @doc """
-  A stateful version of handle_all that maintains state while logging all computations.
-  Similar to handle_relay_s but logs everything and passes all effects through unchanged.
-  The state is threaded through the computation but not used for interpretation.
-  """
-  @spec handle_all_s(freer, any, (any -> (any -> freer))) :: freer
-  def handle_all_s(%Freer.Pure{val: x} = _pure_val, state, ret) do
-    ret.(state).(x)
-  end
-
-  def handle_all_s(%Freer.Impure{sig: eff, data: u, q: q} = _impure_val, state, ret) do
-    inspect_val_f = fn _s ->
-      fn x ->
-        Freer.return(x)
-      end
-    end
-
-    # a continuation including this handler with state threading
-    k = fn s -> Freer.q_comp([inspect_val_f.(s) | q], &handle_all_s(&1, s, ret)) end
-
-    # Always pass the effect through unchanged, but thread the state
-    %Freer.Impure{sig: eff, data: u, q: [k.(state)]}
-  end
-
-  @doc """
-  Convenience wrapper for handle_all_s with default return function.
-  Returns a tuple of {final_value, final_state}.
-  """
-  @spec handle_all_s(freer) :: freer
-  def handle_all_s(computation) do
-    handle_all_s(computation, [], fn s -> fn x -> Freer.return({x, s}) end end)
   end
 end
 

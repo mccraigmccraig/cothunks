@@ -194,7 +194,9 @@ defmodule Freya.Effects.CoroutineTest do
 
       result3 = result2 |> Coroutine.resume(100) |> Freer.run()
 
-      assert %Freya.Effects.Coroutine.Status.Done{value: %Freya.Result{value: "Final resume: 100", outputs: %{state: 15}}} = result3
+      assert %Freya.Effects.Coroutine.Status.Done{
+               value: %Freya.Result{value: "Final resume: 100", outputs: %{state: 15}}
+             } = result3
     end
   end
 
@@ -213,7 +215,7 @@ defmodule Freya.Effects.CoroutineTest do
         end
 
       result1 =
-        computation |> Freer.handle_all_s() |> State.run(5) |> Coroutine.run() |> Freer.run()
+        computation |> State.run(5) |> Coroutine.run() |> Freer.run()
 
       result2 = result1 |> Coroutine.resume(10) |> Freer.run()
       _result3 = result2 |> Coroutine.resume(100) |> Freer.run()

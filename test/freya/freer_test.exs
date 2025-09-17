@@ -282,7 +282,9 @@ defmodule Freya.FreerTest do
       assert out.writer == [22, 120]
 
       # the order of the handlers should not matter for this combination of effects
-      %Freya.Result{value: v2, outputs: out2} = fv |> run_reader(12) |> run_writer() |> Freer.run()
+      %Freya.Result{value: v2, outputs: out2} =
+        fv |> run_reader(12) |> run_writer() |> Freer.run()
+
       assert v2 == v
       assert out2.writer == out.writer
     end
@@ -300,7 +302,10 @@ defmodule Freya.FreerTest do
         end
 
       %Freya.Result{value: v, outputs: out} = fv |> run_numbers() |> run_reader(12) |> Freer.run()
-      %Freya.Result{value: v2, outputs: out2} = fv |> run_reader(12) |> run_numbers() |> Freer.run()
+
+      %Freya.Result{value: v2, outputs: out2} =
+        fv |> run_reader(12) |> run_numbers() |> Freer.run()
+
       assert v == 98
       assert v2 == 98
       assert out == %{}
@@ -324,10 +329,13 @@ defmodule Freya.FreerTest do
 
       %Freya.Result{value: v, outputs: out} =
         fv |> run_numbers() |> run_reader(12) |> run_writer() |> Freer.run()
+
       assert v == 98
       assert out.writer == [10, 12, 22, 120]
 
-      %Freya.Result{value: v3, outputs: out3} = fv |> run_writer |> run_reader(12) |> run_numbers() |> Freer.run()
+      %Freya.Result{value: v3, outputs: out3} =
+        fv |> run_writer |> run_reader(12) |> run_numbers() |> Freer.run()
+
       assert v3 == 98
       assert out3.writer == [10, 12, 22, 120]
     end
@@ -347,6 +355,7 @@ defmodule Freya.FreerTest do
 
       %Freya.Result{value: v, outputs: out} =
         fv |> run_numbers() |> Freya.Effects.State.run(12) |> Freer.run()
+
       assert v == -98
       assert out.state == 22
     end
@@ -380,106 +389,12 @@ defmodule Freya.FreerTest do
           multiply(b, c)
         end
 
-      %Freya.Result{value: res2, outputs: out2} = fv |> run_numbers() |> Freya.Effects.State.run(10) |> Freer.run()
+      %Freya.Result{value: res2, outputs: out2} =
+        fv |> run_numbers() |> Freya.Effects.State.run(10) |> Freer.run()
+
       assert {:error, msg2} = res2
       assert out2.state == 10
       assert msg2 =~ ~r/divide by zero/
     end
   end
-
-  # describe "handle_all_s" do
-  #   test "it logs and threads state through pure computations" do
-  #     fv = Freer.pure(42)
-
-  #     result = fv |> Freer.handle_all_s("initial_state") |> Freer.run()
-
-  #     assert {42, "initial_state"} = result
-  #   end
-
-  #   test "it logs and threads state through effectful computations" do
-  #     require Freer
-
-  #     fv =
-  #       Freer.con Numbers do
-  #         steps a <- number(10),
-  #               b <- multiply(a, 5) do
-  #           add(a, b)
-  #         end
-  #       end
-
-  #     result =
-  #       fv
-  #       |> Freer.handle_all_s("debug_state")
-  #       |> run_numbers()
-  #       |> Freer.run()
-
-  #     assert {:number, {60, "debug_state"}} = result
-  #   end
-
-  #   test "it works with multiple effects and maintains state" do
-  #     require Freer
-
-  #     fv =
-  #       Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
-  #         steps a <- number(10),
-  #               b <- get(),
-  #               put(a + b),
-  #               c <- multiply(a, b) do
-  #           add(a, c)
-  #         end
-  #       end
-
-  #     result =
-  #       fv
-  #       |> Freer.handle_all_s({:debug_info, 0})
-  #       |> run_numbers()
-  #       |> run_reader(5)
-  #       |> run_writer()
-  #       |> Freer.run()
-
-  #     assert {{:number, {60, {:debug_info, 0}}}, [15]} = result
-  #   end
-
-  #   test "it works with multiple effects and maintains state - " <>
-  #          "with a different state interpreter and a different handler order" do
-  #     require Freer
-
-  #     fv =
-  #       Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
-  #         steps a <- number(10),
-  #               b <- get(),
-  #               put(a + b),
-  #               c <- multiply(a, b) do
-  #           add(a, c)
-  #         end
-  #       end
-
-  #     result =
-  #       fv
-  #       |> run_numbers()
-  #       |> State.run(5)
-  #       |> Freer.handle_all_s({:debug_info, 0})
-  #       |> Freer.run()
-
-  #     assert {{{:number, 60}, 15}, {:debug_info, 0}} = result
-  #   end
-
-  #   test "it works with custom return function" do
-  #     fv = Freer.pure(100)
-
-  #     # Custom return function that modifies both value and state
-  #     custom_ret = fn state ->
-  #       fn value ->
-  #         Freer.return({value * 2, state <> "_processed"})
-  #       end
-  #     end
-
-  #     result =
-  #       fv
-  #       |> Freer.handle_all_s("start", custom_ret)
-  #       |> Freer.run()
-
-  #     assert {200, "start_processed"} = result
-  #   end
-  # end
 end
