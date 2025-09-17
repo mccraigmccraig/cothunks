@@ -1,9 +1,9 @@
-defmodule Thunks.MixProject do
+defmodule Freya.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :thunks,
+      app: :freya,
       version: "0.1.0",
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
