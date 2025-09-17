@@ -1,10 +1,10 @@
-defmodule Thunks.FreerTest do
+defmodule Freya.FreerTest do
   use ExUnit.Case
 
   require Logger
-  alias Thunks.Freer
-  alias Thunks.Freer.{Pure, Impure}
-  alias Thunks.FreerOps
+  alias Freya.Freer
+  alias Freya.Freer.{Pure, Impure}
+  alias Freya.FreerOps
 
   describe "pure" do
     test "it wraps a value" do
@@ -130,17 +130,17 @@ defmodule Thunks.FreerTest do
   end
 
   # Reader and Writer effects have been moved to their own modules
-  # Thunks.Reader and Thunks.Writer
+  # Freya.Reader and Freya.Writer
 
   def run_reader(fv, reader_val) do
-    Thunks.Reader.run(fv, reader_val)
+    Freya.Reader.run(fv, reader_val)
   end
 
   def run_writer(fv) do
-    Thunks.Writer.run(fv)
+    Freya.Writer.run(fv)
   end
 
-  # State effect has been moved to its own module Thunks.State
+  # State effect has been moved to its own module Freya.State
 
   describe "q_apply" do
   end
@@ -256,7 +256,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con Thunks.Reader.Ops do
+        Freer.con Freya.Reader.Ops do
           steps a <- Freer.return(10),
                 b <- get() do
             Freer.return(a + b)
@@ -272,7 +272,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Thunks.Reader.Ops, Thunks.Writer.Ops] do
+        Freer.con [Freya.Reader.Ops, Freya.Writer.Ops] do
           steps a <- Freer.return(10),
                 b <- get(),
                 _c <- put(a + b),
@@ -297,7 +297,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Thunks.Reader.Ops] do
+        Freer.con [Numbers, Freya.Reader.Ops] do
           steps a <- number(10),
                 b <- get(),
                 c <- add(a, b),
@@ -319,7 +319,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+        Freer.con [Numbers, Freya.Reader.Ops, Freya.Writer.Ops] do
           steps a <- number(10),
                 put(a),
                 b <- get(),
@@ -350,7 +350,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+        Freer.con [Numbers, Freya.Reader.Ops, Freya.Writer.Ops] do
           steps a <- get(),
                 b <- number(10),
                 put(a + b),
@@ -361,7 +361,7 @@ defmodule Thunks.FreerTest do
         end
 
       result =
-        fv |> run_numbers() |> Thunks.State.run(12) |> Freer.run()
+        fv |> run_numbers() |> Freya.State.run(12) |> Freer.run()
 
       assert {{:number, -98}, 22} == result
     end
@@ -388,7 +388,7 @@ defmodule Thunks.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+        Freer.con [Numbers, Freya.Reader.Ops, Freya.Writer.Ops] do
           steps a <- get(),
                 b <- number(1000),
                 c <- divide(a, 0),
@@ -397,7 +397,7 @@ defmodule Thunks.FreerTest do
           end
         end
 
-      result = fv |> run_numbers() |> Thunks.State.run(10) |> Freer.run()
+      result = fv |> run_numbers() |> Freya.State.run(10) |> Freer.run()
 
       assert {{:error, err}, 10} = result
       assert err =~ ~r/divide by zero/

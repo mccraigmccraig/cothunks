@@ -2,7 +2,7 @@
 # This demonstrates the structured logging capabilities using direct bind operations
 
 defmodule SimpleLoggingDemo do
-  alias Thunks.Freer
+  alias Freya.Freer
 
   # Simple effect functions
   def number(n), do: Freer.send_effect(n, :number)

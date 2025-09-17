@@ -11,9 +11,9 @@ Code.require_file("lib/thunks/state.ex")
 
 defmodule Demo do
   require Logger
-  require Thunks.Freer
-  alias Thunks.Freer
-  alias Thunks.{Reader, Writer, State}
+  require Freya.Freer
+  alias Freya.Freer
+  alias Freya.{Reader, Writer, State}
 
   # Define a simple calculator effect
   defmodule CalcGrammar do
@@ -24,7 +24,7 @@ defmodule Demo do
   end
 
   defmodule Calc do
-    use Thunks.FreerOps, ops: CalcGrammar
+    use Freya.FreerOps, ops: CalcGrammar
   end
 
   # Interpreter for calculator effects

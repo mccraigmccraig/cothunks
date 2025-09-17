@@ -1,10 +1,10 @@
-defmodule Thunks.LoggerTest do
+defmodule Freya.LoggerTest do
   use ExUnit.Case
 
   require Logger
-  alias Thunks.Freer
-  alias Thunks.FreerOps
-  alias Thunks.EffectLogger
+  alias Freya.Freer
+  alias Freya.FreerOps
+  alias Freya.EffectLogger
 
   # define constructors for a simple language with
   # - number
@@ -73,7 +73,7 @@ defmodule Thunks.LoggerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Thunks.Reader.Ops, Thunks.Writer.Ops] do
+        Freer.con [Numbers, Freya.Reader.Ops, Freya.Writer.Ops] do
           steps a <- get(),
                 b <- number(10),
                 x <- Freer.return(12),
@@ -88,7 +88,7 @@ defmodule Thunks.LoggerTest do
         fv
         |> EffectLogger.run_logger()
         |> run_numbers()
-        |> Thunks.State.run_expanded(12)
+        |> Freya.State.run_expanded(12)
         |> Freer.run()
 
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")

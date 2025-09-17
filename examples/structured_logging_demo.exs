@@ -3,8 +3,8 @@
 # that enable computation persistence, resumption, and detailed tracing.
 
 defmodule StructuredLoggingDemo do
-  alias Thunks.Freer
-  alias Thunks.Freer.{ComputationLog, LogEntry}
+  alias Freya.Freer
+  alias Freya.Freer.{ComputationLog, LogEntry}
 
   # Example effect modules
   defmodule MathEffects do
