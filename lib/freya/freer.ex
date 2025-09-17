@@ -23,17 +23,14 @@ defmodule Freya.Freer do
     end
   end
 
-  defp expand_imports(mods) when is_list(mods) do
-    mods
+  defp expand_imports(mod_or_mods) do
+    mod_or_mods
+    |> List.wrap()
     |> Enum.map(fn mod ->
       quote do
         import unquote(mod)
       end
     end)
-  end
-
-  defp expand_imports(mod) do
-    expand_imports([mod])
   end
 
   defp rewrite_block({:__block__, _, exprs}), do: rewrite_exprs(exprs)
