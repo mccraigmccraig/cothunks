@@ -92,7 +92,14 @@ defmodule Freya.LoggerTest do
         |> Freer.run()
 
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")
-      assert %Freya.Result{value: -86, outputs: %{state: 34, logged_computation: %_{} }} = result
+
+      assert %Freya.Result{
+               value: -86,
+               outputs: %{
+                 state: 34,
+                 logged_computation: %_{}
+               }
+             } = result
     end
   end
 end
