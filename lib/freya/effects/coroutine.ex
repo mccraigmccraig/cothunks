@@ -16,17 +16,17 @@ end
 
 # Grammar for the coroutine effect
 defmodule Freya.Effects.Coroutine.Grammar do
-  def yield(value, mapper), do: %Freya.Effects.Coroutine.Yield{value: value, mapper: mapper}
+  alias Freya.Effects.Coroutine.Yield
+
+  def yield(value, mapper), do: %Yield{value: value, mapper: mapper}
+  def yield(value), do: %Yield{value: value, mapper: make_identity()}
+
+  defp make_identity(), do: & &1
 end
 
 # Operations for the coroutine effect
 defmodule Freya.Effects.Coroutine do
   use Freya.FreerOps, ops: Freya.Effects.Coroutine.Grammar
-
-  # 1-arity yield with identity mapper
-  def yield(a) do
-    yield(a, & &1)
-  end
 end
 
 defmodule Freya.Effects.CoroutineHandler do
@@ -45,10 +45,10 @@ defmodule Freya.Effects.CoroutineHandler do
   @doc """
   Reply to a coroutine effect by returning the Continue constructor.
   """
-  def reply_c(%Yield{value: a, mapper: k}, arr) do
+  def reply_c(%Yield{value: a, mapper: mapper}, k) do
     Freer.return(%Status.Continue{
       value: a,
-      continuation: fn b -> k.(b) |> arr.() end
+      continuation: fn b -> mapper.(b) |> k.() end
     })
   end
 
