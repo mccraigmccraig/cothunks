@@ -98,12 +98,12 @@ defmodule Freya.Effects.EffectLogger do
     end
   end
 
-  defmodule OpsGrammar do
+  defmodule EffectLoggerConstructors do
     def log_effect_value(v), do: {:log_effect_value, v}
   end
 
-  defmodule Ops do
-    use FreerOps, ops: OpsGrammar
+  defmodule EffectLoggerOps do
+    use FreerOps, ops: EffectLoggerConstructors
   end
 
   # logger captures effects in log-queue/log-stack, and avoids repeat work
@@ -145,7 +145,7 @@ defmodule Freya.Effects.EffectLogger do
 
       %Impure{sig: eff, data: u, q: q} ->
         case {eff, u} do
-          {Ops, {:log_effect_value, val}} ->
+          {EffectLoggerOps, {:log_effect_value, val}} ->
             # Logger.error("#{__MODULE__}.run_logger handling")
             # capturing the value of an executed effect
             updated_log = Log.log_effect_value(log, val)
@@ -185,7 +185,7 @@ defmodule Freya.Effects.EffectLogger do
       :execute_effect ->
         # pass the effect on to another interpreter, preparing to
         # log the interpreted value
-        capture_k = fn v -> Ops.log_effect_value(v) end
+        capture_k = fn v -> EffectLoggerOps.log_effect_value(v) end
 
         k =
           q
