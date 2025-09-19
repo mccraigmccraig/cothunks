@@ -24,7 +24,9 @@ defmodule Freya.Effects.State do
       computation,
       [Reader.Ops, Writer.Ops],
       initial_state,
-      fn s -> fn x -> Freya.Result.ensure(x) |> Freya.Result.put(:state, s) |> Freer.return end end,
+      fn s ->
+        fn x -> Freya.Result.ensure(x) |> Freya.Result.put(:state, s) |> Freer.return() end
+      end,
       fn s ->
         fn u, k ->
           case u do
@@ -44,7 +46,7 @@ defmodule Freya.Effects.State do
         Freer.return(Freya.Result.ensure(x) |> Freya.Result.put(:state, initial_state))
 
       %Freer.Impure{sig: eff, data: u, q: q} ->
-        k = fn s -> Freer.q_comp(q, &run(&1, s)) end
+        k = fn s -> Freer.q_comp(q, &run_expanded(&1, s)) end
 
         case {eff, u} do
           {Writer.Ops, {:put, o}} ->
