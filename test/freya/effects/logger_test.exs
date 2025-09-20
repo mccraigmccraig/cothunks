@@ -59,7 +59,7 @@ defmodule Freya.LoggerTest do
     def handle({:error, err}, _f), do: Freer.return({:error, err})
   end
 
-  def run_numbers(fv) do
+  def interpret_numbers(fv) do
     fv
     |> Freer.handle_relay(
       [Numbers],
@@ -86,7 +86,7 @@ defmodule Freya.LoggerTest do
       result =
         fv
         |> EffectLogger.interpret_logger()
-        |> run_numbers()
+        |> interpret_numbers()
         |> Freya.Effects.State.interpret_state_expanded({:foo, 12})
         |> Freer.run()
 
