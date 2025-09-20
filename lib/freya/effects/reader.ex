@@ -17,7 +17,7 @@ defmodule Freya.Effects.ReaderHandler do
   @doc "Interpret a reader computation with the given environment value"
   def interpret_reader(computation, reader_val) do
     computation
-    |> Freer.handle_relay(
+    |> Freya.Freer.Impl.handle_relay(
       [Freya.Effects.Reader],
       fn x -> Freya.Result.ensure(x) |> Freer.return end,
       fn :get, k -> k.(reader_val) end

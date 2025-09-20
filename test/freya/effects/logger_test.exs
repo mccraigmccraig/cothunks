@@ -61,7 +61,7 @@ defmodule Freya.LoggerTest do
 
   def interpret_numbers(fv) do
     fv
-    |> Freer.handle_relay(
+    |> Freya.Freer.Impl.handle_relay(
       [Numbers],
       &InterpretNumbers.ret/1,
       &InterpretNumbers.handle/2

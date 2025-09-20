@@ -20,7 +20,7 @@ defmodule Freya.Effects.ErrorHandler do
   @doc "Interpret an Error computation, handling throw/catch"
   def interpret_error(computation) do
     computation
-    |> Freer.handle_relay(
+    |> Freya.Freer.Impl.handle_relay(
       [Freya.Effects.Error],
       fn x -> Freya.Result.ensure(x) |> Freer.return() end,
       fn u, k ->

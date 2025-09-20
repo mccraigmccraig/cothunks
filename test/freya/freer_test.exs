@@ -128,7 +128,7 @@ defmodule Freya.FreerTest do
 
   def run_numbers(fv) do
     fv
-    |> Freer.handle_relay(
+    |> Freya.Freer.Impl.handle_relay(
       [Numbers],
       &InterpretNumbers.ret/1,
       &InterpretNumbers.handle/2

@@ -57,7 +57,7 @@ defmodule Freya.Effects.CoroutineHandler do
   """
   def interpret_coroutine(computation) do
     computation
-    |> Freer.handle_relay(
+    |> Freya.Freer.Impl.handle_relay(
       [Freya.Effects.Coroutine],
       fn x -> Freer.return(%Status.Done{value: x}) end,
       fn %Yield{} = y, k -> reply_c(y, k) end

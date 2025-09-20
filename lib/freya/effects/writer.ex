@@ -17,7 +17,7 @@ defmodule Freya.Effects.WriterHandler do
   @doc "Interpret a writer computation, accumulating output in Freya.Result.outputs[:writer]"
   def interpret_writer(computation) do
     computation
-    |> Freer.handle_relay(
+    |> Freya.Freer.Impl.handle_relay(
       [Freya.Effects.Writer],
       fn x -> Freya.Result.ensure(x) |> Freer.return end,
       fn {:put, o}, k ->

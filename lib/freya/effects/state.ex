@@ -17,7 +17,7 @@ defmodule Freya.Effects.State do
   https://okmij.org/ftp/Haskell/extensible/more.pdf
   """
   def interpret_state(computation, initial_state) do
-    Freer.handle_relay_s(
+    Freya.Freer.Impl.handle_relay_s(
       computation,
       [Reader, Writer],
       initial_state,
@@ -43,7 +43,7 @@ defmodule Freya.Effects.State do
         Freer.return(Freya.Result.ensure(x) |> Freya.Result.put(:state, initial_state))
 
       %Freer.Impure{sig: eff, data: u, q: q} ->
-        k = fn s -> Freer.q_comp(q, &interpret_state_expanded(&1, s)) end
+        k = fn s -> Freya.Freer.Impl.q_comp(q, &interpret_state_expanded(&1, s)) end
 
         case {eff, u} do
           {Writer, {:put, o}} ->
