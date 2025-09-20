@@ -39,7 +39,12 @@ defmodule Freya.Effects.ErrorHandler do
                 err ->
                   handler.(err)
                   |> interpret_error()
-                  |> Freer.bind(fn %Freya.Result{} = rr -> k.(Freya.Result.value(rr)) end)
+                  |> Freer.bind(fn %Freya.Result{} = rr ->
+                    case Map.get(rr.outputs, :error) do
+                      nil -> k.(Freya.Result.value(rr))
+                      _ -> Freer.return(rr)
+                    end
+                  end)
               end
             end)
         end
