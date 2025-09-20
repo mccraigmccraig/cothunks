@@ -101,27 +101,3 @@ defmodule Freya.Freer do
     raise "unhandled effect: #{sig} - #{inspect(impure)}"
   end
 end
-
-# TODO
-# - some scoped effects
-#   - error
-#   - JSON serialisation of steps
-#     - each continuation in a queue is a step
-#     - we can capture inputs and outputs
-#   - syntax for scoped effects ?
-# - a testing approach
-#   - helpers for creating test handlers
-#   - and fuzzing/property-based-testing help
-# - can we construct a log/resume handler ?
-#   - a handler which records a de/seriializable statement/result log,
-#     and if there's already a log, and the statements match then
-#     short-circuits and returns the result directly
-#   - imposes the constraint that statements/results must be de/serializable
-#   - when "resuming", we must follow the continuation chain sufficienly well
-#     that the binds that need to happen (for expressions which aren't
-#     completely short-circuited) happen correctly
-# - can we use Elixir structs to represent effect values - we currently have the
-#    eff atom and some arbitrary data... but a struct would impose an extra constraint
-#    we might use for runtime correctness checking... could even add a function requirement
-#    to the struct module, so we know it's an Ops struct, or use a Protocol to get
-#    what we need from the struct
