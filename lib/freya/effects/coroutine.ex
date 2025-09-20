@@ -14,8 +14,8 @@ defmodule Freya.Effects.Coroutine.Status do
   end
 end
 
-# Grammar for the coroutine effect
-defmodule Freya.Effects.Coroutine.Grammar do
+# Constructors for the coroutine effect
+defmodule Freya.Effects.Coroutine.Constructors do
   alias Freya.Effects.Coroutine.Yield
 
   def yield(value, mapper), do: %Yield{value: value, mapper: mapper}
@@ -26,7 +26,7 @@ end
 
 # Operations for the coroutine effect
 defmodule Freya.Effects.Coroutine do
-  use Freya.FreerOps, ops: Freya.Effects.Coroutine.Grammar
+  use Freya.FreerOps, ops: Freya.Effects.Coroutine.Constructors
 end
 
 defmodule Freya.Effects.CoroutineHandler do
