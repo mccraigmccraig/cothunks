@@ -73,7 +73,7 @@ defmodule Freya.LoggerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader, Freya.Effects.Writer] do
           {:foo, a} <- get()
           b <- number(10)
           x <- Freer.return(12)

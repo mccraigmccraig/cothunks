@@ -22,7 +22,7 @@ defmodule Freya.Effects.State do
   def run(computation, initial_state) do
     Freer.handle_relay_s(
       computation,
-      [Reader.Ops, Writer.Ops],
+      [Reader, Writer],
       initial_state,
       fn s ->
         fn x -> Freya.Result.ensure(x) |> Freya.Result.put(:state, s) |> Freer.return() end
@@ -49,10 +49,10 @@ defmodule Freya.Effects.State do
         k = fn s -> Freer.q_comp(q, &run_expanded(&1, s)) end
 
         case {eff, u} do
-          {Writer.Ops, {:put, o}} ->
+          {Writer, {:put, o}} ->
             k.(o).(nil)
 
-          {Reader.Ops, :get} ->
+          {Reader, :get} ->
             k.(initial_state).(initial_state)
 
           _ ->

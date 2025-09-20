@@ -171,7 +171,7 @@ defmodule Freya.Effects.CoroutineTest do
       require Freer
 
       computation =
-        Freer.con [Coroutine, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
+        Freer.con [Coroutine, Freya.Effects.Reader, Freya.Effects.Writer] do
           state <- get()
           r1 <- yield("State is: #{state}")
           put(state + r1)
@@ -207,7 +207,7 @@ defmodule Freya.Effects.CoroutineTest do
       require Freer
 
       computation =
-        Freer.con [Coroutine, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
+        Freer.con [Coroutine, Freya.Effects.Reader, Freya.Effects.Writer] do
           state <- get()
           r1 <- yield("State is: #{state}")
           put(state + r1)

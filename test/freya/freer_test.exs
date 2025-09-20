@@ -133,11 +133,11 @@ defmodule Freya.FreerTest do
   # Freya.Reader and Freya.Writer
 
   def run_reader(fv, reader_val) do
-    Freya.Effects.Reader.run(fv, reader_val)
+    Freya.Effects.ReaderHandler.run(fv, reader_val)
   end
 
   def run_writer(fv) do
-    Freya.Effects.Writer.run(fv)
+    Freya.Effects.WriterHandler.run(fv)
   end
 
   # State effect has been moved to its own module Freya.State
@@ -254,7 +254,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con Freya.Effects.Reader.Ops do
+        Freer.con Freya.Effects.Reader do
           a <- Freer.return(10)
           b <- get()
           Freer.return(a + b)
@@ -269,7 +269,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
+        Freer.con [Freya.Effects.Reader, Freya.Effects.Writer] do
           a <- Freer.return(10)
           b <- get()
           _c <- put(a + b)
@@ -293,7 +293,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Effects.Reader.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader] do
           a <- number(10)
           b <- get()
           c <- add(a, b)
@@ -316,7 +316,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader, Freya.Effects.Writer] do
           a <- number(10)
           put(a)
           b <- get()
@@ -344,7 +344,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader, Freya.Effects.Writer] do
           a <- get()
           b <- number(10)
           put(a + b)
@@ -381,7 +381,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Freya.Effects.Reader.Ops, Freya.Effects.Writer.Ops] do
+        Freer.con [Numbers, Freya.Effects.Reader, Freya.Effects.Writer] do
           a <- get()
           b <- number(1000)
           c <- divide(a, 0)

@@ -1,31 +1,24 @@
-defmodule Freya.Effects.Writer do
-  @moduledoc """
-  A Writer effect implementation using the Freer monad.
-  Provides a way to accumulate output.
-  """
+defmodule Freya.Effects.Writer.Constructors do
+  @moduledoc "Constructors for the Writer effect"
 
+  @doc "Output a value to the writer's log"
+  def put(o), do: {:put, o}
+end
+
+defmodule Freya.Effects.Writer do
+  @moduledoc "Operations (Ops) for the Writer effect"
+  use Freya.FreerOps, ops: Freya.Effects.Writer.Constructors
+end
+
+defmodule Freya.Effects.WriterHandler do
+  @moduledoc "Interpreter (handler) for the Writer effect"
   alias Freya.Freer
 
-  # Grammar for the writer effect
-  defmodule Grammar do
-    @doc """
-    Output a value to the writer's log
-    """
-    def put(o), do: {:put, o}
-  end
-
-  # Operations for the writer effect
-  defmodule Ops do
-    use Freya.FreerOps, ops: Freya.Effects.Writer.Grammar
-  end
-
-  @doc """
-  Run a writer computation, returning a tuple with the result and accumulated output
-  """
+  @doc "Run a writer computation, accumulating output in Freya.Result.outputs[:writer]"
   def run(computation) do
     computation
     |> Freer.handle_relay(
-      [Ops],
+      [Freya.Effects.Writer],
       fn x -> Freya.Result.ensure(x) |> Freer.return end,
       fn {:put, o}, k ->
         k.(nil)
