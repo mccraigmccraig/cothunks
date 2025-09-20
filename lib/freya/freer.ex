@@ -12,7 +12,16 @@ defmodule Freya.Freer do
   alias Freya.Freer
 
   @doc """
-  con - profitable cheating - and `with` in Spanish
+  con - profitable cheating -and Spanish/Italian `with`
+
+  macro sugar which rewrites a with-like statement into
+  Frrer.bind steps
+
+  con [Reader, Writer] do
+    a <- get()
+    put(a + 5)
+    return(a + 10)
+  end
   """
   defmacro con(mod_or_mods, do: block) do
     imports = expand_imports(mod_or_mods)
