@@ -21,7 +21,7 @@ defmodule Freya.Effects.CoroutineTest do
         end
 
       # Run the coroutine
-      result = computation |> CoroutineHandler.run() |> Freer.run()
+      result = computation |> CoroutineHandler.interpret_coroutine() |> Freer.run()
 
       # assert nil == result
       # It should yield 42
@@ -49,7 +49,7 @@ defmodule Freya.Effects.CoroutineTest do
         end
 
       # First yield
-      result = computation |> CoroutineHandler.run() |> Freer.run()
+      result = computation |> CoroutineHandler.interpret_coroutine() |> Freer.run()
       assert %Status.Continue{value: "first", continuation: _k1} = result
 
       # Second yield
@@ -181,7 +181,7 @@ defmodule Freya.Effects.CoroutineTest do
         end
 
       # First run the computation through the state handler with initial state 5
-      result1 = computation |> Freya.Effects.State.run(5) |> CoroutineHandler.run() |> Freer.run()
+      result1 = computation |> Freya.Effects.State.interpret_state(5) |> CoroutineHandler.interpret_coroutine() |> Freer.run()
 
       assert %Status.Continue{value: "State is: 5", continuation: _k1} =
                result1
@@ -217,7 +217,7 @@ defmodule Freya.Effects.CoroutineTest do
         end
 
       result1 =
-        computation |> State.run(5) |> CoroutineHandler.run() |> Freer.run()
+        computation |> State.interpret_state(5) |> CoroutineHandler.interpret_coroutine() |> Freer.run()
 
       result2 = result1 |> CoroutineHandler.resume(10) |> Freer.run()
       _result3 = result2 |> CoroutineHandler.resume(100) |> Freer.run()

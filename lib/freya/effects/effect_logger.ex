@@ -133,11 +133,11 @@ defmodule Freya.Effects.EffectLogger do
   #
   # - how do logs compose ?
 
-  def run_logger(computation) do
-    run_logger(computation, Log.new())
+  def interpret_logger(computation) do
+    interpret_logger(computation, Log.new())
   end
 
-  def run_logger(computation, %Log{} = log) do
+  def interpret_logger(computation, %Log{} = log) do
     # Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
 
     case computation do
@@ -154,7 +154,7 @@ defmodule Freya.Effects.EffectLogger do
             # Logger.error("#{__MODULE__}.run_logger handling")
             # capturing the value of an executed effect
             updated_log = Log.log_interpreted_effect_value(log, val)
-            k = Freer.q_comp(q, &run_logger(&1, updated_log))
+            k = Freer.q_comp(q, &interpret_logger(&1, updated_log))
             Freer.q_apply([k], val)
 
           _ ->
@@ -195,14 +195,14 @@ defmodule Freya.Effects.EffectLogger do
         k =
           q
           |> Freer.q_prepend(capture_k)
-          |> Freer.q_comp(&run_logger(&1, updated_log))
+          |> Freer.q_comp(&interpret_logger(&1, updated_log))
 
         %Freer.Impure{sig: eff, data: u, q: [k]}
 
       :resume_effect ->
         # no need to execute the effect - use the logged value to feed the next
         # continuation
-        k = Freer.q_comp(q, &run_logger(&1, updated_log))
+        k = Freer.q_comp(q, &interpret_logger(&1, updated_log))
         Freer.q_apply([k], value)
     end
   end

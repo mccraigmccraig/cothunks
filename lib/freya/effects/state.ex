@@ -9,17 +9,14 @@ defmodule Freya.Effects.State do
   alias Freya.Effects.Writer
 
   @doc """
-  Run a stateful computation with the given initial state.
-  Returns a tuple with the result and final state.
+  Interpret a stateful computation with the given initial state.
+  Returns a Freya.Result with :state in outputs.
 
   This implementation uses Reader and Writer effects to manage state.
-  The Reader effect is used to get the current state,
-  and the Writer effect is used to update the state.
-
   Implementation translated from:
   https://okmij.org/ftp/Haskell/extensible/more.pdf
   """
-  def run(computation, initial_state) do
+  def interpret_state(computation, initial_state) do
     Freer.handle_relay_s(
       computation,
       [Reader, Writer],
@@ -40,13 +37,13 @@ defmodule Freya.Effects.State do
 
   # implemented without the help of the handle_relay_s helper
   # from the okmij papaer
-  def run_expanded(computation, initial_state) do
+  def interpret_state_expanded(computation, initial_state) do
     case computation do
       %Freer.Pure{val: x} ->
         Freer.return(Freya.Result.ensure(x) |> Freya.Result.put(:state, initial_state))
 
       %Freer.Impure{sig: eff, data: u, q: q} ->
-        k = fn s -> Freer.q_comp(q, &run_expanded(&1, s)) end
+        k = fn s -> Freer.q_comp(q, &interpret_state_expanded(&1, s)) end
 
         case {eff, u} do
           {Writer, {:put, o}} ->

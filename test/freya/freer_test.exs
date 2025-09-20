@@ -139,11 +139,11 @@ defmodule Freya.FreerTest do
   # Freya.Reader and Freya.Writer
 
   def run_reader(fv, reader_val) do
-    ReaderHandler.run(fv, reader_val)
+    ReaderHandler.interpret_reader(fv, reader_val)
   end
 
   def run_writer(fv) do
-    WriterHandler.run(fv)
+    WriterHandler.interpret_writer(fv)
   end
 
   # State effect has been moved to its own module Freya.State
@@ -360,7 +360,7 @@ defmodule Freya.FreerTest do
         end
 
       %Freya.Result{value: v, outputs: out} =
-        fv |> run_numbers() |> State.run(12) |> Freer.run()
+        fv |> run_numbers() |> State.interpret_state(12) |> Freer.run()
 
       assert v == -98
       assert out.state == 22
@@ -396,7 +396,7 @@ defmodule Freya.FreerTest do
         end
 
       %Freya.Result{value: res2, outputs: out2} =
-        fv |> run_numbers() |> State.run(10) |> Freer.run()
+        fv |> run_numbers() |> State.interpret_state(10) |> Freer.run()
 
       assert {:error, msg2} = res2
       assert out2.state == 10

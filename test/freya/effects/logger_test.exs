@@ -85,9 +85,9 @@ defmodule Freya.LoggerTest do
 
       result =
         fv
-        |> EffectLogger.run_logger()
+        |> EffectLogger.interpret_logger()
         |> run_numbers()
-        |> Freya.Effects.State.run_expanded({:foo, 12})
+        |> Freya.Effects.State.interpret_state_expanded({:foo, 12})
         |> Freer.run()
 
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")

@@ -53,9 +53,9 @@ defmodule Freya.Effects.CoroutineHandler do
   end
 
   @doc """
-  Run a coroutine and report its status.
+  Interpret a coroutine and report its status.
   """
-  def run(computation) do
+  def interpret_coroutine(computation) do
     computation
     |> Freer.handle_relay(
       [Freya.Effects.Coroutine],

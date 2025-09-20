@@ -14,8 +14,8 @@ defmodule Freya.Effects.WriterHandler do
   @moduledoc "Interpreter (handler) for the Writer effect"
   alias Freya.Freer
 
-  @doc "Run a writer computation, accumulating output in Freya.Result.outputs[:writer]"
-  def run(computation) do
+  @doc "Interpret a writer computation, accumulating output in Freya.Result.outputs[:writer]"
+  def interpret_writer(computation) do
     computation
     |> Freer.handle_relay(
       [Freya.Effects.Writer],

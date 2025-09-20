@@ -14,8 +14,8 @@ defmodule Freya.Effects.ReaderHandler do
   @moduledoc "Interpreter (handler) for the Reader effect"
   alias Freya.Freer
 
-  @doc "Run a reader computation with the given environment value"
-  def run(computation, reader_val) do
+  @doc "Interpret a reader computation with the given environment value"
+  def interpret_reader(computation, reader_val) do
     computation
     |> Freer.handle_relay(
       [Freya.Effects.Reader],
