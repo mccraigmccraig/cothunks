@@ -35,7 +35,7 @@ defmodule Freya.Freer do
   defmacro con(mod_or_mods, do: block, else: else_block) do
     imports = expand_imports(mod_or_mods)
     body = rewrite_block(block)
-    handler = build_else_handler_fn(else_block, __CALLER__)
+    handler = build_else_handler_fn(else_block)
 
     quote do
       unquote_splicing(imports)
@@ -76,7 +76,7 @@ defmodule Freya.Freer do
   end
 
   # Build a multi-clause fn from an else block with `->` clauses
-  defp build_else_handler_fn(else_block, caller) do
+  defp build_else_handler_fn(else_block) do
     clauses =
       case else_block do
         {:__block__, _, exprs} -> exprs
@@ -102,6 +102,7 @@ defmodule Freya.Freer do
       end)
 
     default_err = Macro.var(:err, nil)
+
     default_clause =
       {:->, [], [[default_err], quote(do: Freya.Effects.Error.throw_fx(unquote(default_err)))]}
 
