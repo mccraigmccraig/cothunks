@@ -66,9 +66,13 @@ defmodule Freya.Freer.Impl do
 
   handle_relay must return a Freer struct
   """
-  @spec handle_relay(Freer.freer(), [atom], (any -> Freer.freer()), (any,
-                                                                     (any -> Freer.freer()) ->
-                                                                       Freer.freer())) ::
+  @spec handle_relay(
+          Freer.freer(),
+          [atom],
+          (any -> Freer.freer()),
+          (any, (any -> Freer.freer()) ->
+             Freer.freer())
+        ) ::
           Freer.freer()
   def handle_relay(%Pure{val: x}, _effs_or_fn, ret, _h), do: ret.(x)
 
@@ -87,9 +91,14 @@ defmodule Freya.Freer.Impl do
   Allows easy implementation of interpreters which maintain state - such as the
   classical State effect. Adapted from the freer-simple implementation
   """
-  @spec handle_relay_s(Freer.freer(), [atom], any, (any -> Freer.freer()), (any,
-                                                                            (any -> Freer.freer()) ->
-                                                                              Freer.freer())) ::
+  @spec handle_relay_s(
+          Freer.freer(),
+          [atom],
+          any,
+          (any -> Freer.freer()),
+          (any, (any -> Freer.freer()) ->
+             Freer.freer())
+        ) ::
           Freer.freer()
   def handle_relay_s(%Pure{val: x}, _effs_or_fn, initial_state, ret, _h),
     do: ret.(initial_state).(x)
