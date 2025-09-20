@@ -7,7 +7,7 @@ end
 
 defmodule Freya.Effects.Reader do
   @moduledoc "Operations (Ops) for the Reader effect"
-  use Freya.FreerOps, ops: Freya.Effects.Reader.Constructors
+  use Freya.FreerOps, constructors: Freya.Effects.Reader.Constructors
 end
 
 defmodule Freya.Effects.ReaderHandler do

@@ -7,7 +7,7 @@ end
 
 defmodule Freya.Effects.Writer do
   @moduledoc "Operations (Ops) for the Writer effect"
-  use Freya.FreerOps, ops: Freya.Effects.Writer.Constructors
+  use Freya.FreerOps, constructors: Freya.Effects.Writer.Constructors
 end
 
 defmodule Freya.Effects.WriterHandler do

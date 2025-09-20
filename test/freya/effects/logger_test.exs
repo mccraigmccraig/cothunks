@@ -23,7 +23,7 @@ defmodule Freya.LoggerTest do
   end
 
   defmodule Numbers do
-    use FreerOps, ops: NumbersGrammar
+    use FreerOps, constructors: NumbersGrammar
   end
 
   # interpret the Numbers langauge with ret + handle functions

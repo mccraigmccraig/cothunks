@@ -26,7 +26,7 @@ end
 
 # Operations for the coroutine effect
 defmodule Freya.Effects.Coroutine do
-  use Freya.FreerOps, ops: Freya.Effects.Coroutine.Constructors
+  use Freya.FreerOps, constructors: Freya.Effects.Coroutine.Constructors
 end
 
 defmodule Freya.Effects.CoroutineHandler do
