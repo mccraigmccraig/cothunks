@@ -31,11 +31,11 @@ defmodule Freya.Freer do
     _ <- put(:before)
     _ <- throw_fx(:bad)
     _ <- put(:after)
-    Freer.return(:nope)
+    return(:nope)
   else
     :bad ->
-      _ <- Writer.put({:handled, :bad})
-      Freer.return(:ok)
+      _ <- put({:handled, :bad})
+      return(:ok)
   end
 
   """

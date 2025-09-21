@@ -4,8 +4,12 @@ defmodule Freya.Freer.Con do
   """
 
   def expand_imports(mod_or_mods) do
-    mod_or_mods
-    |> List.wrap()
+    mods = mod_or_mods |> List.wrap()
+
+    # always include the BaseOps in the imports
+    all_mods = [Freya.Freer.BaseOps | mods] |> Enum.uniq()
+
+    all_mods
     |> Enum.map(fn mod ->
       quote do
         import unquote(mod)
