@@ -99,7 +99,12 @@ defmodule Freya.Freer do
     do: %Impure{sig: sig, data: u, q: Freya.Freer.Impl.q_append(q, k)}
 
   @doc """
-  after all effects are handled, only %Pure{} is left
+  After all effects are handled, only %Pure{} is left. Extracts the
+  final value
+
+  make sure you handle all effects eith Effect.interpret_*
+  calls before extracting the final value - or there will be
+  a runtime error
   """
   @spec run(freer) :: any
   def run(%Pure{val: x}), do: x
