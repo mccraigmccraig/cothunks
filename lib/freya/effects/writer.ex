@@ -7,7 +7,7 @@ end
 
 defmodule Freya.Effects.Writer do
   @moduledoc "Operations (Ops) for the Writer effect"
-  use Freya.FreerOps, constructors: Freya.Effects.Writer.Constructors
+  use Freya.Freer.Ops, constructors: Freya.Effects.Writer.Constructors
 end
 
 defmodule Freya.Effects.WriterHandler do
@@ -19,12 +19,12 @@ defmodule Freya.Effects.WriterHandler do
     computation
     |> Freya.Freer.Impl.handle_relay(
       [Freya.Effects.Writer],
-      fn x -> Freya.Result.ensure(x) |> Freer.return end,
+      fn x -> Freya.Result.ensure(x) |> Freer.return() end,
       fn {:put, o}, k ->
         k.(nil)
         |> Freer.bind(fn %Freya.Result{} = r ->
           list = Map.get(r.outputs, :writer, [])
-          r |> Freya.Result.put(:writer, [o | list]) |> Freer.return
+          r |> Freya.Result.put(:writer, [o | list]) |> Freer.return()
         end)
       end
     )

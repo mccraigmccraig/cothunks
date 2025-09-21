@@ -10,7 +10,7 @@ defmodule Freya.FreerTest do
   alias Freya.Effects.State
   alias Freya.Freer
   alias Freya.Freer.{Pure, Impure}
-  alias Freya.FreerOps
+  alias Freya.Freer.Ops
 
   describe "pure" do
     test "it wraps a value" do
@@ -90,7 +90,7 @@ defmodule Freya.FreerTest do
   end
 
   defmodule Numbers do
-    use FreerOps, constructors: NumbersGrammar
+    use Ops, constructors: NumbersGrammar
   end
 
   # interpret the Numbers langauge with ret + handle functions

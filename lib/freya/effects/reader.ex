@@ -7,7 +7,7 @@ end
 
 defmodule Freya.Effects.Reader do
   @moduledoc "Operations (Ops) for the Reader effect"
-  use Freya.FreerOps, constructors: Freya.Effects.Reader.Constructors
+  use Freya.Freer.Ops, constructors: Freya.Effects.Reader.Constructors
 end
 
 defmodule Freya.Effects.ReaderHandler do
@@ -19,7 +19,7 @@ defmodule Freya.Effects.ReaderHandler do
     computation
     |> Freya.Freer.Impl.handle_relay(
       [Freya.Effects.Reader],
-      fn x -> Freya.Result.ensure(x) |> Freer.return end,
+      fn x -> Freya.Result.ensure(x) |> Freer.return() end,
       fn :get, k -> k.(reader_val) end
     )
   end

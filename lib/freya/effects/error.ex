@@ -10,7 +10,7 @@ end
 
 defmodule Freya.Effects.Error do
   @moduledoc "Operations (Ops) for the Error effect"
-  use Freya.FreerOps, constructors: Freya.Effects.Error.Constructors
+  use Freya.Freer.Ops, constructors: Freya.Effects.Error.Constructors
 end
 
 defmodule Freya.Effects.ErrorHandler do

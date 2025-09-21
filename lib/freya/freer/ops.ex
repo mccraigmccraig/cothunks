@@ -1,4 +1,4 @@
-defmodule Freya.FreerOps do
+defmodule Freya.Freer.Ops do
   @moduledoc """
   wrap all the data-constructors in a provided module
   with Freer.send_effect() - resulting in a module of operations
@@ -14,7 +14,7 @@ defmodule Freya.FreerOps do
 
     freer_functions =
       functions
-      |> Enum.map(fn {f, arity} -> Freya.FreerOps.freer_op(constructors_mod, f, arity) end)
+      |> Enum.map(fn {f, arity} -> Freya.Freer.Ops.freer_op(constructors_mod, f, arity) end)
 
     # Logger.error("FREER_FUNCTIONS\n#{inspect(freer_functions, pretty: true)}")
 

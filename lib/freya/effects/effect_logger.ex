@@ -2,7 +2,7 @@ defmodule Freya.Effects.EffectLogger do
   require Logger
 
   alias Freya.Freer
-  alias Freya.FreerOps
+  alias Freya.Freer.Ops
   alias Freya.Freer.Pure
   alias Freya.Freer.Impure
 
@@ -108,7 +108,7 @@ defmodule Freya.Effects.EffectLogger do
   end
 
   defmodule EffectLoggerOps do
-    use FreerOps, constructors: EffectLoggerConstructors
+    use Ops, constructors: EffectLoggerConstructors
   end
 
   # logger captures effects in log-queue/log-stack, and avoids repeat work

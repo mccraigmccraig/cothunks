@@ -3,7 +3,7 @@ defmodule Freya.LoggerTest do
 
   require Logger
   alias Freya.Freer
-  alias Freya.FreerOps
+  alias Freya.Freer.Ops
   alias Freya.Effects.EffectLogger
 
   # define constructors for a simple language with
@@ -23,7 +23,7 @@ defmodule Freya.LoggerTest do
   end
 
   defmodule Numbers do
-    use FreerOps, constructors: NumbersGrammar
+    use Ops, constructors: NumbersGrammar
   end
 
   # interpret the Numbers langauge with ret + handle functions
