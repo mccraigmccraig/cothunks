@@ -41,9 +41,9 @@ defmodule Freya.ConElseErrorTest do
 
       fv =
         Freer.con [Error, Writer] do
-          _ <- Writer.put(:before)
-          _ <- Error.throw_fx(:bad)
-          _ <- Writer.put(:after)
+          _ <- put(:before)
+          _ <- throw_fx(:bad)
+          _ <- put(:after)
           Freer.return(:nope)
         else
           :bad ->

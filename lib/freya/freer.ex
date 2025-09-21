@@ -16,13 +16,28 @@ defmodule Freya.Freer do
   con - profitable cheating -and Spanish/Italian `with`
 
   macro sugar which rewrites a with-like statement into
-  Frrer.bind steps
+  Freer.bind steps - similar to Haskell `do` notation
 
   con [Reader, Writer] do
     a <- get()
     put(a + 5)
     return(a + 10)
   end
+
+  there's also an `else` clause which translates into an Error
+  effect catch_fx operation
+
+  Freer.con [Error, Writer] do
+    _ <- put(:before)
+    _ <- throw_fx(:bad)
+    _ <- put(:after)
+    Freer.return(:nope)
+  else
+    :bad ->
+      _ <- Writer.put({:handled, :bad})
+      Freer.return(:ok)
+  end
+
   """
   defmacro con(mod_or_mods, do: block) do
     imports = Con.expand_imports(mod_or_mods)
