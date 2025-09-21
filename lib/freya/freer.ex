@@ -80,11 +80,14 @@ defmodule Freya.Freer do
   @spec pure(any) :: freer
   def pure(x), do: %Pure{val: x}
 
-  # aka etaf
   @spec send_effect(any, atom) :: freer
   def send_effect(fa, eff) do
     %Impure{sig: eff, data: fa, q: [&Freer.pure/1]}
   end
+
+  # traditional name
+  @spec etaf(any, atom) :: freer
+  def etaf(fa, eff), do: send_effect(fa, eff)
 
   @spec return(any) :: freer
   def return(x), do: pure(x)
