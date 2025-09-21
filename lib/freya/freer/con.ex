@@ -65,11 +65,30 @@ defmodule Freya.Freer.Con do
                 "Freer.con else expects `pattern -> expr` clauses, got: #{inspect(other, pretty: true)}"
       end)
 
-    default_err = Macro.var(:err, nil)
+    has_user_default =
+      Enum.any?(clauses, fn
+        {:->, _m, [[pattern], _rhs]} -> underscore_pattern?(pattern)
+        _ -> false
+      end)
 
-    default_clause =
-      {:->, [], [[default_err], quote(do: Freya.Effects.Error.throw_fx(unquote(default_err)))]}
+    final_clauses =
+      if has_user_default do
+        built_clauses
+      else
+        default_err = Macro.var(:err, nil)
+        default_clause =
+          {:->, [], [[default_err], quote(do: Freya.Effects.Error.throw_fx(unquote(default_err)))]}
 
-    {:fn, [], built_clauses ++ [default_clause]}
+        built_clauses ++ [default_clause]
+      end
+
+    {:fn, [], final_clauses}
+  end
+
+  defp underscore_pattern?(ast) do
+    case ast do
+      {:_, _, _} -> true
+      _ -> false
+    end
   end
 end
