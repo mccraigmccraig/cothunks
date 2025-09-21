@@ -10,6 +10,7 @@ defmodule Freya.Freer do
   require Logger
 
   alias Freya.Freer
+  alias Freya.Freer.Con
 
   @doc """
   con - profitable cheating -and Spanish/Italian `with`
@@ -24,89 +25,23 @@ defmodule Freya.Freer do
   end
   """
   defmacro con(mod_or_mods, do: block) do
-    imports = expand_imports(mod_or_mods)
+    imports = Con.expand_imports(mod_or_mods)
 
     quote do
       unquote_splicing(imports)
-      unquote(rewrite_block(block))
+      unquote(Con.rewrite_block(block))
     end
   end
 
   defmacro con(mod_or_mods, do: block, else: else_block) do
-    imports = expand_imports(mod_or_mods)
-    body = rewrite_block(block)
-    handler = build_else_handler_fn(else_block)
+    imports = Con.expand_imports(mod_or_mods)
+    body = Con.rewrite_block(block)
+    handler = Con.build_else_handler_fn(else_block)
 
     quote do
       unquote_splicing(imports)
       Freya.Effects.Error.catch_fx(unquote(body), unquote(handler))
     end
-  end
-
-  defp expand_imports(mod_or_mods) do
-    mod_or_mods
-    |> List.wrap()
-    |> Enum.map(fn mod ->
-      quote do
-        import unquote(mod)
-      end
-    end)
-  end
-
-  defp rewrite_block({:__block__, _, exprs}), do: rewrite_exprs(exprs)
-  defp rewrite_block(expr), do: rewrite_exprs([expr])
-
-  defp rewrite_exprs([last]) do
-    last
-  end
-
-  defp rewrite_exprs([{:<-, _m, [lhs, rhs]} | rest]) do
-    binder(lhs, rhs, rewrite_exprs(rest))
-  end
-
-  defp rewrite_exprs([expr | rest]) do
-    binder(quote(do: _), expr, rewrite_exprs(rest))
-  end
-
-  defp binder(lhs, rhs, body) do
-    quote do
-      unquote(rhs)
-      |> Freer.bind(fn unquote(lhs) -> unquote(body) end)
-    end
-  end
-
-  # Build a multi-clause fn from an else block with `->` clauses
-  defp build_else_handler_fn(else_block) do
-    clauses =
-      case else_block do
-        {:__block__, _, exprs} -> exprs
-        single_list when is_list(single_list) -> single_list
-        single -> [single]
-      end
-
-    built_clauses =
-      Enum.map(clauses, fn
-        {:->, meta, [[pattern], rhs]} ->
-          body_ast =
-            case rhs do
-              {:__block__, _, exprs} -> rewrite_block({:__block__, [], exprs})
-              list when is_list(list) -> rewrite_block({:__block__, [], list})
-              other -> rewrite_block(other)
-            end
-
-          {:->, meta, [[pattern], body_ast]}
-
-        other ->
-          raise ArgumentError,
-                "Freer.con else expects `pattern -> expr` clauses, got: #{inspect(other, pretty: true)}"
-      end)
-
-    default_err = Macro.var(:err, nil)
-
-    default_clause =
-      {:->, [], [[default_err], quote(do: Freya.Effects.Error.throw_fx(unquote(default_err)))]}
-
-    {:fn, [], built_clauses ++ [default_clause]}
   end
 
   # Freer values are %Pure{} and %Impure{}
