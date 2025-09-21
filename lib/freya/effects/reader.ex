@@ -19,7 +19,7 @@ defmodule Freya.Effects.ReaderHandler do
     computation
     |> Freya.Freer.Impl.handle_relay(
       [Freya.Effects.Reader],
-      fn x -> Freya.Result.ensure(x) |> Freer.return() end,
+      fn x -> Freya.RunOutcome.ensure(x) |> Freer.return() end,
       fn :get, k -> k.(reader_val) end
     )
   end

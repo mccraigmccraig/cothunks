@@ -143,8 +143,8 @@ defmodule Freya.Effects.EffectLogger do
     case computation do
       %Pure{val: x} ->
         r =
-          Freya.Result.ensure(x)
-          |> Freya.Result.put(:logged_computation, LoggedComputation.new(x, log))
+          Freya.RunOutcome.ensure(x)
+          |> Freya.RunOutcome.put(:logged_computation, LoggedComputation.new(x, log))
 
         Freer.return(r)
 

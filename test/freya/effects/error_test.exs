@@ -17,7 +17,7 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(:unreachable)
         end
 
-      %Freya.Result{outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      %Freya.RunOutcome{outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
       assert out[:error] == :oops
     end
 
@@ -38,7 +38,7 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(res)
         end
 
-      %Freya.Result{value: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      %Freya.RunOutcome{result: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
       assert v == {:recovered, :bad}
       refute Map.has_key?(out, :error)
     end
@@ -52,7 +52,7 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(res)
         end
 
-      %Freya.Result{value: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      %Freya.RunOutcome{result: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
       assert v == 42
       assert out == %{}
     end
@@ -70,7 +70,7 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(:unreachable)
         end
 
-      %Freya.Result{outputs: out} =
+      %Freya.RunOutcome{outputs: out} =
         fv |> ErrorHandler.interpret_error() |> WriterHandler.interpret_writer() |> Freer.run()
 
       assert out.writer == [:before]
@@ -101,7 +101,7 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(res)
         end
 
-      %Freya.Result{value: v, outputs: out} =
+      %Freya.RunOutcome{result: v, outputs: out} =
         fv
         |> ErrorHandler.interpret_error()
         |> WriterHandler.interpret_writer()

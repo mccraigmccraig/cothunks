@@ -197,7 +197,7 @@ defmodule Freya.Effects.CoroutineTest do
       result3 = result2 |> CoroutineHandler.resume(100) |> Freer.run()
 
       assert %Status.Done{
-               value: %Freya.Result{value: "Final resume: 100", outputs: %{state: 15}}
+               value: %Freya.RunOutcome{result: "Final resume: 100", outputs: %{state: 15}}
              } = result3
     end
   end

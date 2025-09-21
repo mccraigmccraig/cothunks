@@ -10,7 +10,7 @@ defmodule Freya.Effects.State do
 
   @doc """
   Interpret a stateful computation with the given initial state.
-  Returns a Freya.Result with :state in outputs.
+  Returns a Freya.RunOutcome with :state in outputs.
 
   This implementation uses Reader and Writer effects to manage state.
   Implementation translated from:
@@ -22,7 +22,7 @@ defmodule Freya.Effects.State do
       [Reader, Writer],
       initial_state,
       fn s ->
-        fn x -> Freya.Result.ensure(x) |> Freya.Result.put(:state, s) |> Freer.return() end
+        fn x -> Freya.RunOutcome.ensure(x) |> Freya.RunOutcome.put(:state, s) |> Freer.return() end
       end,
       fn s ->
         fn u, k ->
@@ -40,7 +40,7 @@ defmodule Freya.Effects.State do
   def interpret_state_expanded(computation, initial_state) do
     case computation do
       %Freer.Pure{val: x} ->
-        Freer.return(Freya.Result.ensure(x) |> Freya.Result.put(:state, initial_state))
+        Freer.return(Freya.RunOutcome.ensure(x) |> Freya.RunOutcome.put(:state, initial_state))
 
       %Freer.Impure{sig: eff, data: u, q: q} ->
         k = fn s -> Freya.Freer.Impl.q_comp(q, &interpret_state_expanded(&1, s)) end

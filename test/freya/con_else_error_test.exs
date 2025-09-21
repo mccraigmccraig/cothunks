@@ -16,7 +16,7 @@ defmodule Freya.ConElseErrorTest do
           {:invalid, n} -> Freer.return({:fixed, n + 1})
         end
 
-      %Freya.Result{value: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      %Freya.RunOutcome{result: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
       assert v == {:fixed, 4}
       refute Map.has_key?(out, :error)
     end
@@ -32,7 +32,7 @@ defmodule Freya.ConElseErrorTest do
           :other -> Freer.return(:ok)
         end
 
-      %Freya.Result{outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      %Freya.RunOutcome{outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
       assert out[:error] == :nope
     end
 
@@ -51,7 +51,7 @@ defmodule Freya.ConElseErrorTest do
             return(:ok)
         end
 
-      %Freya.Result{value: v, outputs: out} =
+      %Freya.RunOutcome{result: v, outputs: out} =
         fv
         |> ErrorHandler.interpret_error()
         |> WriterHandler.interpret_writer()
@@ -73,7 +73,7 @@ defmodule Freya.ConElseErrorTest do
           _ -> Freer.return(:handled)
         end
 
-      %Freya.Result{value: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      %Freya.RunOutcome{result: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
       assert v == :handled
       refute Map.has_key?(out, :error)
     end

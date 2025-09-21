@@ -1,21 +1,21 @@
-defmodule Freya.Result do
+defmodule Freya.RunOutcome do
   @moduledoc """
-  Unified result envelope for Freya interpreters.
+  Unified run outcome envelope for Freya interpreters.
 
-  - `value`: the primary computation value
+  - `result`: the primary computation value
   - `outputs`: flat map for effect-specific outputs (e.g., state, writer, logs)
   """
 
-  defstruct value: nil, outputs: %{}
+  defstruct result: nil, outputs: %{}
 
-  @type t :: %__MODULE__{value: any, outputs: map()}
+  @type t :: %__MODULE__{result: any, outputs: map()}
 
   @spec new(any, map()) :: t
-  def new(value, outputs \\ %{}) when is_map(outputs), do: %__MODULE__{value: value, outputs: outputs}
+  def new(result, outputs \\ %{}) when is_map(outputs), do: %__MODULE__{result: result, outputs: outputs}
 
   @spec ensure(any) :: t
   def ensure(%__MODULE__{} = r), do: r
-  def ensure(value), do: new(value)
+  def ensure(result), do: new(result)
 
   @spec put(t, atom, any) :: t
   def put(%__MODULE__{outputs: out} = r, key, val) when is_atom(key) do
@@ -28,9 +28,8 @@ defmodule Freya.Result do
   end
 
   @spec value(t) :: any
-  def value(%__MODULE__{value: v}), do: v
+  def value(%__MODULE__{result: v}), do: v
 
   @spec outputs(t) :: map()
   def outputs(%__MODULE__{outputs: out}), do: out
 end
-
