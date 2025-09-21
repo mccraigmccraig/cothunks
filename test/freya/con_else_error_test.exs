@@ -61,5 +61,21 @@ defmodule Freya.ConElseErrorTest do
       assert out.writer == [:before, {:handled, :bad}]
       refute Map.has_key?(out, :error)
     end
+
+    test "user-supplied default else clause handles all and prevents rethrow" do
+      require Freer
+
+      fv =
+        Freer.con [Error] do
+          _ <- Error.throw_fx(:anything)
+          Freer.return(:unreachable)
+        else
+          _ -> Freer.return(:handled)
+        end
+
+      %Freya.Result{value: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      assert v == :handled
+      refute Map.has_key?(out, :error)
+    end
   end
 end
