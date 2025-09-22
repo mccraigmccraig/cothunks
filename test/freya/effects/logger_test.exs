@@ -5,6 +5,7 @@ defmodule Freya.LoggerTest do
   alias Freya.Freer
   alias Freya.Freer.Ops
   alias Freya.Effects.EffectLogger
+  alias Freya.Effects.EffectLogger.InterpretedEffectLogEntry
 
   # define constructors for a simple language with
   # - number
@@ -93,12 +94,29 @@ defmodule Freya.LoggerTest do
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")
 
       assert %Freya.RunOutcome{
-               result: %Freya.Freer.OkResult{value: -86},
+               result: %Freya.Freer.OkResult{value: final_val},
                outputs: %{
                  state: {:bar, 34},
-                 logged_computation: %_{}
+                 logged_computation: %Freya.Effects.EffectLogger.LoggedComputation{
+                   result: lc_val,
+                   log: %Freya.Effects.EffectLogger.Log{stack: lc_stack, queue: lc_queue}
+                 }
                }
              } = result
+
+      # the logged computation result should match the final value
+      assert lc_val == final_val
+      # stack is empty after preparing for resume
+      assert lc_stack == []
+      # log entries are fully deterministic
+      assert lc_queue == [
+               %InterpretedEffectLogEntry{effect: :get, value: {:foo, 12}},
+               %InterpretedEffectLogEntry{effect: {:number, 10}, value: 10},
+               %InterpretedEffectLogEntry{effect: {:put, {:bar, 34}}, value: nil},
+               %InterpretedEffectLogEntry{effect: {:multiply, 12, 10}, value: 120},
+               %InterpretedEffectLogEntry{effect: :get, value: {:bar, 34}},
+               %InterpretedEffectLogEntry{effect: {:subtract, 34, 120}, value: -86}
+             ]
     end
   end
 end
