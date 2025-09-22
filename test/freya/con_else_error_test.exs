@@ -6,7 +6,6 @@ defmodule Freya.ConElseErrorTest do
 
   describe "con ... else error handling" do
     test "matches a pattern and recovers" do
-      require Freer
       import Freya.Con
 
       fv =
@@ -25,7 +24,6 @@ defmodule Freya.ConElseErrorTest do
     end
 
     test "no matching clause rethrows" do
-      require Freer
       import Freya.Con
 
       fv =
@@ -42,7 +40,6 @@ defmodule Freya.ConElseErrorTest do
     end
 
     test "handler clause can perform effects" do
-      require Freer
       import Freya.Con
 
       fv =
@@ -69,7 +66,6 @@ defmodule Freya.ConElseErrorTest do
     end
 
     test "user-supplied default else clause handles all and prevents rethrow" do
-      require Freer
       import Freya.Con
 
       fv =
