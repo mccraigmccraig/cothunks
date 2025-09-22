@@ -24,7 +24,7 @@ defmodule Freya.DefconTest do
 
     Freer.defcon safe_div(a, b), [Error] do
       if b == 0 do
-        Error.throw_fx(:zero)
+        throw_fx(:zero)
       else
         return(a / b)
       end
