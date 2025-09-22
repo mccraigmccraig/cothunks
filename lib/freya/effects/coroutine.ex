@@ -1,6 +1,6 @@
 # Define the Yield effect
 defmodule Freya.Effects.Coroutine.Yield do
-  defstruct [:value, :mapper]
+  defstruct [:value]
 end
 
 # Define the Status type for coroutine state
@@ -10,10 +10,7 @@ end
 defmodule Freya.Effects.Coroutine.Constructors do
   alias Freya.Effects.Coroutine.Yield
 
-  def yield(value, mapper), do: %Yield{value: value, mapper: mapper}
-  def yield(value), do: %Yield{value: value, mapper: make_identity()}
-
-  defp make_identity(), do: & &1
+  def yield(value), do: %Yield{value: value}
 end
 
 # Operations for the coroutine effect
@@ -37,8 +34,8 @@ defmodule Freya.Effects.CoroutineHandler do
   @doc """
   Reply to a coroutine effect by returning the Continue constructor.
   """
-  def reply_c(%Yield{value: a, mapper: mapper}, k) do
-    Freer.return(RunOutcome.yield(a, fn b -> mapper.(b) |> k.() end))
+  def reply_c(%Yield{value: a}, k) do
+    Freer.return(RunOutcome.yield(a, fn b -> k.(b) end))
   end
 
   @doc """
