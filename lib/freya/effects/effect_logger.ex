@@ -7,22 +7,22 @@ defmodule Freya.Effects.EffectLogger do
   alias Freya.Freer.Impure
 
   defmodule EffectLogEntry do
-    defstruct effect: nil
+    defstruct sig: nil, data: nil
 
-    @type t :: %__MODULE__{effect: any}
+    @type t :: %__MODULE__{sig: any, data: any}
 
-    def new(effect) do
-      %__MODULE__{effect: effect}
+    def new(sig, data) do
+      %__MODULE__{sig: sig, data: data}
     end
   end
 
   defmodule InterpretedEffectLogEntry do
-    defstruct effect: nil, value: nil
+    defstruct sig: nil, data: nil, value: nil
 
-    @type t :: %__MODULE__{effect: any, value: any}
+    @type t :: %__MODULE__{sig: any, data: any, value: any}
 
     def set_value(%EffectLogEntry{} = log_entry, value) do
-      %InterpretedEffectLogEntry{effect: log_entry.effect, value: value}
+      %InterpretedEffectLogEntry{sig: log_entry.sig, data: log_entry.data, value: value}
     end
   end
 
@@ -42,13 +42,14 @@ defmodule Freya.Effects.EffectLogger do
       }
     end
 
-    def log_effect(%__MODULE__{} = log, effect) do
+    def log_effect(%__MODULE__{} = log, %Impure{sig: sig, data: data}) do
       case log.queue do
         [] ->
-          %{log | queue: [EffectLogEntry.new(effect)]}
+          %{log | queue: [EffectLogEntry.new(sig, data)]}
 
         _ ->
-          raise ArgumentError, message: "unexpected effect: #{inspect(effect, pretty: true)}"
+          raise ArgumentError,
+            message: "unexpected effect: #{inspect(%{sig: sig, data: data}, pretty: true)}"
       end
     end
 
@@ -165,21 +166,22 @@ defmodule Freya.Effects.EffectLogger do
     end
   end
 
-  def log_or_resume(%Impure{sig: eff, data: u, q: q} = _computation, %Log{} = log) do
+  def log_or_resume(%Impure{sig: sig, data: u, q: q} = computation, %Log{} = log) do
     {action, updated_log, value} =
       case log.queue do
         [] ->
           # a new effect LogEntry
-          {:execute_effect, Log.log_effect(log, u), nil}
+          {:execute_effect, Log.log_effect(log, computation), nil}
 
         [
           %InterpretedEffectLogEntry{
-            effect: log_entry_effect,
+            sig: log_entry_sig,
+            data: log_entry_data,
             value: value
           } = _log_entry
           | _rest
         ]
-        when u == log_entry_effect ->
+        when sig == log_entry_sig and u == log_entry_data ->
           # resumed computation
           {:resume_effect, Log.consume_log_entry(log), value}
 
@@ -198,7 +200,7 @@ defmodule Freya.Effects.EffectLogger do
           |> Freya.Freer.Impl.q_prepend(capture_k)
           |> Freya.Freer.Impl.q_comp(&interpret_logger(&1, updated_log))
 
-        %Freer.Impure{sig: eff, data: u, q: [k]}
+        %Freer.Impure{sig: sig, data: u, q: [k]}
 
       :resume_effect ->
         # no need to execute the effect - use the logged value to feed the next

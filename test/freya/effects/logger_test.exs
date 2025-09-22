@@ -6,6 +6,8 @@ defmodule Freya.LoggerTest do
   alias Freya.Freer.Ops
   alias Freya.Effects.EffectLogger
   alias Freya.Effects.EffectLogger.InterpretedEffectLogEntry
+  alias Freya.Effects.Reader
+  alias Freya.Effects.Writer
 
   # define constructors for a simple language with
   # - number
@@ -110,12 +112,12 @@ defmodule Freya.LoggerTest do
       assert lc_stack == []
       # log entries are fully deterministic
       assert lc_queue == [
-               %InterpretedEffectLogEntry{effect: :get, value: {:foo, 12}},
-               %InterpretedEffectLogEntry{effect: {:number, 10}, value: 10},
-               %InterpretedEffectLogEntry{effect: {:put, {:bar, 34}}, value: nil},
-               %InterpretedEffectLogEntry{effect: {:multiply, 12, 10}, value: 120},
-               %InterpretedEffectLogEntry{effect: :get, value: {:bar, 34}},
-               %InterpretedEffectLogEntry{effect: {:subtract, 34, 120}, value: -86}
+               %InterpretedEffectLogEntry{sig: Reader, data: :get, value: {:foo, 12}},
+               %InterpretedEffectLogEntry{sig: Numbers, data: {:number, 10}, value: 10},
+               %InterpretedEffectLogEntry{sig: Writer, data: {:put, {:bar, 34}}, value: nil},
+               %InterpretedEffectLogEntry{sig: Numbers, data: {:multiply, 12, 10}, value: 120},
+               %InterpretedEffectLogEntry{sig: Reader, data: :get, value: {:bar, 34}},
+               %InterpretedEffectLogEntry{sig: Numbers, data: {:subtract, 34, 120}, value: -86}
              ]
     end
   end
