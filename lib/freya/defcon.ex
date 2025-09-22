@@ -39,7 +39,7 @@ defmodule Freya.Defcon do
 
       quote do
         def unquote(call_ast) do
-          Freya.Freer.con unquote(mods_list) do
+          Freya.Con.con unquote(mods_list) do
             unquote(body)
           end
         end
@@ -51,7 +51,7 @@ defmodule Freya.Defcon do
 
       quote do
         def unquote(call_ast) do
-          Freya.Freer.con(unquote(mods_list), do: unquote(body), else: unquote(else_block))
+          Freya.Con.con(unquote(mods_list), do: unquote(body), else: unquote(else_block))
         end
       end
     end
@@ -64,7 +64,7 @@ defmodule Freya.Defcon do
 
       quote do
         defp unquote(call_ast) do
-          Freya.Freer.con unquote(mods_list) do
+          Freya.Con.con unquote(mods_list) do
             unquote(body)
           end
         end
@@ -76,7 +76,7 @@ defmodule Freya.Defcon do
 
       quote do
         defp unquote(call_ast) do
-          Freya.Freer.con(unquote(mods_list), do: unquote(body), else: unquote(else_block))
+          Freya.Con.con(unquote(mods_list), do: unquote(body), else: unquote(else_block))
         end
       end
     end

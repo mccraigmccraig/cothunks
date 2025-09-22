@@ -5,7 +5,7 @@ defmodule Freya.DefconTest do
   alias Freya.Effects.{Reader, ReaderHandler, Writer, WriterHandler, Error, ErrorHandler}
 
   defmodule DefconExample do
-    require Freer
+    require Freya.Con
     import Freya.Defcon
 
     defcon sum_env(a, b), [Reader] do
