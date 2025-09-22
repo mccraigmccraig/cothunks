@@ -6,7 +6,7 @@ defmodule Freya.DefconTest do
 
   defmodule DefconExample do
     require Freer
-    import Freer.Defcon
+    import Freya.Defcon
 
     defcon sum_env(a, b), [Reader] do
       c <- get()

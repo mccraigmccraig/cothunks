@@ -1,12 +1,12 @@
-defmodule Freya.Freer.Con do
+defmodule Freya.Con do
   @moduledoc """
-  Supporting functions for the Freya.Freer.con macro
+  The `con` macro for `with`-like effect binding syntax
   """
 
-  defmacro con(mod_or_mods, do: do_block), do: Freya.Freer.Con.Impl.con(mod_or_mods, do_block)
+  defmacro con(mod_or_mods, do: do_block), do: Freya.Con.Impl.con(mod_or_mods, do_block)
 
   defmacro con(mod_or_mods, do: do_block, else: else_block),
-    do: Freya.Freer.Con.Impl.con(mod_or_mods, do_block, else_block)
+    do: Freya.Con.Impl.con(mod_or_mods, do_block, else_block)
 
   defmodule Impl do
     def con(mod_or_mods, do_block) do

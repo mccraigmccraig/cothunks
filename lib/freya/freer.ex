@@ -38,41 +38,10 @@ defmodule Freya.Freer do
   end
 
   """
-  defmacro con(mod_or_mods, do: do_block), do: Freya.Freer.Con.Impl.con(mod_or_mods, do_block)
+  defmacro con(mod_or_mods, do: do_block), do: Freya.Con.Impl.con(mod_or_mods, do_block)
 
   defmacro con(mod_or_mods, do: do_block, else: else_block),
-    do: Freya.Freer.Con.Impl.con(mod_or_mods, do_block, else_block)
-
-  @doc """
-  Define a function whose body is a Freer.con block.
-
-  Usage:
-    defcon foo(a, b), [Reader, Writer] do
-      c <- get()
-      put(a + b)
-      return(a + b + c)
-    end
-
-  With else:
-    defcon foo(a), [Error] do
-      _ <- Error.throw_fx(:bad)
-      return(a)
-    else
-      :bad -> return(:ok)
-    end
-  """
-
-  defmacro defcon(call_ast, mods_ast, do: body),
-    do: Freya.Freer.Defcon.Impl.defcon(call_ast, mods_ast, body)
-
-  defmacro defcon(call_ast, mods_ast, do: body, else: else_block),
-    do: Freya.Freer.Defcon.Impl.defcon(call_ast, mods_ast, body, else_block)
-
-  defmacro defconp(call_ast, mods_ast, do: body),
-    do: Freya.Freer.Defcon.Impl.defconp(call_ast, mods_ast, body)
-
-  defmacro defconp(call_ast, mods_ast, do: body, else: else_block),
-    do: Freya.Freer.Defcon.Impl.defconp(call_ast, mods_ast, body, else_block)
+    do: Freya.Con.Impl.con(mod_or_mods, do_block, else_block)
 
   # Freer values are %Pure{} and %Impure{}
 
