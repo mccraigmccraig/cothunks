@@ -24,9 +24,10 @@ defmodule Freya.Effects.CompositionTest do
   describe "Logger + Error" do
     test "throw without catch is logged and propagates error (logger outermost)" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con [Error] do
+        Freya.Con.con [Error] do
           _ <- throw_fx(:oops)
           return(:unreachable)
         end
@@ -42,9 +43,10 @@ defmodule Freya.Effects.CompositionTest do
 
     test "logger inside error sees nothing (cautionary)" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con [Error] do
+        Freya.Con.con [Error] do
           _ <- throw_fx(:oops)
           return(:unreachable)
         end
@@ -59,9 +61,10 @@ defmodule Freya.Effects.CompositionTest do
   describe "Logger + Coroutine" do
     test "yield is logged; no interpreted value for yield" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con Coroutine do
+        Freya.Con.con Coroutine do
           a <- yield("first")
           return(a)
         end
@@ -92,9 +95,10 @@ defmodule Freya.Effects.CompositionTest do
   describe "Error + Coroutine" do
     test "yield then throw after resume (error outermost)" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con [Error, Coroutine] do
+        Freya.Con.con [Error, Coroutine] do
           a <- yield(:step)
           _ <- throw_fx(:boom)
           return({:ok, a})
@@ -120,9 +124,10 @@ defmodule Freya.Effects.CompositionTest do
   describe "Logger + Error + Coroutine" do
     test "yield then throw; both logged (logger outermost)" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con [Coroutine, Error] do
+        Freya.Con.con [Coroutine, Error] do
           _ <- yield(:hello)
           _ <- throw_fx(:bad)
           return(:nope)

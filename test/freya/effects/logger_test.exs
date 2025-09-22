@@ -75,8 +75,9 @@ defmodule Freya.LoggerTest do
     test "it can mix numbers with the state interpretation of Reader+Writer" do
       require Freer
 
+      require Freya.Con
       fv =
-        Freer.con [Numbers, Freya.Effects.Reader, Freya.Effects.Writer] do
+        Freya.Con.con [Numbers, Freya.Effects.Reader, Freya.Effects.Writer] do
           {:foo, a} <- get()
           b <- number(10)
           x <- Freer.return(12)

@@ -2,6 +2,7 @@ defmodule Freya.Effects.CoroutineTest do
   use ExUnit.Case
 
   require Logger
+  require Freya.Con
 
   alias Freya.Freer
   alias Freya.Effects.State
@@ -16,7 +17,7 @@ defmodule Freya.Effects.CoroutineTest do
 
       # Create a coroutine that yields a value and returns another
       computation =
-        Freer.con Coroutine do
+        Freya.Con.con Coroutine do
           a <- yield(42)
           Freer.return("finished: " <> a)
         end
@@ -42,7 +43,7 @@ defmodule Freya.Effects.CoroutineTest do
 
       # Keep the simple test as well
       computation =
-        Freer.con Coroutine do
+        Freya.Con.con Coroutine do
           a <- yield("first")
           b <- yield("second: #{a}")
           Freer.return("final: #{a + b}")
@@ -171,7 +172,7 @@ defmodule Freya.Effects.CoroutineTest do
       require Freer
 
       computation =
-        Freer.con [Coroutine, Freya.Effects.Reader, Freya.Effects.Writer] do
+        Freya.Con.con [Coroutine, Freya.Effects.Reader, Freya.Effects.Writer] do
           state <- get()
           r1 <- yield("State is: #{state}")
           put(state + r1)
@@ -201,7 +202,7 @@ defmodule Freya.Effects.CoroutineTest do
       require Freer
 
       computation =
-        Freer.con [Coroutine, Freya.Effects.Reader, Freya.Effects.Writer] do
+        Freya.Con.con [Coroutine, Freya.Effects.Reader, Freya.Effects.Writer] do
           state <- get()
           r1 <- yield("State is: #{state}")
           put(state + r1)

@@ -10,9 +10,10 @@ defmodule Freya.Effects.ErrorTest do
   describe "throw/catch basics" do
     test "throw without catch propagates error" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con [Error] do
+        Freya.Con.con [Error] do
           _ <- Error.throw_fx(:oops)
           Freer.return(:unreachable)
         end
@@ -24,12 +25,13 @@ defmodule Freya.Effects.ErrorTest do
 
     test "catch recovers from throw" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con Error do
+        Freya.Con.con Error do
           res <-
             Error.catch_fx(
-              Freer.con Error do
+              Freya.Con.con Error do
                 _ <- Error.throw_fx(:bad)
                 Freer.return(:nope)
               end,
@@ -48,9 +50,10 @@ defmodule Freya.Effects.ErrorTest do
 
     test "catch passes through success" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con Error do
+        Freya.Con.con Error do
           res <- Error.catch_fx(Freer.return(42), fn _ -> Freer.return(0) end)
           Freer.return(res)
         end
@@ -66,9 +69,10 @@ defmodule Freya.Effects.ErrorTest do
   describe "composition with Writer and State" do
     test "writer before throw is kept; after is skipped" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con [Error, Writer] do
+        Freya.Con.con [Error, Writer] do
           _ <- Writer.put(:before)
           _ <- Error.throw_fx(:bad)
           _ <- Writer.put(:after)
@@ -85,19 +89,20 @@ defmodule Freya.Effects.ErrorTest do
 
     test "nested catch with state" do
       require Freer
+      require Freya.Con
 
       fv =
-        Freer.con [Error, Writer] do
+        Freya.Con.con [Error, Writer] do
           # emulate state with Reader+Writer interpreter
           res <-
             Error.catch_fx(
-              Freer.con [Error, Writer] do
+              Freya.Con.con [Error, Writer] do
                 _ <- Error.throw_fx(:inner)
                 _ <- Writer.put(:after_throw)
                 Freer.return(:nope)
               end,
               fn err ->
-                Freer.con [Writer] do
+                Freya.Con.con [Writer] do
                   _ <- Writer.put({:handled, err})
                   Freer.return(:ok)
                 end

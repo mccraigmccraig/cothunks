@@ -11,6 +11,7 @@ defmodule Freya.FreerTest do
   alias Freya.Freer
   alias Freya.Freer.{Pure, Impure}
   alias Freya.Freer.Ops
+  require Freya.Con
 
   defp unwrap(v) do
     case v do
@@ -251,7 +252,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con Numbers do
+        Freya.Con.con Numbers do
           a <- number(10)
           b <- number(1000)
           c <- add(a, b)
@@ -268,7 +269,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con Reader do
+        Freya.Con.con Reader do
           a <- Freer.return(10)
           b <- get()
           Freer.return(a + b)
@@ -283,7 +284,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Reader, Writer] do
+        Freya.Con.con [Reader, Writer] do
           a <- Freer.return(10)
           b <- get()
           _c <- put(a + b)
@@ -307,7 +308,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader] do
+        Freya.Con.con [Numbers, Reader] do
           a <- number(10)
           b <- get()
           c <- add(a, b)
@@ -330,7 +331,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freya.Con.con [Numbers, Reader, Writer] do
           a <- number(10)
           put(a)
           b <- get()
@@ -358,7 +359,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freya.Con.con [Numbers, Reader, Writer] do
           a <- get()
           b <- number(10)
           put(a + b)
@@ -378,7 +379,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con Numbers do
+        Freya.Con.con Numbers do
           a <- number(10)
           b <- number(1000)
           c <- divide(a, 0)
@@ -395,7 +396,7 @@ defmodule Freya.FreerTest do
       require Freer
 
       fv =
-        Freer.con [Numbers, Reader, Writer] do
+        Freya.Con.con [Numbers, Reader, Writer] do
           a <- get()
           b <- number(1000)
           c <- divide(a, 0)

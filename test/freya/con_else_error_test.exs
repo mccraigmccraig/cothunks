@@ -7,13 +7,14 @@ defmodule Freya.ConElseErrorTest do
   describe "con ... else error handling" do
     test "matches a pattern and recovers" do
       require Freer
+      import Freya.Con
 
       fv =
-        Freer.con [Error] do
+        con [Error] do
           throw_fx({:invalid, 3})
           return(:unreachable)
         else
-          {:invalid, n} -> Freer.return({:fixed, n + 1})
+          {:invalid, n} -> return({:fixed, n + 1})
         end
 
       %Freya.RunOutcome{result: res, outputs: _out} =
@@ -25,13 +26,14 @@ defmodule Freya.ConElseErrorTest do
 
     test "no matching clause rethrows" do
       require Freer
+      import Freya.Con
 
       fv =
-        Freer.con [Error] do
+        con [Error] do
           _ <- throw_fx(:nope)
           return(:unreachable)
         else
-          :other -> Freer.return(:ok)
+          :other -> return(:ok)
         end
 
       %Freya.RunOutcome{result: res} = fv |> ErrorHandler.interpret_error() |> Freer.run()
@@ -41,9 +43,10 @@ defmodule Freya.ConElseErrorTest do
 
     test "handler clause can perform effects" do
       require Freer
+      import Freya.Con
 
       fv =
-        Freer.con [Error, Writer] do
+        con [Error, Writer] do
           _ <- put(:before)
           _ <- throw_fx(:bad)
           _ <- put(:after)
@@ -67,13 +70,14 @@ defmodule Freya.ConElseErrorTest do
 
     test "user-supplied default else clause handles all and prevents rethrow" do
       require Freer
+      import Freya.Con
 
       fv =
-        Freer.con [Error] do
+        con [Error] do
           _ <- throw_fx(:anything)
           return(:unreachable)
         else
-          _ -> Freer.return(:handled)
+          _ -> return(:handled)
         end
 
       %Freya.RunOutcome{result: res, outputs: _out} =

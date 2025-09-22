@@ -3,6 +3,33 @@ defmodule Freya.Con do
   The `con` macro for `with`-like effect binding syntax
   """
 
+  @doc """
+  con - profitable cheating -and Spanish/Italian `with`
+
+  macro sugar which rewrites a with-like statement into
+  Freer.bind steps - similar to Haskell `do` notation
+
+  con [Reader, Writer] do
+    a <- get()
+    put(a + 5)
+    return(a + 10)
+  end
+
+  there's also an `else` clause which translates into an Error
+  effect catch_fx operation
+
+  Freer.con [Error, Writer] do
+    _ <- put(:before)
+    _ <- throw_fx(:bad)
+    _ <- put(:after)
+    return(:nope)
+  else
+    :bad ->
+      _ <- put({:handled, :bad})
+      return(:ok)
+  end
+
+  """
   defmacro con(mod_or_mods, do: do_block), do: Freya.Con.Impl.con(mod_or_mods, do_block)
 
   defmacro con(mod_or_mods, do: do_block, else: else_block),
