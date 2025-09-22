@@ -6,7 +6,7 @@ defmodule Freya.Con do
   """
 
   @doc """
-  Define a function whose body is a Freer.con block.
+  Define a function whose body is a `Freya.Con.con` block.
 
   Usage:
     defcon foo(a, b), [Reader, Writer] do
@@ -36,7 +36,7 @@ defmodule Freya.Con do
     do: Freya.Con.Impl.defconp(call_ast, mods_ast, body, else_block)
 
   @doc """
-  con - profitable cheating -and Spanish/Italian `with`
+  `con` - profitable cheating -and Spanish/Italian `with`
 
   macro sugar which rewrites a with-like statement into
   Freer.bind steps - similar to Haskell `do` notation
@@ -47,8 +47,8 @@ defmodule Freya.Con do
     return(a + 10)
   end
 
-  there's also an `else` clause which translates into an Error
-  effect catch_fx operation
+  there's also an `else` clause which translates into an `Error`
+  effect `catch_fx` operation
 
   Freer.con [Error, Writer] do
     _ <- put(:before)
