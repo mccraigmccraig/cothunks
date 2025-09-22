@@ -25,8 +25,8 @@ defmodule Freya.Effects.CompositionTest do
 
       fv =
         Freer.con [Error] do
-          _ <- Error.throw_fx(:oops)
-          Freer.return(:unreachable)
+          _ <- throw_fx(:oops)
+          return(:unreachable)
         end
 
       out = fv |> EffectLogger.interpret_logger() |> ErrorHandler.interpret_error() |> Freer.run()
@@ -41,8 +41,8 @@ defmodule Freya.Effects.CompositionTest do
 
       fv =
         Freer.con [Error] do
-          _ <- Error.throw_fx(:oops)
-          Freer.return(:unreachable)
+          _ <- throw_fx(:oops)
+          return(:unreachable)
         end
 
       out = fv |> ErrorHandler.interpret_error() |> EffectLogger.interpret_logger() |> Freer.run()
@@ -59,7 +59,7 @@ defmodule Freya.Effects.CompositionTest do
       fv =
         Freer.con Coroutine do
           a <- yield("first")
-          Freer.return(a)
+          return(a)
         end
 
       out1 =
@@ -85,10 +85,10 @@ defmodule Freya.Effects.CompositionTest do
       require Freer
 
       fv =
-        Freer.con Coroutine do
+        Freer.con [Error, Coroutine] do
           a <- yield(:step)
-          _ <- Error.throw_fx(:boom)
-          Freer.return({:ok, a})
+          _ <- throw_fx(:boom)
+          return({:ok, a})
         end
 
       out1 =
@@ -111,8 +111,8 @@ defmodule Freya.Effects.CompositionTest do
       fv =
         Freer.con [Coroutine, Error] do
           _ <- yield(:hello)
-          _ <- Error.throw_fx(:bad)
-          Freer.return(:nope)
+          _ <- throw_fx(:bad)
+          return(:nope)
         end
 
       out1 =
