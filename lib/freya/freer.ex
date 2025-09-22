@@ -80,14 +80,23 @@ defmodule Freya.Freer do
   @spec pure(any) :: freer
   def pure(x), do: %Pure{val: x}
 
+  @doc """
+  send an effect data-structure for interpretation
+
+  `sig` identifies the operations module definint the effect signature -
+  (the set of operation functions available for the effect)
+  """
   @spec send_effect(any, atom) :: freer
-  def send_effect(fa, eff) do
-    %Impure{sig: eff, data: fa, q: [&Freer.pure/1]}
+  def send_effect(fa, sig) do
+    %Impure{sig: sig, data: fa, q: [&Freer.pure/1]}
   end
 
-  # traditional name
+  @doc """
+  the same as `send_effect` - `etaf` is the name of the function in the
+  `more.pdf` paper
+  """
   @spec etaf(any, atom) :: freer
-  def etaf(fa, eff), do: send_effect(fa, eff)
+  def etaf(fa, sig), do: send_effect(fa, sig)
 
   @spec return(any) :: freer
   def return(x), do: pure(x)

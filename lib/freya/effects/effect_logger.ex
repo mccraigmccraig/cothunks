@@ -154,7 +154,7 @@ defmodule Freya.Effects.EffectLogger do
 
       %Impure{sig: eff, data: u, q: q} ->
         Logger.error(
-          "#{__MODULE__}.interprety_logger(%Imure{}) #{inspect(computation, pretty: true)}"
+          "#{__MODULE__}.interprety_logger(%Impure{}) #{inspect(computation, pretty: true)}"
         )
 
         case {eff, u} do
