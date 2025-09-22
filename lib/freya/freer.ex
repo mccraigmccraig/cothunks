@@ -59,6 +59,71 @@ defmodule Freya.Freer do
     end
   end
 
+  @doc """
+  Define a function whose body is a Freer.con block.
+
+  Usage:
+    defcon foo(a, b), [Reader, Writer] do
+      c <- get()
+      put(a + b)
+      return(a + b + c)
+    end
+
+  With else:
+    defcon foo(a), [Error] do
+      _ <- Error.throw_fx(:bad)
+      return(a)
+    else
+      :bad -> return(:ok)
+    end
+  """
+  defmacro defcon(call_ast, mods_ast, do: body) do
+    mods_list = List.wrap(mods_ast)
+
+    quote do
+      def unquote(call_ast) do
+        Freya.Freer.con unquote(mods_list) do
+          unquote(body)
+        end
+      end
+    end
+  end
+
+  defmacro defcon(call_ast, mods_ast, do: body, else: else_block) do
+    mods_list = List.wrap(mods_ast)
+
+    quote do
+      def unquote(call_ast) do
+        Freya.Freer.con(unquote(mods_list), do: unquote(body), else: unquote(else_block))
+      end
+    end
+  end
+
+  @doc """
+  Private variant of defcon. Defines a defp with a Freer.con body.
+  """
+  defmacro defconp(call_ast, mods_ast, do: body) do
+    mods_list = List.wrap(mods_ast)
+
+    quote do
+      defp unquote(call_ast) do
+        Freya.Freer.con unquote(mods_list) do
+          unquote(body)
+        end
+      end
+    end
+  end
+
+  defmacro defconp(call_ast, mods_ast, do: body, else: else_block) do
+    mods_list = List.wrap(mods_ast)
+
+    quote do
+      defp unquote(call_ast) do
+        Freya.Freer.con(unquote(mods_list), do: unquote(body), else: unquote(else_block))
+      end
+    end
+  end
+
   # Freer values are %Pure{} and %Impure{}
 
   defmodule Pure do
