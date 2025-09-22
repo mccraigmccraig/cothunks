@@ -10,8 +10,6 @@ defmodule Freya.Freer do
   require Logger
 
   alias Freya.Freer
-  alias Freya.Freer.Con
-  alias Freya.Freer.Defcon
 
   @doc """
   con - profitable cheating -and Spanish/Italian `with`
@@ -40,10 +38,10 @@ defmodule Freya.Freer do
   end
 
   """
-  defmacro con(mod_or_mods, do: do_block), do: Con.con(mod_or_mods, do_block)
+  defmacro con(mod_or_mods, do: do_block), do: Freya.Freer.Con.Impl.con(mod_or_mods, do_block)
 
   defmacro con(mod_or_mods, do: do_block, else: else_block),
-    do: Con.con(mod_or_mods, do_block, else_block)
+    do: Freya.Freer.Con.Impl.con(mod_or_mods, do_block, else_block)
 
   @doc """
   Define a function whose body is a Freer.con block.
@@ -64,15 +62,17 @@ defmodule Freya.Freer do
     end
   """
 
-  defmacro defcon(call_ast, mods_ast, do: body), do: Defcon.defcon(call_ast, mods_ast, body)
+  defmacro defcon(call_ast, mods_ast, do: body),
+    do: Freya.Freer.Defcon.Impl.defcon(call_ast, mods_ast, body)
 
   defmacro defcon(call_ast, mods_ast, do: body, else: else_block),
-    do: Defcon.defcon(call_ast, mods_ast, body, else_block)
+    do: Freya.Freer.Defcon.Impl.defcon(call_ast, mods_ast, body, else_block)
 
-  defmacro defconp(call_ast, mods_ast, do: body), do: Defcon.defconp(call_ast, mods_ast, body)
+  defmacro defconp(call_ast, mods_ast, do: body),
+    do: Freya.Freer.Defcon.Impl.defconp(call_ast, mods_ast, body)
 
   defmacro defconp(call_ast, mods_ast, do: body, else: else_block),
-    do: Defcon.defconp(call_ast, mods_ast, body, else_block)
+    do: Freya.Freer.Defcon.Impl.defconp(call_ast, mods_ast, body, else_block)
 
   # Freer values are %Pure{} and %Impure{}
 
