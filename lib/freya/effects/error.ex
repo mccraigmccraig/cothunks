@@ -26,22 +26,24 @@ defmodule Freya.Effects.ErrorHandler do
       fn u, k ->
         case u do
           {:throw, err} ->
-            Freya.RunOutcome.new(nil, %{error: err}) |> Freer.return()
+            Freya.RunOutcome.error(err) |> Freer.return()
 
           {:catch, inner, handler} ->
             inner
             |> interpret_error()
-            |> Freer.bind(fn %Freya.RunOutcome{} = r ->
-              case Map.get(r.outputs, :error) do
-                nil ->
-                  k.(Freya.RunOutcome.value(r))
+            |> Freer.bind(fn %Freya.RunOutcome{result: res} ->
+              case Freya.Result.type(res) do
+                Freya.Freer.OkResult ->
+                  k.(Freya.Result.value(res))
 
-                err ->
+                Freya.Freer.ErrorResult ->
+                  err = Freya.Result.value(res)
+
                   handler.(err)
                   |> interpret_error()
-                  |> Freer.bind(fn %Freya.RunOutcome{} = rr ->
-                    case Map.get(rr.outputs, :error) do
-                      nil -> k.(Freya.RunOutcome.value(rr))
+                  |> Freer.bind(fn %Freya.RunOutcome{result: res2} = rr ->
+                    case Freya.Result.type(res2) do
+                      Freya.Freer.OkResult -> k.(Freya.Result.value(res2))
                       _ -> Freer.return(rr)
                     end
                   end)

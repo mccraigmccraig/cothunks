@@ -40,7 +40,7 @@ defmodule Freya.Effects.State do
   def interpret_state_expanded(computation, initial_state) do
     case computation do
       %Freer.Pure{val: x} ->
-        Freer.return(Freya.RunOutcome.ensure(x) |> Freya.RunOutcome.put(:state, initial_state))
+        Freer.return(Freya.RunOutcome.ok(x) |> Freya.RunOutcome.put(:state, initial_state))
 
       %Freer.Impure{sig: eff, data: u, q: q} ->
         k = fn s -> Freya.Freer.Impl.q_comp(q, &interpret_state_expanded(&1, s)) end

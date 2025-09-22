@@ -10,15 +10,17 @@ defmodule Freya.ConElseErrorTest do
 
       fv =
         Freer.con [Error] do
-          _ <- Error.throw_fx({:invalid, 3})
-          Freer.return(:unreachable)
+          _ <- throw_fx({:invalid, 3})
+          return(:unreachable)
         else
           {:invalid, n} -> Freer.return({:fixed, n + 1})
         end
 
-      %Freya.RunOutcome{result: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert v == {:fixed, 4}
-      refute Map.has_key?(out, :error)
+      %Freya.RunOutcome{result: res, outputs: _out} =
+        fv |> ErrorHandler.interpret_error() |> Freer.run()
+
+      assert Freya.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Result.value(res) == {:fixed, 4}
     end
 
     test "no matching clause rethrows" do
@@ -26,14 +28,15 @@ defmodule Freya.ConElseErrorTest do
 
       fv =
         Freer.con [Error] do
-          _ <- Error.throw_fx(:nope)
-          Freer.return(:unreachable)
+          _ <- throw_fx(:nope)
+          return(:unreachable)
         else
           :other -> Freer.return(:ok)
         end
 
-      %Freya.RunOutcome{outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert out[:error] == :nope
+      %Freya.RunOutcome{result: res} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      assert Freya.Result.type(res) == Freya.Freer.ErrorResult
+      assert Freya.Result.value(res) == :nope
     end
 
     test "handler clause can perform effects" do
@@ -51,15 +54,15 @@ defmodule Freya.ConElseErrorTest do
             return(:ok)
         end
 
-      %Freya.RunOutcome{result: v, outputs: out} =
+      %Freya.RunOutcome{result: res, outputs: out} =
         fv
         |> ErrorHandler.interpret_error()
         |> WriterHandler.interpret_writer()
         |> Freer.run()
 
-      assert v == :ok
+      assert Freya.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Result.value(res) == :ok
       assert out.writer == [:before, {:handled, :bad}]
-      refute Map.has_key?(out, :error)
     end
 
     test "user-supplied default else clause handles all and prevents rethrow" do
@@ -67,15 +70,17 @@ defmodule Freya.ConElseErrorTest do
 
       fv =
         Freer.con [Error] do
-          _ <- Error.throw_fx(:anything)
-          Freer.return(:unreachable)
+          _ <- throw_fx(:anything)
+          return(:unreachable)
         else
           _ -> Freer.return(:handled)
         end
 
-      %Freya.RunOutcome{result: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert v == :handled
-      refute Map.has_key?(out, :error)
+      %Freya.RunOutcome{result: res, outputs: _out} =
+        fv |> ErrorHandler.interpret_error() |> Freer.run()
+
+      assert Freya.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Result.value(res) == :handled
     end
   end
 end

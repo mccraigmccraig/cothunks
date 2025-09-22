@@ -17,8 +17,9 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(:unreachable)
         end
 
-      %Freya.RunOutcome{outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert out[:error] == :oops
+      %Freya.RunOutcome{result: res} = fv |> ErrorHandler.interpret_error() |> Freer.run()
+      assert Freya.Result.type(res) == Freya.Freer.ErrorResult
+      assert Freya.Result.value(res) == :oops
     end
 
     test "catch recovers from throw" do
@@ -38,9 +39,11 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(res)
         end
 
-      %Freya.RunOutcome{result: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert v == {:recovered, :bad}
-      refute Map.has_key?(out, :error)
+      %Freya.RunOutcome{result: res, outputs: _out} =
+        fv |> ErrorHandler.interpret_error() |> Freer.run()
+
+      assert Freya.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Result.value(res) == {:recovered, :bad}
     end
 
     test "catch passes through success" do
@@ -52,9 +55,11 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(res)
         end
 
-      %Freya.RunOutcome{result: v, outputs: out} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert v == 42
-      assert out == %{}
+      %Freya.RunOutcome{result: res, outputs: _out} =
+        fv |> ErrorHandler.interpret_error() |> Freer.run()
+
+      assert Freya.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Result.value(res) == 42
     end
   end
 
@@ -70,11 +75,12 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(:unreachable)
         end
 
-      %Freya.RunOutcome{outputs: out} =
+      %Freya.RunOutcome{result: res, outputs: out} =
         fv |> ErrorHandler.interpret_error() |> WriterHandler.interpret_writer() |> Freer.run()
 
       assert out.writer == [:before]
-      assert out.error == :bad
+      assert Freya.Result.type(res) == Freya.Freer.ErrorResult
+      assert Freya.Result.value(res) == :bad
     end
 
     test "nested catch with state" do
@@ -101,15 +107,15 @@ defmodule Freya.Effects.ErrorTest do
           Freer.return(res)
         end
 
-      %Freya.RunOutcome{result: v, outputs: out} =
+      %Freya.RunOutcome{result: res, outputs: out} =
         fv
         |> ErrorHandler.interpret_error()
         |> WriterHandler.interpret_writer()
         |> Freer.run()
 
-      assert v == :ok
+      assert Freya.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Result.value(res) == :ok
       assert out[:writer] == [{:handled, :inner}]
-      refute Map.has_key?(out, :error)
     end
   end
 end

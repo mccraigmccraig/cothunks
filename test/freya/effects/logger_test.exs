@@ -52,7 +52,7 @@ defmodule Freya.LoggerTest do
       if b != 0 do
         k.(a / b)
       else
-        Freer.return(Freya.RunOutcome.ensure({:error, "divide by zero: #{a}/#{b}"}))
+        Freer.return(Freya.RunOutcome.ok({:error, "divide by zero: #{a}/#{b}"}))
       end
     end
 
@@ -93,7 +93,7 @@ defmodule Freya.LoggerTest do
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")
 
       assert %Freya.RunOutcome{
-               result: -86,
+               result: %Freya.Freer.OkResult{value: -86},
                outputs: %{
                  state: {:bar, 34},
                  logged_computation: %_{}

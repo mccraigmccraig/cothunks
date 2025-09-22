@@ -145,6 +145,7 @@ defmodule Freya.Effects.EffectLogger do
         r =
           Freya.RunOutcome.ensure(x)
           |> Freya.RunOutcome.put(:logged_computation, LoggedComputation.new(x, log))
+          |> Freya.RunOutcome.flatten()
 
         Freer.return(r)
 

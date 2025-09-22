@@ -4,15 +4,7 @@ defmodule Freya.Effects.Coroutine.Yield do
 end
 
 # Define the Status type for coroutine state
-defmodule Freya.Effects.Coroutine.Status do
-  defmodule Done do
-    defstruct [:value]
-  end
-
-  defmodule Continue do
-    defstruct [:value, :continuation]
-  end
-end
+# Status structs are superseded by RunOutcome with OkResult/YieldResult
 
 # Constructors for the coroutine effect
 defmodule Freya.Effects.Coroutine.Constructors do
@@ -40,16 +32,13 @@ defmodule Freya.Effects.CoroutineHandler do
 
   alias Freya.Freer
   alias Freya.Effects.Coroutine.Yield
-  alias Freya.Effects.Coroutine.Status
+  alias Freya.RunOutcome
 
   @doc """
   Reply to a coroutine effect by returning the Continue constructor.
   """
   def reply_c(%Yield{value: a, mapper: mapper}, k) do
-    Freer.return(%Status.Continue{
-      value: a,
-      continuation: fn b -> mapper.(b) |> k.() end
-    })
+    Freer.return(RunOutcome.yield(a, fn b -> mapper.(b) |> k.() end))
   end
 
   @doc """
@@ -59,7 +48,7 @@ defmodule Freya.Effects.CoroutineHandler do
     computation
     |> Freya.Freer.Impl.handle_relay(
       [Freya.Effects.Coroutine],
-      fn x -> Freer.return(%Status.Done{value: x}) end,
+      fn x -> Freer.return(RunOutcome.ensure(x)) end,
       fn %Yield{} = y, k -> reply_c(y, k) end
     )
   end
@@ -67,13 +56,8 @@ defmodule Freya.Effects.CoroutineHandler do
   @doc """
   Resume a previously yielded coroutine with a value.
   """
-  def resume(%Status.Continue{continuation: k}, input) do
-    k.(input)
-  end
-
-  def resume(%Status.Done{value: value}, _input) do
-    Freer.return(%Status.Done{value: value})
-  end
+  def resume(%RunOutcome{result: %Freya.Freer.YieldResult{continuation: k}}, input), do: k.(input)
+  def resume(%RunOutcome{} = out, _input), do: Freer.return(out)
 
   # @doc """
   # Run a coroutine to completion, collecting all yielded values and the final result.
