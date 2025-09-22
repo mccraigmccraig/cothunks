@@ -143,6 +143,8 @@ defmodule Freya.Effects.EffectLogger do
 
     case computation do
       %Pure{val: x} ->
+        Logger.error("#{__MODULE__}.interprety_logger(%Pure{}) #{inspect(x, pretty: true)}")
+
         r =
           Freya.RunOutcome.ensure(x)
           |> Freya.RunOutcome.put(:logged_computation, LoggedComputation.new(x, log))
@@ -151,6 +153,10 @@ defmodule Freya.Effects.EffectLogger do
         Freer.return(r)
 
       %Impure{sig: eff, data: u, q: q} ->
+        Logger.error(
+          "#{__MODULE__}.interprety_logger(%Imure{}) #{inspect(computation, pretty: true)}"
+        )
+
         case {eff, u} do
           {EffectLoggerOps, %LogInterpretedEffectValue{value: val}} ->
             # Logger.error("#{__MODULE__}.run_logger handling")
