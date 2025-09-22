@@ -11,7 +11,7 @@ defmodule Freya.FreerTest do
   alias Freya.Freer
   alias Freya.Freer.{Pure, Impure}
   alias Freya.Freer.Ops
-  require Freya.Con
+  import Freya.Con
 
   defp unwrap(v) do
     case v do
@@ -169,7 +169,9 @@ defmodule Freya.FreerTest do
     test "it interprets a pure value" do
       fv = Freer.pure(10)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_numbers() |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_numbers() |> Freer.run()
+
       assert v == 10
       assert out == %{}
     end
@@ -179,7 +181,9 @@ defmodule Freya.FreerTest do
         Numbers.number(10)
         |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_numbers() |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_numbers() |> Freer.run()
+
       assert v == 100
       assert out == %{}
     end
@@ -194,7 +198,9 @@ defmodule Freya.FreerTest do
           Numbers.number(5) |> Freer.bind(fn z -> Freer.return(x * z) end)
         end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_numbers() |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_numbers() |> Freer.run()
+
       assert v == 60
       assert out == %{}
     end
@@ -207,7 +213,9 @@ defmodule Freya.FreerTest do
         |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
         |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_numbers() |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_numbers() |> Freer.run()
+
       assert v == -4.0
       assert out == %{}
     end
@@ -228,7 +236,9 @@ defmodule Freya.FreerTest do
           end)
         end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_numbers() |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_numbers() |> Freer.run()
+
       assert v == 205
       assert out == %{}
     end
@@ -240,7 +250,9 @@ defmodule Freya.FreerTest do
         |> Freer.bind(fn y -> Numbers.divide(y, 0) end)
         |> Freer.bind(fn z -> Numbers.add(z, 10) end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: res}, outputs: out} = fv |> run_numbers() |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: res}, outputs: out} =
+        fv |> run_numbers() |> Freer.run()
+
       assert {:error, err} = res
       assert err =~ ~r/divide by zero/
       assert out == %{}
@@ -249,10 +261,8 @@ defmodule Freya.FreerTest do
 
   describe "con" do
     test "it provides a nice bind syntax sugar" do
-      require Freer
-
       fv =
-        Freya.Con.con Numbers do
+        con Numbers do
           a <- number(10)
           b <- number(1000)
           c <- add(a, b)
@@ -260,31 +270,31 @@ defmodule Freya.FreerTest do
           subtract(d, c)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_numbers() |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_numbers() |> Freer.run()
+
       assert v == 8990
       assert out == %{}
     end
 
     test "it can run a reader" do
-      require Freer
-
       fv =
-        Freya.Con.con Reader do
+        con Reader do
           a <- Freer.return(10)
           b <- get()
           Freer.return(a + b)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_reader(12) |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_reader(12) |> Freer.run()
+
       assert v == 22
       assert out == %{}
     end
 
     test "it can run a reader and a writer" do
-      require Freer
-
       fv =
-        Freya.Con.con [Reader, Writer] do
+        con [Reader, Writer] do
           a <- Freer.return(10)
           b <- get()
           _c <- put(a + b)
@@ -292,7 +302,9 @@ defmodule Freya.FreerTest do
           Freer.return(2 * (a + b))
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_writer() |> run_reader(12) |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_writer() |> run_reader(12) |> Freer.run()
+
       assert v == 44
       assert out.writer == [22, 120]
 
@@ -305,10 +317,8 @@ defmodule Freya.FreerTest do
     end
 
     test "it can mix numbers with a reader" do
-      require Freer
-
       fv =
-        Freya.Con.con [Numbers, Reader] do
+        con [Numbers, Reader] do
           a <- number(10)
           b <- get()
           c <- add(a, b)
@@ -316,7 +326,8 @@ defmodule Freya.FreerTest do
           subtract(d, c)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} = fv |> run_numbers() |> run_reader(12) |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+        fv |> run_numbers() |> run_reader(12) |> Freer.run()
 
       %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v2_val}, outputs: out2} =
         fv |> run_reader(12) |> run_numbers() |> Freer.run()
@@ -328,10 +339,8 @@ defmodule Freya.FreerTest do
     end
 
     test "it can mix numbers with a reader and a writer" do
-      require Freer
-
       fv =
-        Freya.Con.con [Numbers, Reader, Writer] do
+        con [Numbers, Reader, Writer] do
           a <- number(10)
           put(a)
           b <- get()
@@ -356,10 +365,8 @@ defmodule Freya.FreerTest do
     end
 
     test "it can mix numbers with the state interpretation of Reader+Writer" do
-      require Freer
-
       fv =
-        Freya.Con.con [Numbers, Reader, Writer] do
+        con [Numbers, Reader, Writer] do
           a <- get()
           b <- number(10)
           put(a + b)
@@ -376,27 +383,25 @@ defmodule Freya.FreerTest do
     end
 
     test "it short circuits" do
-      require Freer
-
       fv =
-        Freya.Con.con Numbers do
+        con Numbers do
           a <- number(10)
           b <- number(1000)
           c <- divide(a, 0)
           multiply(b, c)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: res}, outputs: out} = fv |> run_numbers() |> Freer.run()
+      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: res}, outputs: out} =
+        fv |> run_numbers() |> Freer.run()
+
       assert {:error, msg} = res
       assert out == %{}
       assert msg =~ ~r/divide by zero/
     end
 
     test "it short circuits Numbes in combination with other effects" do
-      require Freer
-
       fv =
-        Freya.Con.con [Numbers, Reader, Writer] do
+        con [Numbers, Reader, Writer] do
           a <- get()
           b <- number(1000)
           c <- divide(a, 0)
