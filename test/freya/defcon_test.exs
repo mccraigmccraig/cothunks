@@ -13,8 +13,8 @@ defmodule Freya.DefconTest do
     end
 
     Freer.defconp write_and_sum(a, b), [Writer] do
-      _ <- put(a)
-      _ <- put(b)
+      put(a)
+      put(b)
       return(a + b)
     end
 
