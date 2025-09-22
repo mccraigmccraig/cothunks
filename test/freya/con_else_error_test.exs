@@ -10,7 +10,7 @@ defmodule Freya.ConElseErrorTest do
 
       fv =
         Freer.con [Error] do
-          _ <- throw_fx({:invalid, 3})
+          throw_fx({:invalid, 3})
           return(:unreachable)
         else
           {:invalid, n} -> Freer.return({:fixed, n + 1})
