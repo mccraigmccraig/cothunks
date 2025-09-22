@@ -3,6 +3,26 @@ defmodule Freya.Freer.Con do
   Supporting functions for the Freya.Freer.con macro
   """
 
+  def con(mod_or_mods, do_block) do
+    imports = expand_imports(mod_or_mods)
+
+    quote do
+      unquote_splicing(imports)
+      unquote(rewrite_block(do_block))
+    end
+  end
+
+  def con(mod_or_mods, do_block, else_block) do
+    imports = expand_imports(mod_or_mods)
+    body = rewrite_block(do_block)
+    handler = build_else_handler_fn(else_block)
+
+    quote do
+      unquote_splicing(imports)
+      Freya.Effects.Error.catch_fx(unquote(body), unquote(handler))
+    end
+  end
+
   def expand_imports(mod_or_mods) do
     mods = mod_or_mods |> List.wrap()
 
@@ -76,8 +96,10 @@ defmodule Freya.Freer.Con do
         built_clauses
       else
         default_err = Macro.var(:err, nil)
+
         default_clause =
-          {:->, [], [[default_err], quote(do: Freya.Effects.Error.throw_fx(unquote(default_err)))]}
+          {:->, [],
+           [[default_err], quote(do: Freya.Effects.Error.throw_fx(unquote(default_err)))]}
 
         built_clauses ++ [default_clause]
       end

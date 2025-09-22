@@ -39,25 +39,10 @@ defmodule Freya.Freer do
   end
 
   """
-  defmacro con(mod_or_mods, do: block) do
-    imports = Con.expand_imports(mod_or_mods)
+  defmacro con(mod_or_mods, do: do_block), do: Con.con(mod_or_mods, do_block)
 
-    quote do
-      unquote_splicing(imports)
-      unquote(Con.rewrite_block(block))
-    end
-  end
-
-  defmacro con(mod_or_mods, do: block, else: else_block) do
-    imports = Con.expand_imports(mod_or_mods)
-    body = Con.rewrite_block(block)
-    handler = Con.build_else_handler_fn(else_block)
-
-    quote do
-      unquote_splicing(imports)
-      Freya.Effects.Error.catch_fx(unquote(body), unquote(handler))
-    end
-  end
+  defmacro con(mod_or_mods, do: do_block, else: else_block),
+    do: Con.con(mod_or_mods, do_block, else_block)
 
   @doc """
   Define a function whose body is a Freer.con block.
