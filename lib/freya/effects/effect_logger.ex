@@ -165,6 +165,14 @@ defmodule Freya.Effects.EffectLogger do
             k = Freya.Freer.Impl.q_comp(q, &interpret_logger(&1, updated_log))
             Freya.Freer.Impl.q_apply([k], val)
 
+          {Freya.Effects.Finalize, {:finalize, %Freya.RunOutcome{} = out}} ->
+            snapshot = LoggedComputation.new(Freya.RunOutcome.result_value(out), log)
+
+            out
+            |> Freya.RunOutcome.put(:logged_computation, snapshot)
+            |> Freya.RunOutcome.flatten()
+            |> Freer.return()
+
           _ ->
             # Logger.error("#{__MODULE__}.run_logger log_or_resume")
             log_or_resume(computation, log)
