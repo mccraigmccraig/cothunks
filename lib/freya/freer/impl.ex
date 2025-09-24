@@ -9,6 +9,14 @@ defmodule Freya.Freer.Impl do
 
   @doc """
   add a continuation `mf` to a queue of continuations `q`
+
+  horribly inefficienrt - need to change queue representation
+  to one that supports
+   - append
+   - prepend
+   - concat
+  with reasonable (log) amortized time - but a list is fine for now
+  while developing the API
   """
   @spec q_append([(any -> any)], (any -> any)) :: [(any -> any)]
   def q_append(q, mf), do: Enum.concat(q, [mf])
