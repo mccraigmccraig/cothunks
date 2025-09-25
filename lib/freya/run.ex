@@ -74,6 +74,7 @@ defmodule Freya.Run do
           {new_effect, updated_state, output} =
             mod.interpret(effect, key, Map.get(states, key), outputs)
 
+          # observer? handlers see but do not touch
           observer? = new_effect === effect
           reduce_action = if observer?, do: :cont, else: :halt
 
