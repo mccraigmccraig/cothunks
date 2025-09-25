@@ -59,6 +59,47 @@ defmodule Freya.Run do
     }
   end
 
-  def run(%Impure{sig: sig, data: u, q: q}, %__MODULE__{} = runner) do
+  def run(
+        %Impure{sig: _sig, data: _u, q: _q} = effect,
+        %__MODULE__{
+          handlers: handlers,
+          states: states,
+          outputs: outputs
+        } = run_state
+      ) do
+    {new_effect, updated_run_state} =
+      handlers
+      |> Enum.reduce_while({effect, run_state}, fn {key, mod}, {effect, run_state} = acc ->
+        if mod.handles?(effect) do
+          {new_effect, updated_state, output} =
+            mod.interpret(effect, key, Map.get(states, key), outputs)
+
+          observer? = new_effect === effect
+          reduce_action = if observer?, do: :cont, else: :halt
+
+          {reduce_action,
+           {new_effect,
+            %{
+              run_state
+              | states: Map.put(states, key, updated_state),
+                outputs: %{outputs: Map.put(outputs, key, output)}
+            }}}
+        else
+          {:cont, acc}
+        end
+      end)
+
+    handled? = new_effect !== effect
+
+    if !handled? do
+      # TODO replace with an error effect, for nice retry/resume
+      raise ArgumentError,
+        message:
+          "#{__MODULE__}.run: no handler for effect in stack\n" <>
+            "#{inspect(effect, pretty: true)}\n" <>
+            "#{inspect(run_state, pretty: true)}"
+    else
+      run(new_effect, updated_run_state)
+    end
   end
 end

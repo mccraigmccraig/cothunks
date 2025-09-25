@@ -7,6 +7,17 @@ defmodule Freya.EffectHandler do
   alias Freya.Freer
 
   @doc """
+  return true if this handler can handle the given effect. Handlers
+  will be offered each effect in priority-queue order.
+
+  A Handler may choose to handle an effect, and return it unchanged
+  - in which case the `updated_state` and `outputs` of the handler
+  will be recorded, but the effect will continue to be offered to
+  further EffectHandlers until one handles it and changes it
+  """
+  @callback handles?(computation :: Freer.freer()) :: boolean
+
+  @doc """
   interpret an Effect with the handler - the handler
   - handler_key - its key in the outputs
   - state - its state returned from its last invocation
@@ -30,15 +41,4 @@ defmodule Freya.EffectHandler do
               state :: any,
               outputs :: map
             ) :: {Freer.freer(), any, any}
-
-  @doc """
-  return true if this handler can handle the given effect. Handlers
-  will be offered each effect in priority-queue order.
-
-  A Handler may choose to handle an effect, and return it unchanged
-  - in which case the `updated_state` and `outputs` of the handler
-  will be recorded, but the effect will continue to be offered to
-  further EffectHandlers until one handles it and changes it
-  """
-  @callback handles?(computation :: Freer.freer()) :: boolean
 end
