@@ -6,11 +6,12 @@ defmodule Freya.Run do
   EffectHandlers are structs providing the EffectHandler protocol
   """
   alias Freya.Freer.Impure
+  alias Freya.Freer.OkResult
   alias Freya.Freer.Pure
   alias Freya.Result
   alias Freya.RunOutcome
 
-  defstruct handlers: [], states: %{}, outputs: %{}
+  defstruct handlers: [], states: %{}
 
   @type handler_mod :: atom
   @type handler_mod_with_state :: {atom, any}
@@ -29,7 +30,7 @@ defmodule Freya.Run do
       {key, {mod, _state}} = spec_with_state when is_atom(key) and is_atom(mod) -> spec_with_state
     end)
     |> Enum.reduce(
-      %__MODULE__{handlers: [], states: %{}, outputs: %{}},
+      %__MODULE__{handlers: [], states: %{}},
       fn {key, {mod, state}}, acc ->
         if Map.has_key?(acc, key) do
           raise ArgumentError,
@@ -52,10 +53,29 @@ defmodule Freya.Run do
   end
 
   @spec run(Freer.freer(), %__MODULE__{}) :: any
-  def run(%Pure{val: val}, %__MODULE__{} = runner) do
+  def run(
+        %Pure{val: val} = pure,
+        %__MODULE__{
+          handlers: handlers,
+          states: states
+        }
+      ) do
+    # if we get to the output phase and no effect has decided upon
+    # what type of output it's going to be, then it's an OkResult,
+    # signalling a normal completion
+    pure = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: pure
+
+    # should all effects get a shot at the result ? maybe not
+    {%Pure{val: final_val}, final_states} =
+      handlers
+      |> Enum.reduce({pure, states}, fn {key, mod}, {pure, states} ->
+        {pure, updated_state} = mod.interpret(pure, key, Map.get(states.key, states))
+        {pure, Map.put(states, key, updated_state)}
+      end)
+
     %RunOutcome{
-      result: val,
-      outputs: runner.outputs
+      result: final_val,
+      outputs: final_states
     }
   end
 
@@ -63,16 +83,15 @@ defmodule Freya.Run do
         %Impure{sig: _sig, data: _u, q: _q} = effect,
         %__MODULE__{
           handlers: handlers,
-          states: states,
-          outputs: outputs
+          states: states
         } = run_state
       ) do
     {new_effect, updated_run_state} =
       handlers
       |> Enum.reduce_while({effect, run_state}, fn {key, mod}, {effect, run_state} = acc ->
         if mod.handles?(effect) do
-          {new_effect, updated_state, output} =
-            mod.interpret(effect, key, Map.get(states, key), outputs)
+          {new_effect, updated_state} =
+            mod.interpret(effect, key, Map.get(states, key), states)
 
           # observer? handlers see but do not touch
           observer? = new_effect === effect
@@ -82,8 +101,7 @@ defmodule Freya.Run do
            {new_effect,
             %{
               run_state
-              | states: Map.put(states, key, updated_state),
-                outputs: %{outputs: Map.put(outputs, key, output)}
+              | states: Map.put(states, key, updated_state)
             }}}
         else
           {:cont, acc}

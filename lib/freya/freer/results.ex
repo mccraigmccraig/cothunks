@@ -35,3 +35,9 @@ defimpl Freya.Result, for: Freya.Freer.YieldResult do
   def type(_r), do: Freya.Freer.YieldResult
   def value(r), do: r.value
 end
+
+# default implementation allows us to detect non-Result values
+defimpl Freya.Result, for: Any do
+  def type(_r), do: nil
+  def value(r), do: r
+end

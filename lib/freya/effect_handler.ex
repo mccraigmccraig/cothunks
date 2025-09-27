@@ -25,20 +25,16 @@ defmodule Freya.EffectHandler do
 
   the function should return:
 
-  `{effect, updated_state, output}`
+  `{effect, updated_state}`
 
   its `updated_state` will be retained and given to the next
   invocation of this handler
 
-  its `output` will be added to the `outputs` map passed to
-  all handlers, at key `handler_key`. A handler may read
-  the outputs of other handlers, but it cannot change
-  the outputs of any other handlers
   """
   @callback interpret(
               computation :: Freer.freer(),
               handler_key :: atom,
               state :: any,
-              outputs :: map
-            ) :: {Freer.freer(), any, any}
+              all_states :: %{atom => any}
+            ) :: {Freer.freer(), any}
 end
