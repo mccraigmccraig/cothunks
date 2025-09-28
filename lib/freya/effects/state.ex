@@ -22,12 +22,12 @@ defmodule Freya.Effects.State.Interpreter do
 
   @behaviour Freya.EffectHandler
 
-  @impl true
+  @impl Freya.EffectHandler
   def handles?(%Impure{sig: sig, data: _data, q: _q}) do
     sig == State
   end
 
-  @impl true
+  @impl Freya.EffectHandler
   def interpret(computation, _handler_key, state, _all_states) do
     case computation do
       %Freer.Pure{val: _x} = pure ->
