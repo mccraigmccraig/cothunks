@@ -15,10 +15,21 @@ defmodule Freya.Freer do
 
   defmodule Pure do
     defstruct val: nil
+
+    @type t :: %__MODULE__{
+            val: any
+          }
   end
 
   defmodule Impure do
     defstruct sig: nil, data: nil, q: []
+
+    @type t :: %__MODULE__{
+            sig: atom,
+            data: any,
+            # should be list((any->freer))
+            q: list((any -> any))
+          }
   end
 
   @type freer() :: %Pure{} | %Impure{}
