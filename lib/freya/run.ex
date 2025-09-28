@@ -11,6 +11,8 @@ defmodule Freya.Run do
   alias Freya.Result
   alias Freya.RunOutcome
 
+  require Logger
+
   defstruct handlers: [], states: %{}
 
   @type handler_mod :: atom
@@ -43,7 +45,7 @@ defmodule Freya.Run do
         %{
           acc
           | handlers: [{key, mod} | acc.handlers],
-            states: %{acc.states | key => state}
+            states: Map.put(acc.states, key, state)
         }
       end
     )
@@ -69,7 +71,8 @@ defmodule Freya.Run do
     {%Pure{val: final_val}, final_states} =
       handlers
       |> Enum.reduce({pure, states}, fn {key, mod}, {pure, states} ->
-        {pure, updated_state} = mod.interpret(pure, key, Map.get(states.key, states))
+        Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(states)}")
+        {pure, updated_state} = mod.interpret(pure, key, Map.get(states, key), states)
         {pure, Map.put(states, key, updated_state)}
       end)
 

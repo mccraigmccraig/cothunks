@@ -15,7 +15,7 @@ defmodule Freya.EffectHandler do
   will be recorded, but the effect will continue to be offered to
   further EffectHandlers until one handles it and changes it
   """
-  @callback handles?(computation :: Freer.freer()) :: boolean
+  @callback handles?(computation :: Freer.Impure.t()) :: boolean
 
   @doc """
   interpret an Effect with the handler - the handler

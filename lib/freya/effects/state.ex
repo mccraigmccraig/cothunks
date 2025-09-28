@@ -5,8 +5,39 @@ defmodule Freya.Effects.State do
   """
 
   alias Freya.Freer
+  alias Freya.Freer.Impl
+  alias Freya.Freer.Impure
   alias Freya.Effects.Reader
   alias Freya.Effects.Writer
+
+  defmodule StateExpanded do
+    @behaviour Freya.EffectHandler
+
+    @impl true
+    def handles?(%Impure{sig: sig, data: _data, q: _q}) do
+      sig in [Reader, Writer]
+    end
+
+    @impl true
+    def interpret(computation, _handler_key, state, _all_states) do
+      case computation do
+        %Freer.Pure{val: _x} = pure ->
+          {pure, state}
+
+        %Freer.Impure{sig: eff, data: u, q: q} ->
+          case {eff, u} do
+            {Writer, {:put, o}} ->
+              {Impl.q_apply(q, nil), o}
+
+            {Reader, :get} ->
+              {Impl.q_apply(q, state), state}
+
+            _ ->
+              {%Freer.Impure{sig: eff, data: u, q: q}, state}
+          end
+      end
+    end
+  end
 
   @doc """
   Interpret a stateful computation with the given initial state.
@@ -22,7 +53,9 @@ defmodule Freya.Effects.State do
       [Reader, Writer],
       initial_state,
       fn s ->
-        fn x -> Freya.RunOutcome.ensure(x) |> Freya.RunOutcome.put(:state, s) |> Freer.return() end
+        fn x ->
+          Freya.RunOutcome.ensure(x) |> Freya.RunOutcome.put(:state, s) |> Freer.return()
+        end
       end,
       fn s ->
         fn u, k ->
