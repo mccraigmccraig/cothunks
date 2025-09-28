@@ -2,7 +2,7 @@ defmodule Freya.Effects.Writer.Constructors do
   @moduledoc "Constructors for the Writer effect"
 
   @doc "Output a value to the writer's log"
-  def put(o), do: {:put, o}
+  def tell(o), do: {:tell, o}
 end
 
 defmodule Freya.Effects.Writer do
@@ -10,23 +10,34 @@ defmodule Freya.Effects.Writer do
   use Freya.Freer.Ops, constructors: Freya.Effects.Writer.Constructors
 end
 
-defmodule Freya.Effects.WriterHandler do
-  @moduledoc "Interpreter (handler) for the Writer effect"
+defmodule Freya.Effects.Writer.Interpreter do
   alias Freya.Freer
+  alias Freya.Freer.Impl
+  alias Freya.Freer.Impure
+  alias Freya.Effects.Writer
 
-  @doc "Interpret a writer computation, accumulating output in Freya.RunOutcome.outputs[:writer]"
-  def interpret_writer(computation) do
-    computation
-    |> Freya.Freer.Impl.handle_relay(
-      [Freya.Effects.Writer],
-      fn x -> Freya.RunOutcome.ensure(x) |> Freer.return() end,
-      fn {:put, o}, k ->
-        k.(nil)
-        |> Freer.bind(fn %Freya.RunOutcome{} = r ->
-          list = Map.get(r.outputs, :writer, [])
-          r |> Freya.RunOutcome.put(:writer, [o | list]) |> Freer.return()
-        end)
-      end
-    )
+  @behaviour Freya.EffectHandler
+
+  @impl true
+  def handles?(%Impure{sig: sig, data: _data, q: _q}) do
+    sig == Writer
+  end
+
+  @impl true
+  def interpret(computation, _handler_key, state, _all_states) do
+    case computation do
+      %Freer.Pure{val: _x} = pure ->
+        {pure, state}
+
+      %Freer.Impure{sig: eff, data: u, q: q} ->
+        case {eff, u} do
+          {Writer, {:tell, o}} ->
+            updated_state = [o | state || []]
+            {Impl.q_apply(q, updated_state), updated_state}
+
+          _ ->
+            {%Freer.Impure{sig: eff, data: u, q: q}, state}
+        end
+    end
   end
 end

@@ -2,8 +2,8 @@ defmodule Freya.Effects.StateTest do
   use ExUnit.Case
 
   alias Freya.Effects.Reader
+  alias Freya.Effects.State
   alias Freya.Effects.Writer
-  alias Freya.Effects.State.StateExpanded
   alias Freya.Freer
   alias Freya.Run
 
@@ -13,14 +13,21 @@ defmodule Freya.Effects.StateTest do
       import Freya.Con
 
       computation =
-        con [Reader, Writer] do
-          a <- get()
-          _ <- put(a * 10)
+        con [Reader, Writer, State] do
+          a <- ask()
           b <- get()
-          return(a + b)
+          c <- return(10)
+          _ <- put(a * b * c)
+          tell(a + b + c)
+          return(a * b * c)
         end
 
-      runner = Run.with_handlers(s: {StateExpanded, 5})
+      runner =
+        Run.with_handlers(
+          s: {State.Interpreter, 5},
+          r: {Reader.Interpreter, 7},
+          w: {Writer.Interpreter, []}
+        )
 
       outcome = Run.run(computation, runner)
 
