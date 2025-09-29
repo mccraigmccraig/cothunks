@@ -1,6 +1,7 @@
 defmodule Freya.Effects.StateTest do
   use ExUnit.Case
 
+  alias Freya.Effects.EffectLogger
   alias Freya.Effects.Reader
   alias Freya.Effects.State
   alias Freya.Effects.Writer
@@ -24,6 +25,7 @@ defmodule Freya.Effects.StateTest do
 
       runner =
         Run.with_handlers(
+          l: EffectLogger.Interpreter,
           s: {State.Interpreter, 5},
           r: {Reader.Interpreter, 7},
           w: {Writer.Interpreter, []}

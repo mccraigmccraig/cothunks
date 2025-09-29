@@ -159,7 +159,7 @@ defmodule Freya.Effects.EffectLogger.Interpreter do
 
   @impl Freya.EffectHandler
   def interpret(computation, _handler_key, log, _all_states) do
-    log || Log.new()
+    log = log || Log.new()
     # Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
 
     case computation do
@@ -188,50 +188,29 @@ defmodule Freya.Effects.EffectLogger.Interpreter do
   end
 
   def log_or_resume(%Impure{sig: sig, data: u, q: q} = computation, %Log{} = log) do
-    {action, updated_log, value} =
-      case log.queue do
-        [] ->
-          # a new effect LogEntry
-          {:execute_effect, Log.log_effect(log, computation), nil}
-
-        [
-          %InterpretedEffectLogEntry{
-            sig: log_entry_sig,
-            data: log_entry_data,
-            value: value
-          } = _log_entry
-          | _rest
-        ]
-        when sig == log_entry_sig and u == log_entry_data ->
-          # resumed computation
-          {:resume_effect, Log.consume_log_entry(log), value}
-
-        _ ->
-          raise ArgumentError, message: "Effect diverged from log: #{inspect(log, pretty: true)}"
-      end
-
-    case action do
-      :execute_effect ->
-        # pass the effect on to another interpreter, preparing to
-        # log the interpreted value
+    case log.queue do
+      [] ->
+        # unseen com[utation]
+        updated_log = Log.log_effect(log, computation)
         capture_k = fn v -> EffectLogger.log_interpreted_effect_value(v) end
-
         updated_q = q |> Freya.Freer.Impl.q_prepend(capture_k)
-
         {%Freer.Impure{sig: sig, data: u, q: updated_q}, updated_log}
 
-      :resume_effect ->
+      [
+        %InterpretedEffectLogEntry{
+          sig: log_entry_sig,
+          data: log_entry_data,
+          value: value
+        } = _log_entry
+        | _rest
+      ]
+      when sig == log_entry_sig and u == log_entry_data ->
+        # resumed computation
+        updated_log = Log.consume_log_entry(log)
         {Freya.Freer.Impl.q_apply(q, value), updated_log}
+
+      _ ->
+        raise ArgumentError, message: "Effect diverged from log: #{inspect(log, pretty: true)}"
     end
   end
 end
-
-# ok, this seems to work pretty well... the qeustion now is
-# how to deal with the log
-#
-# the EffectLogger needs to be the first effect in the chain,
-# otherwise it doesn't see the other effects
-#
-# which also means that the log is deeply nested in the result
-#
-# maybe need something to take apart the result ?
