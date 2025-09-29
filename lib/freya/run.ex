@@ -19,7 +19,7 @@ defmodule Freya.Run do
   @type handler_spec_list :: list({RunState.handler_key(), handler_spec})
 
   @doc """
-  Build a Run struct with the provided EffectHandlers, and their initial state
+  Build a RunState struct with the provided EffectHandlers, and their initial state
   """
   @spec with_handlers(handler_spec_list()) :: %RunState{}
   def with_handlers(handler_specs) do
