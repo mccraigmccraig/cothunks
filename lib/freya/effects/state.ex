@@ -18,6 +18,7 @@ defmodule Freya.Effects.State.Interpreter do
   alias Freya.Freer
   alias Freya.Freer.Impl
   alias Freya.Freer.Impure
+  alias Freya.Freer.Pure
   alias Freya.Effects.State
 
   @behaviour Freya.EffectHandler
@@ -28,22 +29,26 @@ defmodule Freya.Effects.State.Interpreter do
   end
 
   @impl Freya.EffectHandler
-  def interpret(computation, _handler_key, state, _all_states) do
-    case computation do
-      %Freer.Pure{val: _x} = pure ->
-        {pure, state}
+  def interpret(
+        %Freer.Impure{sig: eff, data: u, q: q} = _computation,
+        _handler_key,
+        state,
+        _all_states
+      ) do
+    case {eff, u} do
+      {State, {:put, o}} ->
+        {Impl.q_apply(q, nil), o}
 
-      %Freer.Impure{sig: eff, data: u, q: q} ->
-        case {eff, u} do
-          {State, {:put, o}} ->
-            {Impl.q_apply(q, nil), o}
+      {State, :get} ->
+        {Impl.q_apply(q, state), state}
 
-          {State, :get} ->
-            {Impl.q_apply(q, state), state}
-
-          _ ->
-            {%Freer.Impure{sig: eff, data: u, q: q}, state}
-        end
+      _ ->
+        {%Freer.Impure{sig: eff, data: u, q: q}, state}
     end
+  end
+
+  @impl Freya.EffectHandler
+  def finalize(%Pure{} = computation, _handler_key, state, _all_states) do
+    {computation, state}
   end
 end

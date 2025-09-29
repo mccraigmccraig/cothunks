@@ -32,7 +32,14 @@ defmodule Freya.EffectHandler do
 
   """
   @callback interpret(
-              computation :: Freer.freer(),
+              computation :: Freer.Impure.t(),
+              handler_key :: atom,
+              state :: any,
+              all_states :: %{atom => any}
+            ) :: {Freer.freer(), any}
+
+  @callback finalize(
+              computation :: Freer.Pure.t(),
               handler_key :: atom,
               state :: any,
               all_states :: %{atom => any}

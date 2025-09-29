@@ -72,7 +72,7 @@ defmodule Freya.Run do
       handlers
       |> Enum.reduce({pure, states}, fn {key, mod}, {pure, states} ->
         # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(states)}")
-        {pure, updated_state} = mod.interpret(pure, key, Map.get(states, key), states)
+        {pure, updated_state} = mod.finalize(pure, key, Map.get(states, key), states)
         {pure, Map.put(states, key, updated_state)}
       end)
 

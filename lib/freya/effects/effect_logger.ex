@@ -158,33 +158,31 @@ defmodule Freya.Effects.EffectLogger.Interpreter do
   end
 
   @impl Freya.EffectHandler
-  def interpret(computation, _handler_key, log, _all_states) do
+  def interpret(%Impure{sig: eff, data: u, q: q} = computation, _handler_key, log, _all_states) do
     log = log || Log.new()
     # Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
 
-    case computation do
-      %Pure{val: _x} = pure ->
-        # Logger.error("#{__MODULE__}.interprety_logger(%Pure{}) #{inspect(x, pretty: true)}")
+    # Logger.error(
+    #   "#{__MODULE__}.interprety_logger(%Impure{}) #{inspect(computation, pretty: true)}"
+    # )
 
-        {pure, log}
+    case {eff, u} do
+      {EffectLogger, %LogInterpretedEffectValue{value: val}} ->
+        # Logger.error("#{__MODULE__}.run_logger handling")
+        # capturing the value of an executed effect
+        updated_log = Log.log_interpreted_effect_value(log, val)
+        {Impl.q_apply(q, val), updated_log}
 
-      %Impure{sig: eff, data: u, q: q} ->
-        # Logger.error(
-        #   "#{__MODULE__}.interprety_logger(%Impure{}) #{inspect(computation, pretty: true)}"
-        # )
-
-        case {eff, u} do
-          {EffectLogger, %LogInterpretedEffectValue{value: val}} ->
-            # Logger.error("#{__MODULE__}.run_logger handling")
-            # capturing the value of an executed effect
-            updated_log = Log.log_interpreted_effect_value(log, val)
-            {Impl.q_apply(q, val), updated_log}
-
-          _ ->
-            # Logger.error("#{__MODULE__}.run_logger log_or_resume")
-            log_or_resume(computation, log)
-        end
+      _ ->
+        # Logger.error("#{__MODULE__}.run_logger log_or_resume")
+        log_or_resume(computation, log)
     end
+  end
+
+  @impl Freya.EffectHandler
+  def finalize(%Pure{} = computation, _handler_key, log, _all_states) do
+    log = log || Log.new()
+    {computation, log}
   end
 
   def log_or_resume(%Impure{sig: sig, data: u, q: q} = computation, %Log{} = log) do
