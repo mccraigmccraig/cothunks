@@ -11,13 +11,26 @@ defmodule Freya.Effects.StateTest do
   alias Freya.Effects.Writer
   alias Freya.Run
 
+  # demonstrating composition with effects
+  defcon multiply_store(a, b, c), [State] do
+    r <- return(a * b * c)
+    put(r)
+    return(r)
+  end
+
+  defcon sum_log(a, b, c), [Writer] do
+    r <- return(a + b + c)
+    tell(r)
+    return(r)
+  end
+
   defcon calc(v), [Reader, Writer, State] do
     %{env: a} <- ask()
     b <- get()
     c <- return(v)
-    put(a * b * c)
-    tell(a + b + c)
-    return(a * b * c)
+    product <- multiply_store(a, b, c)
+    sum <- sum_log(a, b, c)
+    return(%{product: product, sum: sum})
   end
 
   describe "simple state" do
@@ -32,10 +45,11 @@ defmodule Freya.Effects.StateTest do
 
       outcome = Run.run(calc(10), runner)
 
-      assert outcome.result == %Freya.Freer.OkResult{value: 350}
+      assert outcome.result == %Freya.Freer.OkResult{value: %{sum: 22, product: 350}}
+      assert outcome.outputs.s == 350
+      assert outcome.outputs.w == [22]
 
       Logger.error("#{__MODULE__}.outcome\n" <> inspect(outcome, pretty: true))
-      # assert outcome == nil
     end
   end
 end
