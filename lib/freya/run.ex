@@ -141,7 +141,7 @@ defmodule Freya.Run do
             mod.interpret(effect, key, Map.get(run_state.states, key), run_state)
 
           # observer? handlers see but do not touch
-          observer? = !effect_changed?(new_effect, effect)
+          observer? = effect_equals?(new_effect, effect)
           reduce_action = if observer?, do: :cont, else: :halt
 
           {reduce_action,
@@ -155,7 +155,7 @@ defmodule Freya.Run do
         end
       end)
 
-    handled? = effect_changed?(new_effect, effect)
+    handled? = !effect_equals?(new_effect, effect)
 
     if !handled? do
       # TODO replace with an error effect, for nice retry/resume
@@ -170,13 +170,13 @@ defmodule Freya.Run do
   end
 
   # is effect b different from effect a
-  defp effect_changed?(b, %Impure{sig: sig, data: data, q: _q} = _a) do
+  defp effect_equals?(b, %Impure{sig: sig, data: data, q: _q} = _a) do
     case b do
       %Impure{sig: updated_sig, data: updated_data, q: _updated_q} ->
-        updated_sig != sig || updated_data != data
+        updated_sig == sig && updated_data == data
 
       _ ->
-        true
+        false
     end
   end
 end
