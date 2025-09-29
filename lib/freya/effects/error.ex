@@ -16,6 +16,8 @@ end
 defmodule Freya.Effects.Error.Handler do
   @moduledoc "Interpreter (handler) for the Error effect"
 
+  require Logger
+
   alias Freya.ErrorResult
   alias Freya.Freer
   alias Freya.Freer.Impure
@@ -43,7 +45,8 @@ defmodule Freya.Effects.Error.Handler do
       ) do
     case u do
       {:throw, err} ->
-        Freya.ErrorResult.error(err) |> Freer.return()
+        Logger.error("#{__MODULE__}.throw")
+        {Freya.ErrorResult.error(err) |> Freer.return(), nil}
 
       {:catch, inner, handler} ->
         {%Pure{val: result} = pure, updated_run_state} = inner |> Run.interpret(run_state)
