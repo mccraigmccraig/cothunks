@@ -69,33 +69,4 @@ defmodule Freya.Freer do
 
   def bind(%Impure{sig: sig, data: u, q: q}, k),
     do: %Impure{sig: sig, data: u, q: Freya.Freer.Impl.q_append(q, k)}
-
-  @doc """
-  After all effects are handled, only %Pure{} is left. Extracts the
-  final value
-
-  make sure you handle all effects eith Effect.interpret_*
-  calls before extracting the final value - or there will be
-  a runtime error
-  """
-  @spec run(freer) :: any
-  def run(%Pure{val: x}), do: x
-
-  def run(%Impure{sig: sig, data: _u, q: _q} = impure) do
-    raise "unhandled effect: #{sig} - #{inspect(impure)}"
-  end
-
-  @doc """
-  Run a computation after binding a Finalize on the normal Ok path.
-
-  This ensures a Finalize effect is emitted at the outer boundary for
-  normal completion, allowing EffectLogger (or a FinalizeNoop handler)
-  to observe and consume it.
-  """
-  @spec run_with_finalize(freer) :: any
-  def run_with_finalize(comp) do
-    comp
-    |> bind(fn x -> Freya.Effects.Finalize.finalize(Freya.RunOutcome.ensure(x)) end)
-    |> run()
-  end
 end
