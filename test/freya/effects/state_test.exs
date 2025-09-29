@@ -12,7 +12,7 @@ defmodule Freya.Effects.StateTest do
   alias Freya.Run
 
   defcon calc(v), [Reader, Writer, State] do
-    a <- ask()
+    %{env: a} <- ask()
     b <- get()
     c <- return(v)
     _ <- put(a * b * c)
@@ -26,7 +26,7 @@ defmodule Freya.Effects.StateTest do
         Run.with_handlers(
           l: EffectLogger.Interpreter,
           s: {State.Interpreter, 5},
-          r: {Reader.Interpreter, 7},
+          r: {Reader.Interpreter, %{env: 7}},
           w: {Writer.Interpreter, []}
         )
 
