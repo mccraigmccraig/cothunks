@@ -29,3 +29,7 @@ thunks-*.tar
 /freer-simple
 
 /.elixir-tools
+
+/archive
+
+.DS_Store
