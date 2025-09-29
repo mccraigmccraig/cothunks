@@ -19,8 +19,8 @@ defmodule Freya.ConElseErrorTest do
       %Freya.RunOutcome{result: res, outputs: _out} =
         fv |> ErrorHandler.interpret_error() |> Freer.run()
 
-      assert Freya.Result.type(res) == Freya.Freer.OkResult
-      assert Freya.Result.value(res) == {:fixed, 4}
+      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.value(res) == {:fixed, 4}
     end
 
     test "no matching clause rethrows" do
@@ -35,8 +35,8 @@ defmodule Freya.ConElseErrorTest do
         end
 
       %Freya.RunOutcome{result: res} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert Freya.Result.type(res) == Freya.Freer.ErrorResult
-      assert Freya.Result.value(res) == :nope
+      assert Freya.Protocols.Result.type(res) == Freya.Freer.ErrorResult
+      assert Freya.Protocols.Result.value(res) == :nope
     end
 
     test "handler clause can perform effects" do
@@ -60,8 +60,8 @@ defmodule Freya.ConElseErrorTest do
         |> WriterHandler.interpret_writer()
         |> Freer.run()
 
-      assert Freya.Result.type(res) == Freya.Freer.OkResult
-      assert Freya.Result.value(res) == :ok
+      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.value(res) == :ok
       assert out.writer == [:before, {:handled, :bad}]
     end
 
@@ -79,8 +79,8 @@ defmodule Freya.ConElseErrorTest do
       %Freya.RunOutcome{result: res, outputs: _out} =
         fv |> ErrorHandler.interpret_error() |> Freer.run()
 
-      assert Freya.Result.type(res) == Freya.Freer.OkResult
-      assert Freya.Result.value(res) == :handled
+      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.value(res) == :handled
     end
   end
 end

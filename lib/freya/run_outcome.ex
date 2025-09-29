@@ -11,7 +11,8 @@ defmodule Freya.RunOutcome do
   @type t :: %__MODULE__{result: any, outputs: map()}
 
   @spec new(any, map()) :: t
-  def new(result, outputs \\ %{}) when is_map(outputs), do: %__MODULE__{result: result, outputs: outputs}
+  def new(result, outputs \\ %{}) when is_map(outputs),
+    do: %__MODULE__{result: result, outputs: outputs}
 
   @doc """
   Ensure value is a RunOutcome. Idempotent: returns a RunOutcome unchanged,
@@ -55,18 +56,21 @@ defmodule Freya.RunOutcome do
 
   @doc "Return the result variant type for a RunOutcome"
   @spec result_type(t) :: atom
-  def result_type(%__MODULE__{result: r}), do: Freya.Result.type(r)
+  def result_type(%__MODULE__{result: r}), do: Freya.Protocols.Result.type(r)
 
   @doc "Return the payload value for a RunOutcome's result"
   @spec result_value(t) :: any
-  def result_value(%__MODULE__{result: r}), do: Freya.Result.value(r)
+  def result_value(%__MODULE__{result: r}), do: Freya.Protocols.Result.value(r)
 
   @doc """
   Flatten nested RunOutcome within OkResult payloads by merging outputs upward.
   Useful when interpreter composition accidentally nests outcomes.
   """
   @spec flatten(t) :: t
-  def flatten(%__MODULE__{result: %Freya.Freer.OkResult{value: %__MODULE__{} = inner}, outputs: out}) do
+  def flatten(%__MODULE__{
+        result: %Freya.Freer.OkResult{value: %__MODULE__{} = inner},
+        outputs: out
+      }) do
     merged = %__MODULE__{result: inner.result, outputs: Map.merge(inner.outputs, out)}
     flatten(merged)
   end

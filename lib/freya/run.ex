@@ -8,7 +8,7 @@ defmodule Freya.Run do
   alias Freya.Freer.Impure
   alias Freya.Freer.OkResult
   alias Freya.Freer.Pure
-  alias Freya.Result
+  alias Freya.Protocols.Result
   alias Freya.RunOutcome
 
   require Logger

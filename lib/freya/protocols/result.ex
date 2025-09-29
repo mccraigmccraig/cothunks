@@ -1,4 +1,4 @@
-defprotocol Freya.Result do
+defprotocol Freya.Protocols.Result do
   @fallback_to_any true
 
   @spec type(t) :: atom

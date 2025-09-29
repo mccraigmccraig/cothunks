@@ -32,18 +32,18 @@ defmodule Freya.Effects.ErrorHandler do
             inner
             |> interpret_error()
             |> Freer.bind(fn %Freya.RunOutcome{result: res} ->
-              case Freya.Result.type(res) do
+              case Freya.Protocols.Result.type(res) do
                 Freya.Freer.OkResult ->
-                  k.(Freya.Result.value(res))
+                  k.(Freya.Protocols.Result.value(res))
 
                 Freya.Freer.ErrorResult ->
-                  err = Freya.Result.value(res)
+                  err = Freya.Protocols.Result.value(res)
 
                   handler.(err)
                   |> interpret_error()
                   |> Freer.bind(fn %Freya.RunOutcome{result: res2} = rr ->
-                    case Freya.Result.type(res2) do
-                      Freya.Freer.OkResult -> k.(Freya.Result.value(res2))
+                    case Freya.Protocols.Result.type(res2) do
+                      Freya.Freer.OkResult -> k.(Freya.Protocols.Result.value(res2))
                       _ -> Freer.return(rr)
                     end
                   end)

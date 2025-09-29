@@ -5,7 +5,7 @@ defmodule Freya.Freer.OkResult do
   defstruct value: nil
 end
 
-defimpl Freya.Result, for: Freya.Freer.OkResult do
+defimpl Freya.Protocols.Result, for: Freya.Freer.OkResult do
   def type(_r), do: Freya.Freer.OkResult
   def value(r), do: r.value
 end
@@ -17,7 +17,7 @@ defmodule Freya.Freer.ErrorResult do
   defstruct error: nil
 end
 
-defimpl Freya.Result, for: Freya.Freer.ErrorResult do
+defimpl Freya.Protocols.Result, for: Freya.Freer.ErrorResult do
   def type(_r), do: Freya.Freer.ErrorResult
   def value(r), do: r.error
 end
@@ -31,13 +31,13 @@ defmodule Freya.Freer.YieldResult do
   defstruct value: nil, continuation: nil
 end
 
-defimpl Freya.Result, for: Freya.Freer.YieldResult do
+defimpl Freya.Protocols.Result, for: Freya.Freer.YieldResult do
   def type(_r), do: Freya.Freer.YieldResult
   def value(r), do: r.value
 end
 
 # default implementation allows us to detect non-Result values
-defimpl Freya.Result, for: Any do
+defimpl Freya.Protocols.Result, for: Any do
   def type(_r), do: nil
   def value(r), do: r
 end
