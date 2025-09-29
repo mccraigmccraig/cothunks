@@ -3,6 +3,8 @@ defmodule Freya.OkResult do
   Result type for a finished computation
   """
   defstruct value: nil
+
+  def ok(val), do: %__MODULE__{value: val}
 end
 
 defimpl Freya.Protocols.Result, for: Freya.OkResult do
@@ -15,6 +17,8 @@ defmodule Freya.ErrorResult do
   Result type for a computation which is short-circuiting with an error
   """
   defstruct error: nil
+
+  def error(err), do: %__MODULE__{error: err}
 end
 
 defimpl Freya.Protocols.Result, for: Freya.ErrorResult do
@@ -29,6 +33,8 @@ defmodule Freya.YieldResult do
   continue the computation
   """
   defstruct value: nil, continuation: nil
+
+  def yield(val), do: %__MODULE__{value: val}
 end
 
 defimpl Freya.Protocols.Result, for: Freya.YieldResult do
