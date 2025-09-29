@@ -9,6 +9,8 @@ defmodule Freya.Con do
   Define a function whose body is a `Freya.Con.con` block.
 
   Usage:
+    import Freya.Con
+
     defcon foo(a, b), [Reader, Writer] do
       c <- get()
       put(a + b)
@@ -16,6 +18,8 @@ defmodule Freya.Con do
     end
 
   With else:
+    import Freya.Con
+
     defcon foo(a), [Error] do
       _ <- Error.throw_fx(:bad)
       return(a)
