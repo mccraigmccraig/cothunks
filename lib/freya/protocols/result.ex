@@ -6,4 +6,7 @@ defprotocol Freya.Protocols.Result do
 
   @spec value(t) :: any
   def value(result)
+
+  @spec short_circuits?(t) :: boolean
+  def short_circuits?(result)
 end

@@ -10,6 +10,7 @@ end
 defimpl Freya.Protocols.Result, for: Freya.OkResult do
   def type(_r), do: Freya.OkResult
   def value(r), do: r.value
+  def short_circuits?(_r), do: false
 end
 
 defmodule Freya.ErrorResult do
@@ -24,6 +25,7 @@ end
 defimpl Freya.Protocols.Result, for: Freya.ErrorResult do
   def type(_r), do: Freya.ErrorResult
   def value(r), do: r.error
+  def short_circuits?(_r), do: true
 end
 
 defmodule Freya.YieldResult do
@@ -40,10 +42,12 @@ end
 defimpl Freya.Protocols.Result, for: Freya.YieldResult do
   def type(_r), do: Freya.YieldResult
   def value(r), do: r.value
+  def short_circuits?(_r), do: true
 end
 
 # default implementation allows us to detect non-Result values
 defimpl Freya.Protocols.Result, for: Any do
   def type(_r), do: nil
   def value(r), do: r
+  def short_circuits?(_r), do: false
 end
