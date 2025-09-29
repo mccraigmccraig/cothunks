@@ -12,7 +12,7 @@ defmodule Freya.Run do
   alias Freya.Freer.Pure
   alias Freya.Protocols.Result
   alias Freya.Run.RunEffects
-  alias Freya.Run.RunEffects.CommitOutputs
+  alias Freya.Run.RunEffects.CommitStates
   alias Freya.Run.RunState
   alias Freya.RunOutcome
 
@@ -109,16 +109,16 @@ defmodule Freya.Run do
   end
 
   def interpret(
-        %Impure{sig: RunEffects, data: u, q: q},
+        %Impure{
+          sig: RunEffects,
+          data: %CommitStates{value: value, states: new_states},
+          q: q
+        },
         %RunState{} = run_state
       ) do
     # blessed handler for delimited effects to use to commit outputs to
     # the parent computation
-
-    case u do
-      %CommitOutputs{value: value, outputs: new_outputs} ->
-        {Impl.q_apply(q, value), %{run_state | states: new_outputs}}
-    end
+    {Impl.q_apply(q, value), %{run_state | states: new_states}}
   end
 
   def interpret(
