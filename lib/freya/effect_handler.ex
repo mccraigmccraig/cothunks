@@ -5,7 +5,7 @@ defmodule Freya.EffectHandler do
   """
 
   alias Freya.Freer
-  alias Freya.Freer.Run
+  alias Freya.Run.RunState
 
   @doc """
   return true if this handler can handle the given effect. Handlers
@@ -36,13 +36,13 @@ defmodule Freya.EffectHandler do
               computation :: Freer.Impure.t(),
               handler_key :: atom,
               state :: any,
-              run_state :: Run.t()
+              run_state :: RunState.t()
             ) :: {Freer.freer(), any}
 
   @callback finalize(
               computation :: Freer.Pure.t(),
               handler_key :: atom,
               state :: any,
-              run_state :: Run.t()
+              run_state :: RunState.t()
             ) :: {Freer.freer(), any}
 end

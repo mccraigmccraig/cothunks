@@ -9,27 +9,19 @@ defmodule Freya.Run do
   alias Freya.OkResult
   alias Freya.Freer.Pure
   alias Freya.Protocols.Result
+  alias Freya.Run.RunState
   alias Freya.RunOutcome
 
   require Logger
 
-  defstruct handlers: [], states: %{}
-
-  @type handler_mod :: atom
-  @type handler_mod_with_state :: {atom, any}
-  @type handler_spec :: handler_mod | handler_mod_with_state()
-  @type handler_key :: atom
-  @type handler_spec_list :: list({handler_key, handler_spec})
-
-  @type t :: %__MODULE__{
-          handlers: list({handler_key, handler_mod}),
-          states: %{handler_key => any}
-        }
+  @type handler_mod_with_state :: {RunState.handler_key(), any}
+  @type handler_spec :: RunState.handler_mod() | handler_mod_with_state()
+  @type handler_spec_list :: list({RunState.handler_key(), handler_spec})
 
   @doc """
   Build a Run struct with the provided EffectHandlers, and their initial state
   """
-  @spec with_handlers(handler_spec_list()) :: %__MODULE__{}
+  @spec with_handlers(handler_spec_list()) :: %RunState{}
   def with_handlers(handler_specs) do
     handler_specs
     |> Enum.map(fn
@@ -37,7 +29,7 @@ defmodule Freya.Run do
       {key, {mod, _state}} = spec_with_state when is_atom(key) and is_atom(mod) -> spec_with_state
     end)
     |> Enum.reduce(
-      %__MODULE__{handlers: [], states: %{}},
+      %RunState{handlers: [], states: %{}},
       fn {key, {mod, state}}, acc ->
         if Map.has_key?(acc, key) do
           raise ArgumentError,
@@ -54,15 +46,15 @@ defmodule Freya.Run do
         }
       end
     )
-    |> then(fn %__MODULE__{handlers: handlers} = self ->
+    |> then(fn %RunState{handlers: handlers} = self ->
       %{self | handlers: Enum.reverse(handlers)}
     end)
   end
 
-  @spec run(Freer.freer(), %__MODULE__{}) :: any
+  @spec run(Freer.freer(), %RunState{}) :: any
   def run(
         %Pure{val: val} = pure,
-        %__MODULE__{
+        %RunState{
           handlers: handlers
         } = run_state
       ) do
@@ -88,7 +80,7 @@ defmodule Freya.Run do
 
   def run(
         %Impure{sig: _sig, data: _u, q: _q} = effect,
-        %__MODULE__{handlers: handlers} = run_state
+        %RunState{handlers: handlers} = run_state
       ) do
     # Logger.error(
     #   "#{__MODULE__}.run\n" <>

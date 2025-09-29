@@ -126,7 +126,7 @@ defmodule Freya.Effects.EffectLogger.Interpreter do
   alias Freya.Effects.EffectLogger.Log
   alias Freya.Effects.EffectLogger.LogInterpretedEffectValue
   alias Freya.Effects.EffectLogger.InterpretedEffectLogEntry
-  alias Freya.Run
+  alias Freya.Run.RunState
 
   @behaviour Freya.EffectHandler
 
@@ -163,7 +163,7 @@ defmodule Freya.Effects.EffectLogger.Interpreter do
         %Impure{sig: eff, data: u, q: q} = computation,
         _handler_key,
         log,
-        %Run{} = _run_state
+        %RunState{} = _run_state
       ) do
     log = log || Log.new()
     # Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
@@ -190,7 +190,7 @@ defmodule Freya.Effects.EffectLogger.Interpreter do
         %Pure{} = computation,
         _handler_key,
         log,
-        %Run{} = _run_state
+        %RunState{} = _run_state
       ) do
     log = log || Log.new()
     finalized_log = Log.prepare_for_resume(log)

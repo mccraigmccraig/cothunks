@@ -16,7 +16,7 @@ defmodule Freya.Effects.Writer.Interpreter do
   alias Freya.Freer.Impure
   alias Freya.Freer.Pure
   alias Freya.Effects.Writer
-  alias Freya.Run
+  alias Freya.Run.RunState
 
   @behaviour Freya.EffectHandler
 
@@ -30,7 +30,7 @@ defmodule Freya.Effects.Writer.Interpreter do
         %Freer.Impure{sig: eff, data: u, q: q} = _computation,
         _handler_key,
         state,
-        %Run{} = _run_state
+        %RunState{} = _run_state
       ) do
     case {eff, u} do
       {Writer, {:tell, o}} ->
@@ -47,7 +47,7 @@ defmodule Freya.Effects.Writer.Interpreter do
         %Pure{} = computation,
         _handler_key,
         state,
-        %Run{} = _run_state
+        %RunState{} = _run_state
       ) do
     {computation, state}
   end
