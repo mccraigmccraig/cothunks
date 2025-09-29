@@ -3,28 +3,25 @@ defmodule Freya.Effects.StateTest do
 
   require Logger
 
+  import Freya.Con
+
   alias Freya.Effects.EffectLogger
   alias Freya.Effects.Reader
   alias Freya.Effects.State
   alias Freya.Effects.Writer
-  alias Freya.Freer
   alias Freya.Run
+
+  defcon calc(v), [Reader, Writer, State] do
+    a <- ask()
+    b <- get()
+    c <- return(v)
+    _ <- put(a * b * c)
+    tell(a + b + c)
+    return(a * b * c)
+  end
 
   describe "simple state" do
     test "it does state stuff" do
-      require Freer
-      import Freya.Con
-
-      computation =
-        con [Reader, Writer, State] do
-          a <- ask()
-          b <- get()
-          c <- return(10)
-          _ <- put(a * b * c)
-          tell(a + b + c)
-          return(a * b * c)
-        end
-
       runner =
         Run.with_handlers(
           l: EffectLogger.Interpreter,
@@ -33,10 +30,12 @@ defmodule Freya.Effects.StateTest do
           w: {Writer.Interpreter, []}
         )
 
-      outcome = Run.run(computation, runner)
+      outcome = Run.run(calc(10), runner)
+
+      assert outcome.result == %Freya.Freer.OkResult{value: 350}
 
       Logger.error("#{__MODULE__}.outcome\n" <> inspect(outcome, pretty: true))
-      assert outcome == nil
+      # assert outcome == nil
     end
   end
 end
