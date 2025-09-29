@@ -1,9 +1,9 @@
 defmodule Freya.Run.RunEffects.CommitOutputs do
-  defstruct value: nil, outputs: %{}
+  defstruct value: nil, states: %{}
 
   @type t :: %__MODULE__{
           value: any,
-          outputs: %{atom => any}
+          states: %{atom => any}
         }
 end
 
@@ -12,10 +12,10 @@ defmodule Freya.Run.RunEffects.Constructors do
 
   @doc """
   A privileged operation which allows delimited effects like
-  Error to commit the outputs of a child computation to the
+  Error to commit the effect states of a child computation to the
   parent's RunState
   """
-  def commit_outputs(value, outputs), do: %CommitOutputs{value: value, outputs: outputs}
+  def commit_states(value, states), do: %CommitOutputs{value: value, states: states}
 end
 
 defmodule Freya.Run.RunEffects do

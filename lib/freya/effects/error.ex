@@ -57,11 +57,11 @@ defmodule Freya.Effects.Error.Handler do
                 {Error.throw_fx(err), nil}
 
               {pure, updated_run_state_2} ->
-                {RunEffects.commit_outputs(pure, updated_run_state_2.outputs), nil}
+                {RunEffects.commit_states(pure, updated_run_state_2.states), nil}
             end
 
           _ ->
-            {RunEffects.commit_outputs(pure, updated_run_state.outputs), nil}
+            {RunEffects.commit_states(pure, updated_run_state.states), nil}
         end
     end
   end

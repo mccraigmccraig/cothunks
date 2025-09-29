@@ -6,10 +6,13 @@ defmodule Freya.Run do
   EffectHandlers are structs providing the EffectHandler protocol
   """
   alias Freya.Freer
+  alias Freya.Freer.Impl
   alias Freya.Freer.Impure
   alias Freya.OkResult
   alias Freya.Freer.Pure
   alias Freya.Protocols.Result
+  alias Freya.Run.RunEffects
+  alias Freya.Run.RunEffects.CommitOutputs
   alias Freya.Run.RunState
   alias Freya.RunOutcome
 
@@ -103,6 +106,19 @@ defmodule Freya.Run do
         %RunState{} = run_state
       ) do
     {computation, run_state}
+  end
+
+  def interpret(
+        %Impure{sig: RunEffects, data: u, q: q},
+        %RunState{} = run_state
+      ) do
+    # blessed handler for delimited effects to use to commit outputs to
+    # the parent computation
+
+    case u do
+      %CommitOutputs{value: value, outputs: new_outputs} ->
+        {Impl.q_apply(q, value), %{run_state | states: new_outputs}}
+    end
   end
 
   def interpret(
