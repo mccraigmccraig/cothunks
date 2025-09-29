@@ -13,44 +13,66 @@ defmodule Freya.Effects.Error do
   use Freya.Freer.Ops, constructors: Freya.Effects.Error.Constructors
 end
 
-defmodule Freya.Effects.ErrorHandler do
+defmodule Freya.Effects.Error.Handler do
   @moduledoc "Interpreter (handler) for the Error effect"
+
+  alias Freya.ErrorResult
   alias Freya.Freer
+  alias Freya.Freer.Impure
+  alias Freya.Freer.Pure
+  alias Freya.Effects.Error
+  alias Freya.Run
+  alias Freya.Run.RunEffects
+  alias Freya.Run.RunState
+  alias Freya.ErrorResult
+
+  @behaviour Freya.EffectHandler
+
+  @impl Freya.EffectHandler
+  def handles?(%Impure{sig: sig, data: _data, q: _q}) do
+    sig == Error
+  end
 
   @doc "Interpret an Error computation, handling throw/catch"
-  def interpret_error(computation) do
-    computation
-    |> Freya.Freer.Impl.handle_relay(
-      [Freya.Effects.Error],
-      fn x -> Freya.RunOutcome.ensure(x) |> Freer.return() end,
-      fn u, k ->
-        case u do
-          {:throw, err} ->
-            Freya.RunOutcome.error(err) |> Freer.return()
+  @impl Freya.EffectHandler
+  def interpret(
+        %Freer.Impure{sig: _eff, data: u, q: _q} = _computation,
+        _handler_key,
+        _state,
+        %RunState{} = run_state
+      ) do
+    case u do
+      {:throw, err} ->
+        Freya.ErrorResult.error(err) |> Freer.return()
 
-          {:catch, inner, handler} ->
-            inner
-            |> interpret_error()
-            |> Freer.bind(fn %Freya.RunOutcome{result: res} ->
-              case Freya.Protocols.Result.type(res) do
-                Freya.OkResult ->
-                  k.(Freya.Protocols.Result.value(res))
+      {:catch, inner, handler} ->
+        {%Pure{val: result} = pure, updated_run_state} = inner |> Run.interpret(run_state)
 
-                Freya.ErrorResult ->
-                  err = Freya.Protocols.Result.value(res)
+        case result do
+          %ErrorResult{error: err} ->
+            handler.(err)
+            |> Run.interpret(updated_run_state)
+            |> case do
+              {%Pure{val: %ErrorResult{}}, _updated_run_state_2} ->
+                {Error.throw_fx(err), nil}
 
-                  handler.(err)
-                  |> interpret_error()
-                  |> Freer.bind(fn %Freya.RunOutcome{result: res2} = rr ->
-                    case Freya.Protocols.Result.type(res2) do
-                      Freya.OkResult -> k.(Freya.Protocols.Result.value(res2))
-                      _ -> Freer.return(rr)
-                    end
-                  end)
-              end
-            end)
+              {pure, updated_run_state_2} ->
+                {RunEffects.commit_outputs(pure, updated_run_state_2.outputs), nil}
+            end
+
+          _ ->
+            {RunEffects.commit_outputs(pure, updated_run_state.outputs), nil}
         end
-      end
-    )
+    end
+  end
+
+  @impl Freya.EffectHandler
+  def finalize(
+        %Pure{} = computation,
+        _handler_key,
+        state,
+        %RunState{} = _run_state
+      ) do
+    {computation, state}
   end
 end
