@@ -34,7 +34,7 @@ defmodule Freya.Effects.CoroutineTest do
       # Resume with a value
       resumed = CoroutineHandler.resume(result, "resumed value")
 
-      assert %RunOutcome{result: %Freya.Freer.OkResult{value: "finished: resumed value"}} =
+      assert %RunOutcome{result: %Freya.OkResult{value: "finished: resumed value"}} =
                Freer.run(resumed)
     end
 
@@ -51,7 +51,9 @@ defmodule Freya.Effects.CoroutineTest do
 
       # First yield
       result = computation |> CoroutineHandler.interpret_coroutine() |> Freer.run()
-      assert %RunOutcome{result: %Freya.Freer.YieldResult{value: "first", continuation: _k1}} = result
+
+      assert %RunOutcome{result: %Freya.Freer.YieldResult{value: "first", continuation: _k1}} =
+               result
 
       # Second yield
       result2 = result |> CoroutineHandler.resume(10) |> Freer.run()
@@ -61,7 +63,7 @@ defmodule Freya.Effects.CoroutineTest do
 
       # Final result
       result3 = result2 |> CoroutineHandler.resume(20) |> Freer.run()
-      assert %RunOutcome{result: %Freya.Freer.OkResult{value: "final: 30"}} = result3
+      assert %RunOutcome{result: %Freya.OkResult{value: "final: 30"}} = result3
     end
 
     # test "multiple yields" do
@@ -182,18 +184,29 @@ defmodule Freya.Effects.CoroutineTest do
         end
 
       # First run the computation through the state handler with initial state 5
-      result1 = computation |> Freya.Effects.State.interpret_state(5) |> CoroutineHandler.interpret_coroutine() |> Freer.run()
+      result1 =
+        computation
+        |> Freya.Effects.State.interpret_state(5)
+        |> CoroutineHandler.interpret_coroutine()
+        |> Freer.run()
 
-      assert %RunOutcome{result: %Freya.Freer.YieldResult{value: "State is: 5", continuation: _k1}} =
+      assert %RunOutcome{
+               result: %Freya.Freer.YieldResult{value: "State is: 5", continuation: _k1}
+             } =
                result1
 
       result2 = result1 |> CoroutineHandler.resume(10) |> Freer.run()
 
-      assert %RunOutcome{result: %Freya.Freer.YieldResult{value: "New state is: 15", continuation: _k2}} = result2
+      assert %RunOutcome{
+               result: %Freya.Freer.YieldResult{value: "New state is: 15", continuation: _k2}
+             } = result2
 
       result3 = result2 |> CoroutineHandler.resume(100) |> Freer.run()
 
-      assert %RunOutcome{result: %Freya.Freer.OkResult{value: "Final resume: 100"}, outputs: %{state: 15}} = result3
+      assert %RunOutcome{
+               result: %Freya.OkResult{value: "Final resume: 100"},
+               outputs: %{state: 15}
+             } = result3
     end
   end
 
@@ -211,7 +224,12 @@ defmodule Freya.Effects.CoroutineTest do
           Freer.return("Final resume: #{r2}")
         end
 
-      result1 = computation |> State.interpret_state(5) |> CoroutineHandler.interpret_coroutine() |> Freer.run()
+      result1 =
+        computation
+        |> State.interpret_state(5)
+        |> CoroutineHandler.interpret_coroutine()
+        |> Freer.run()
+
       result2 = result1 |> CoroutineHandler.resume(10) |> Freer.run()
       _result3 = result2 |> CoroutineHandler.resume(100) |> Freer.run()
     end

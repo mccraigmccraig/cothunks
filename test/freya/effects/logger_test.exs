@@ -76,6 +76,7 @@ defmodule Freya.LoggerTest do
       require Freer
 
       require Freya.Con
+
       fv =
         Freya.Con.con [Numbers, Freya.Effects.Reader, Freya.Effects.Writer] do
           {:foo, a} <- get()
@@ -97,7 +98,7 @@ defmodule Freya.LoggerTest do
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")
 
       assert %Freya.RunOutcome{
-               result: %Freya.Freer.OkResult{value: final_val},
+               result: %Freya.OkResult{value: final_val},
                outputs: %{
                  state: {:bar, 34},
                  logged_computation: %Freya.Effects.EffectLogger.LoggedComputation{

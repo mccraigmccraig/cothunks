@@ -42,7 +42,7 @@ defmodule Freya.RunOutcome do
   @doc "Create an Ok outcome containing a value"
   @spec ok(any) :: t
   def ok(%__MODULE__{} = r), do: r
-  def ok(value), do: new(%Freya.Freer.OkResult{value: value})
+  def ok(value), do: new(%Freya.OkResult{value: value})
 
   @doc "Create an Error outcome containing an error"
   @spec error(any) :: t
@@ -68,7 +68,7 @@ defmodule Freya.RunOutcome do
   """
   @spec flatten(t) :: t
   def flatten(%__MODULE__{
-        result: %Freya.Freer.OkResult{value: %__MODULE__{} = inner},
+        result: %Freya.OkResult{value: %__MODULE__{} = inner},
         outputs: out
       }) do
     merged = %__MODULE__{result: inner.result, outputs: Map.merge(inner.outputs, out)}

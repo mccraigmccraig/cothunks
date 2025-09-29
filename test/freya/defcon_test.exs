@@ -47,22 +47,22 @@ defmodule Freya.DefconTest do
 
   test "defcon with Reader returns expected sum" do
     out = DefconExample.sum_env(1, 2) |> ReaderHandler.interpret_reader(3) |> Freer.run()
-    assert %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: 6}} = out
+    assert %Freya.RunOutcome{result: %Freya.OkResult{value: 6}} = out
   end
 
   test "defconp with Writer accumulates outputs" do
     out = DefconExample.call_private(4, 5) |> WriterHandler.interpret_writer() |> Freer.run()
 
-    assert %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: 9}, outputs: %{writer: [4, 5]}} =
+    assert %Freya.RunOutcome{result: %Freya.OkResult{value: 9}, outputs: %{writer: [4, 5]}} =
              out
   end
 
   test "defcon with Error and else handles divide by zero" do
     out = DefconExample.safe_div(10, 0) |> ErrorHandler.interpret_error() |> Freer.run()
-    assert %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: :infty}} = out
+    assert %Freya.RunOutcome{result: %Freya.OkResult{value: :infty}} = out
 
     out2 = DefconExample.safe_div(10, 2) |> ErrorHandler.interpret_error() |> Freer.run()
-    assert %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: 5.0}} = out2
+    assert %Freya.RunOutcome{result: %Freya.OkResult{value: 5.0}} = out2
   end
 end
 
@@ -79,7 +79,7 @@ defmodule Freya.DefconCompositionTest do
       |> Freer.run()
 
     assert %Freya.RunOutcome{
-             result: %Freya.Freer.OkResult{value: 6},
+             result: %Freya.OkResult{value: 6},
              outputs: %{writer: [{:sum, 6}]}
            } = out
   end
@@ -91,6 +91,6 @@ defmodule Freya.DefconCompositionTest do
       |> Freer.run()
 
     # First sum_env: 1+2+3 = 6; second: 6+0+3 = 9
-    assert %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: 9}} = out
+    assert %Freya.RunOutcome{result: %Freya.OkResult{value: 9}} = out
   end
 end

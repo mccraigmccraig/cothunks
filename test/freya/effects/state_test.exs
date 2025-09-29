@@ -45,7 +45,7 @@ defmodule Freya.Effects.StateTest do
 
       outcome = Run.run(calc(10), runner)
 
-      assert outcome.result == %Freya.Freer.OkResult{value: %{sum: 22, product: 350}}
+      assert outcome.result == %Freya.OkResult{value: %{sum: 22, product: 350}}
       assert outcome.outputs.s == 350
       assert outcome.outputs.w == [22]
 

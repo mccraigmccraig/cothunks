@@ -16,7 +16,7 @@ defmodule Freya.FreerTest do
   defp unwrap(v) do
     case v do
       %Freya.RunOutcome{result: res} -> unwrap(res)
-      %Freya.Freer.OkResult{value: inner} -> unwrap(inner)
+      %Freya.OkResult{value: inner} -> unwrap(inner)
       other -> other
     end
   end
@@ -169,7 +169,7 @@ defmodule Freya.FreerTest do
     test "it interprets a pure value" do
       fv = Freer.pure(10)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> Freer.run()
 
       assert v == 10
@@ -181,7 +181,7 @@ defmodule Freya.FreerTest do
         Numbers.number(10)
         |> Freer.bind(fn x -> Numbers.multiply(x, 10) end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> Freer.run()
 
       assert v == 100
@@ -198,7 +198,7 @@ defmodule Freya.FreerTest do
           Numbers.number(5) |> Freer.bind(fn z -> Freer.return(x * z) end)
         end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> Freer.run()
 
       assert v == 60
@@ -213,7 +213,7 @@ defmodule Freya.FreerTest do
         |> Freer.bind(fn c -> Numbers.divide(c, 20) end)
         |> Freer.bind(fn d -> Numbers.subtract(d, 8) end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> Freer.run()
 
       assert v == -4.0
@@ -236,7 +236,7 @@ defmodule Freya.FreerTest do
           end)
         end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> Freer.run()
 
       assert v == 205
@@ -250,7 +250,7 @@ defmodule Freya.FreerTest do
         |> Freer.bind(fn y -> Numbers.divide(y, 0) end)
         |> Freer.bind(fn z -> Numbers.add(z, 10) end)
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: res}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: res}, outputs: out} =
         fv |> run_numbers() |> Freer.run()
 
       assert {:error, err} = res
@@ -270,7 +270,7 @@ defmodule Freya.FreerTest do
           subtract(d, c)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> Freer.run()
 
       assert v == 8990
@@ -285,7 +285,7 @@ defmodule Freya.FreerTest do
           Freer.return(a + b)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_reader(12) |> Freer.run()
 
       assert v == 22
@@ -302,14 +302,14 @@ defmodule Freya.FreerTest do
           Freer.return(2 * (a + b))
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_writer() |> run_reader(12) |> Freer.run()
 
       assert v == 44
       assert out.writer == [22, 120]
 
       # the order of the handlers should not matter for this combination of effects
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v2}, outputs: out2} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v2}, outputs: out2} =
         fv |> run_reader(12) |> run_writer() |> Freer.run()
 
       assert v2 == v
@@ -326,10 +326,10 @@ defmodule Freya.FreerTest do
           subtract(d, c)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> run_reader(12) |> Freer.run()
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v2_val}, outputs: out2} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v2_val}, outputs: out2} =
         fv |> run_reader(12) |> run_numbers() |> Freer.run()
 
       assert v == 98
@@ -351,13 +351,13 @@ defmodule Freya.FreerTest do
           put(d) |> Freer.bind(fn _ -> subtract(d, c) end)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> run_reader(12) |> run_writer() |> Freer.run()
 
       assert v == 98
       assert out.writer == [10, 12, 22, 120]
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v3_val}, outputs: out3} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v3_val}, outputs: out3} =
         fv |> run_writer |> run_reader(12) |> run_numbers() |> Freer.run()
 
       assert unwrap(v3_val) == 98
@@ -375,7 +375,7 @@ defmodule Freya.FreerTest do
           subtract(d, c)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: v}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: v}, outputs: out} =
         fv |> run_numbers() |> State.interpret_state(12) |> Freer.run()
 
       assert v == -98
@@ -391,7 +391,7 @@ defmodule Freya.FreerTest do
           multiply(b, c)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: res}, outputs: out} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: res}, outputs: out} =
         fv |> run_numbers() |> Freer.run()
 
       assert {:error, msg} = res
@@ -409,7 +409,7 @@ defmodule Freya.FreerTest do
           multiply(b, c)
         end
 
-      %Freya.RunOutcome{result: %Freya.Freer.OkResult{value: res2}, outputs: out2} =
+      %Freya.RunOutcome{result: %Freya.OkResult{value: res2}, outputs: out2} =
         fv |> run_numbers() |> State.interpret_state(10) |> Freer.run()
 
       assert {:error, msg2} = res2

@@ -44,7 +44,7 @@ defmodule Freya.Effects.ErrorTest do
       %Freya.RunOutcome{result: res, outputs: _out} =
         fv |> ErrorHandler.interpret_error() |> Freer.run()
 
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.type(res) == Freya.OkResult
       assert Freya.Protocols.Result.value(res) == {:recovered, :bad}
     end
 
@@ -61,7 +61,7 @@ defmodule Freya.Effects.ErrorTest do
       %Freya.RunOutcome{result: res, outputs: _out} =
         fv |> ErrorHandler.interpret_error() |> Freer.run()
 
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.type(res) == Freya.OkResult
       assert Freya.Protocols.Result.value(res) == 42
     end
   end
@@ -118,7 +118,7 @@ defmodule Freya.Effects.ErrorTest do
         |> WriterHandler.interpret_writer()
         |> Freer.run()
 
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.type(res) == Freya.OkResult
       assert Freya.Protocols.Result.value(res) == :ok
       assert out[:writer] == [{:handled, :inner}]
     end

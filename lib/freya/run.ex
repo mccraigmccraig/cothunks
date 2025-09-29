@@ -6,7 +6,7 @@ defmodule Freya.Run do
   EffectHandlers are structs providing the EffectHandler protocol
   """
   alias Freya.Freer.Impure
-  alias Freya.Freer.OkResult
+  alias Freya.OkResult
   alias Freya.Freer.Pure
   alias Freya.Protocols.Result
   alias Freya.RunOutcome

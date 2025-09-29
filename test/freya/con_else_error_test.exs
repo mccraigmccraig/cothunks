@@ -19,7 +19,7 @@ defmodule Freya.ConElseErrorTest do
       %Freya.RunOutcome{result: res, outputs: _out} =
         fv |> ErrorHandler.interpret_error() |> Freer.run()
 
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.type(res) == Freya.OkResult
       assert Freya.Protocols.Result.value(res) == {:fixed, 4}
     end
 
@@ -60,7 +60,7 @@ defmodule Freya.ConElseErrorTest do
         |> WriterHandler.interpret_writer()
         |> Freer.run()
 
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.type(res) == Freya.OkResult
       assert Freya.Protocols.Result.value(res) == :ok
       assert out.writer == [:before, {:handled, :bad}]
     end
@@ -79,7 +79,7 @@ defmodule Freya.ConElseErrorTest do
       %Freya.RunOutcome{result: res, outputs: _out} =
         fv |> ErrorHandler.interpret_error() |> Freer.run()
 
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.OkResult
+      assert Freya.Protocols.Result.type(res) == Freya.OkResult
       assert Freya.Protocols.Result.value(res) == :handled
     end
   end

@@ -7,7 +7,7 @@ defmodule Freya.Effects.CompositionTest do
   alias Freya.RunOutcome
   alias Freya.Effects.{EffectLogger, Error, ErrorHandler, Coroutine, CoroutineHandler}
 
-  # defp unwrap(%RunOutcome{result: %Freya.Freer.OkResult{value: v}}), do: unwrap(v)
+  # defp unwrap(%RunOutcome{result: %Freya.OkResult{value: v}}), do: unwrap(v)
   # defp unwrap(other), do: other
 
   defp log_queue(%RunOutcome{
@@ -88,7 +88,7 @@ defmodule Freya.Effects.CompositionTest do
 
       Logger.error("Logger + Coroutine out2: \n#{inspect(out2, pretty: true, limit: :infinity)}")
 
-      assert %RunOutcome{result: %Freya.Freer.OkResult{value: "done"}} = out2
+      assert %RunOutcome{result: %Freya.OkResult{value: "done"}} = out2
     end
   end
 
