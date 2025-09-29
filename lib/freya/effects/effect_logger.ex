@@ -193,7 +193,8 @@ defmodule Freya.Effects.EffectLogger.Interpreter do
         %Run{} = _run_state
       ) do
     log = log || Log.new()
-    {computation, log}
+    finalized_log = Log.prepare_for_resume(log)
+    {computation, finalized_log}
   end
 
   def log_or_resume(%Impure{sig: sig, data: u, q: q} = computation, %Log{} = log) do
