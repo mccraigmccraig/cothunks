@@ -1,6 +1,8 @@
 defmodule Freya.Effects.StateTest do
   use ExUnit.Case
 
+  require Logger
+
   alias Freya.Effects.EffectLogger
   alias Freya.Effects.Reader
   alias Freya.Effects.State
@@ -33,6 +35,7 @@ defmodule Freya.Effects.StateTest do
 
       outcome = Run.run(computation, runner)
 
+      Logger.error("#{__MODULE__}.outcome\n" <> inspect(outcome, pretty: true))
       assert outcome == nil
     end
   end

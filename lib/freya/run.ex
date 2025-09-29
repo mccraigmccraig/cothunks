@@ -71,7 +71,7 @@ defmodule Freya.Run do
     {%Pure{val: final_val}, final_states} =
       handlers
       |> Enum.reduce({pure, states}, fn {key, mod}, {pure, states} ->
-        Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(states)}")
+        # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(states)}")
         {pure, updated_state} = mod.interpret(pure, key, Map.get(states, key), states)
         {pure, Map.put(states, key, updated_state)}
       end)
@@ -84,17 +84,22 @@ defmodule Freya.Run do
 
   def run(
         %Impure{sig: _sig, data: _u, q: _q} = effect,
-        %__MODULE__{
-          handlers: handlers,
-          states: states
-        } = run_state
+        %__MODULE__{handlers: handlers} = run_state
       ) do
+    # Logger.error(
+    #   "#{__MODULE__}.run\n" <>
+    #     "effect: #{inspect(effect, pretty: true)}\n" <>
+    #     "run_state: #{inspect(run_state, pretty: true)}"
+    # )
+
     {new_effect, updated_run_state} =
       handlers
       |> Enum.reduce_while({effect, run_state}, fn {key, mod}, {effect, run_state} = acc ->
+        # Logger.error(inspect(effect, pretty: true))
+
         if mod.handles?(effect) do
           {new_effect, updated_state} =
-            mod.interpret(effect, key, Map.get(states, key), states)
+            mod.interpret(effect, key, Map.get(run_state.states, key), run_state.states)
 
           # observer? handlers see but do not touch
           observer? = !effect_changed?(new_effect, effect)
@@ -104,7 +109,7 @@ defmodule Freya.Run do
            {new_effect,
             %{
               run_state
-              | states: Map.put(states, key, updated_state)
+              | states: Map.put(run_state.states, key, updated_state)
             }}}
         else
           {:cont, acc}
@@ -132,7 +137,7 @@ defmodule Freya.Run do
         updated_sig != sig || updated_data != data
 
       _ ->
-        false
+        true
     end
   end
 end

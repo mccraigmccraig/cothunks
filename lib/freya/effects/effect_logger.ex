@@ -163,15 +163,15 @@ defmodule Freya.Effects.EffectLogger.Interpreter do
     # Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
 
     case computation do
-      %Pure{val: x} = pure ->
-        Logger.error("#{__MODULE__}.interprety_logger(%Pure{}) #{inspect(x, pretty: true)}")
+      %Pure{val: _x} = pure ->
+        # Logger.error("#{__MODULE__}.interprety_logger(%Pure{}) #{inspect(x, pretty: true)}")
 
         {pure, log}
 
       %Impure{sig: eff, data: u, q: q} ->
-        Logger.error(
-          "#{__MODULE__}.interprety_logger(%Impure{}) #{inspect(computation, pretty: true)}"
-        )
+        # Logger.error(
+        #   "#{__MODULE__}.interprety_logger(%Impure{}) #{inspect(computation, pretty: true)}"
+        # )
 
         case {eff, u} do
           {EffectLogger, %LogInterpretedEffectValue{value: val}} ->
