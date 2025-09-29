@@ -46,7 +46,7 @@ defmodule Freya.RunOutcome do
 
   @doc "Create an Error outcome containing an error"
   @spec error(any) :: t
-  def error(error), do: new(%Freya.Freer.ErrorResult{error: error})
+  def error(error), do: new(%Freya.ErrorResult{error: error})
 
   @doc "Create a Yield outcome containing a value and continuation"
   @spec yield(any, (any -> any)) :: t

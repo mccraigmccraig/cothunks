@@ -35,7 +35,7 @@ defmodule Freya.ConElseErrorTest do
         end
 
       %Freya.RunOutcome{result: res} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.ErrorResult
+      assert Freya.Protocols.Result.type(res) == Freya.ErrorResult
       assert Freya.Protocols.Result.value(res) == :nope
     end
 

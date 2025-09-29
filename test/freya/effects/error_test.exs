@@ -19,7 +19,7 @@ defmodule Freya.Effects.ErrorTest do
         end
 
       %Freya.RunOutcome{result: res} = fv |> ErrorHandler.interpret_error() |> Freer.run()
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.ErrorResult
+      assert Freya.Protocols.Result.type(res) == Freya.ErrorResult
       assert Freya.Protocols.Result.value(res) == :oops
     end
 
@@ -83,7 +83,7 @@ defmodule Freya.Effects.ErrorTest do
         fv |> ErrorHandler.interpret_error() |> WriterHandler.interpret_writer() |> Freer.run()
 
       assert out.writer == [:before]
-      assert Freya.Protocols.Result.type(res) == Freya.Freer.ErrorResult
+      assert Freya.Protocols.Result.type(res) == Freya.ErrorResult
       assert Freya.Protocols.Result.value(res) == :bad
     end
 

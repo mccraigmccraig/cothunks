@@ -36,7 +36,7 @@ defmodule Freya.Effects.CompositionTest do
 
       Logger.error("Logger + Error: \n#{inspect(out, pretty: true, limit: :infinity)}")
 
-      assert %RunOutcome{result: %Freya.Freer.ErrorResult{error: :oops}, outputs: out_map} = out
+      assert %RunOutcome{result: %Freya.ErrorResult{error: :oops}, outputs: out_map} = out
       # For short-circuiting error, logger cannot finalize into logged_computation yet
       refute Map.has_key?(out_map, :logged_computation)
     end
@@ -53,7 +53,7 @@ defmodule Freya.Effects.CompositionTest do
 
       out = fv |> ErrorHandler.interpret_error() |> EffectLogger.interpret_logger() |> Freer.run()
 
-      assert %RunOutcome{result: %Freya.Freer.ErrorResult{error: :oops}} = out
+      assert %RunOutcome{result: %Freya.ErrorResult{error: :oops}} = out
       assert log_queue(out) == []
     end
   end
@@ -117,7 +117,7 @@ defmodule Freya.Effects.CompositionTest do
       out2 = out1 |> CoroutineHandler.resume(:ignored) |> Freer.run()
 
       Logger.error("Error + Coroutine out2: \n#{inspect(out2, pretty: true, limit: :infinity)}")
-      assert %RunOutcome{result: %Freya.Freer.ErrorResult{error: :boom}} = out2
+      assert %RunOutcome{result: %Freya.ErrorResult{error: :boom}} = out2
     end
   end
 
@@ -151,7 +151,7 @@ defmodule Freya.Effects.CompositionTest do
       refute Map.has_key?(out1.outputs, :logged_computation)
 
       out2 = out1 |> CoroutineHandler.resume(:ignored) |> Freer.run()
-      assert %RunOutcome{result: %Freya.Freer.ErrorResult{error: :bad}} = out2
+      assert %RunOutcome{result: %Freya.ErrorResult{error: :bad}} = out2
 
       Logger.error(
         "Logger + Error + Coroutine out2: \n#{inspect(out2, pretty: true, limit: :infinity)}"

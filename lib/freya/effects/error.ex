@@ -36,7 +36,7 @@ defmodule Freya.Effects.ErrorHandler do
                 Freya.OkResult ->
                   k.(Freya.Protocols.Result.value(res))
 
-                Freya.Freer.ErrorResult ->
+                Freya.ErrorResult ->
                   err = Freya.Protocols.Result.value(res)
 
                   handler.(err)
