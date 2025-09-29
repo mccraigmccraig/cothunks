@@ -5,6 +5,7 @@ defmodule Freya.Run do
 
   EffectHandlers are structs providing the EffectHandler protocol
   """
+  alias Freya.Freer
   alias Freya.Freer.Impure
   alias Freya.OkResult
   alias Freya.Freer.Pure
@@ -51,7 +52,11 @@ defmodule Freya.Run do
     end)
   end
 
-  @spec run(Freer.freer(), %RunState{}) :: any
+  @doc """
+  Interpret effects and finalize outputs - the main client-facing
+  computation runner
+  """
+  @spec run(Freer.freer(), RunState.t()) :: RunOutcome.t()
   def run(
         %Pure{val: val} = pure,
         %RunState{
@@ -79,6 +84,28 @@ defmodule Freya.Run do
   end
 
   def run(
+        %Impure{sig: _sig, data: _u, q: _q} = computation,
+        %RunState{} = run_state
+      ) do
+    {new_computation, updated_run_state} = interpret(computation, run_state)
+
+    # it's %Pure{} now
+    run(new_computation, updated_run_state)
+  end
+
+  @doc """
+  Interpret effects, but don't finalise. Useful for EffectHandlers which
+  want to run a sub-computation and control the outputs
+  """
+  @spec interpret(Freer.freer(), RunState.t()) :: {Pure.t(), RunState.t()}
+  def interpret(
+        %Pure{} = computation,
+        %RunState{} = run_state
+      ) do
+    {computation, run_state}
+  end
+
+  def interpret(
         %Impure{sig: _sig, data: _u, q: _q} = effect,
         %RunState{handlers: handlers} = run_state
       ) do
@@ -122,7 +149,7 @@ defmodule Freya.Run do
             "#{inspect(effect, pretty: true)}\n" <>
             "#{inspect(run_state, pretty: true)}"
     else
-      run(new_effect, updated_run_state)
+      interpret(new_effect, updated_run_state)
     end
   end
 
