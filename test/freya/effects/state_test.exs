@@ -15,7 +15,7 @@ defmodule Freya.Effects.StateTest do
     %{env: a} <- ask()
     b <- get()
     c <- return(v)
-    _ <- put(a * b * c)
+    put(a * b * c)
     tell(a + b + c)
     return(a * b * c)
   end
