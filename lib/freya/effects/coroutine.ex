@@ -53,7 +53,7 @@ defmodule Freya.Effects.CoroutineHandler do
   @doc """
   Resume a previously yielded coroutine with a value.
   """
-  def resume(%RunOutcome{result: %Freya.Freer.YieldResult{continuation: k}}, input), do: k.(input)
+  def resume(%RunOutcome{result: %Freya.YieldResult{continuation: k}}, input), do: k.(input)
   def resume(%RunOutcome{} = out, _input), do: Freer.return(out)
 
   # @doc """

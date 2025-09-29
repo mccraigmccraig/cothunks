@@ -51,7 +51,7 @@ defmodule Freya.RunOutcome do
   @doc "Create a Yield outcome containing a value and continuation"
   @spec yield(any, (any -> any)) :: t
   def yield(value, continuation) when is_function(continuation, 1) do
-    new(%Freya.Freer.YieldResult{value: value, continuation: continuation})
+    new(%Freya.YieldResult{value: value, continuation: continuation})
   end
 
   @doc "Return the result variant type for a RunOutcome"

@@ -22,7 +22,7 @@ defimpl Freya.Protocols.Result, for: Freya.ErrorResult do
   def value(r), do: r.error
 end
 
-defmodule Freya.Freer.YieldResult do
+defmodule Freya.YieldResult do
   @moduledoc """
   Result type for a computation which is yielding a value to a caller,
   with the expectation that the caller will supply a return value to
@@ -31,8 +31,8 @@ defmodule Freya.Freer.YieldResult do
   defstruct value: nil, continuation: nil
 end
 
-defimpl Freya.Protocols.Result, for: Freya.Freer.YieldResult do
-  def type(_r), do: Freya.Freer.YieldResult
+defimpl Freya.Protocols.Result, for: Freya.YieldResult do
+  def type(_r), do: Freya.YieldResult
   def value(r), do: r.value
 end
 
