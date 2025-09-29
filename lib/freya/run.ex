@@ -21,6 +21,11 @@ defmodule Freya.Run do
   @type handler_key :: atom
   @type handler_spec_list :: list({handler_key, handler_spec})
 
+  @type t :: %__MODULE__{
+          handlers: list({handler_key, handler_mod}),
+          states: %{handler_key => any}
+        }
+
   @doc """
   Build a Run struct with the provided EffectHandlers, and their initial state
   """
@@ -58,9 +63,8 @@ defmodule Freya.Run do
   def run(
         %Pure{val: val} = pure,
         %__MODULE__{
-          handlers: handlers,
-          states: states
-        }
+          handlers: handlers
+        } = run_state
       ) do
     # if we get to the output phase and no effect has decided upon
     # what type of output it's going to be, then it's an OkResult,
@@ -68,17 +72,17 @@ defmodule Freya.Run do
     pure = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: pure
 
     # should all effects get a shot at the result ? maybe not
-    {%Pure{val: final_val}, final_states} =
+    {%Pure{val: final_val}, final_run_state} =
       handlers
-      |> Enum.reduce({pure, states}, fn {key, mod}, {pure, states} ->
+      |> Enum.reduce({pure, run_state}, fn {key, mod}, {pure, run_state} ->
         # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(states)}")
-        {pure, updated_state} = mod.finalize(pure, key, Map.get(states, key), states)
-        {pure, Map.put(states, key, updated_state)}
+        {pure, updated_state} = mod.finalize(pure, key, Map.get(run_state.states, key), run_state)
+        {pure, %{run_state | states: Map.put(run_state.states, key, updated_state)}}
       end)
 
     %RunOutcome{
       result: final_val,
-      outputs: final_states
+      outputs: final_run_state.states
     }
   end
 
@@ -99,7 +103,7 @@ defmodule Freya.Run do
 
         if mod.handles?(effect) do
           {new_effect, updated_state} =
-            mod.interpret(effect, key, Map.get(run_state.states, key), run_state.states)
+            mod.interpret(effect, key, Map.get(run_state.states, key), run_state)
 
           # observer? handlers see but do not touch
           observer? = !effect_changed?(new_effect, effect)
