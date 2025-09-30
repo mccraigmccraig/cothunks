@@ -5,11 +5,10 @@ defmodule Freya.Effects.CoroutineTest do
   import Freya.Con
 
   alias Freya.Freer
-  alias Freya.Effects.State
+  alias Freya.Effects.EffectLogger
   alias Freya.Effects.Coroutine
   alias Freya.Freer
   alias Freya.RunOutcome
-  alias Freya.Effects.CoroutineHandler
   alias Freya.Run
   alias Freya.YieldResult
   alias Freya.OkResult
@@ -30,7 +29,7 @@ defmodule Freya.Effects.CoroutineTest do
       assert %RunOutcome{result: %YieldResult{value: 42}} = outcome
 
       outcome2 = Coroutine.Handler.resume(outcome, 100, runner)
-      assert %Freya.RunOutcome{result: "finished: 100"} = outcome2
+      assert %Freya.RunOutcome{result: %OkResult{value: "finished: 100"}} = outcome2
     end
 
     test "multiple yields" do
@@ -46,7 +45,10 @@ defmodule Freya.Effects.CoroutineTest do
 
       # First yield
       runner =
-        Run.with_handlers(c: Coroutine.Handler)
+        Run.with_handlers(
+          l: EffectLogger.Interpreter,
+          c: Coroutine.Handler
+        )
 
       outcome = Run.run(computation, runner)
       assert %RunOutcome{result: %YieldResult{value: "first"}} = outcome
@@ -56,6 +58,8 @@ defmodule Freya.Effects.CoroutineTest do
 
       outcome3 = Coroutine.Handler.resume(outcome2, 50, runner)
       assert %Freya.RunOutcome{result: %OkResult{value: "final: 150"}} = outcome3
+
+      Logger.error("#{__MODULE__}.log\n#{inspect(outcome3, pretty: true)}")
     end
 
     # test "multiple yields" do

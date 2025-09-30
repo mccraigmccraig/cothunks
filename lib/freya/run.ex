@@ -88,11 +88,16 @@ defmodule Freya.Run do
   # its state and the result value
   @spec finalize(Pure.t(), RunState.t()) :: {Pure.t(), RunState.t()}
   defp finalize(
-         %Pure{} = computation,
+         %Pure{val: val} = computation,
          %RunState{
            handlers: handlers
          } = run_state
        ) do
+    # if we get to the finalize phase and no effect has decided upon
+    # what type of output it's going to be, then it's an OkResult,
+    # signalling a normal completion
+    computation = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: computation
+
     handlers
     |> Enum.reduce({computation, run_state}, fn {key, mod}, {pure, run_state} ->
       # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
