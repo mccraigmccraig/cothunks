@@ -107,7 +107,9 @@ defmodule Freya.Run do
   end
 
   @doc """
-  Interpret effects until there is only %Pure{} remaining
+  Interpret effects until there is only %Pure{} remaining - does not finalize.
+  Useful for Effect handlers which want to run a sub-computation and control
+  the outputs (e.g. discard or commit to the parent)
   """
   @spec interpret(Freer.freer(), RunState.t()) :: {Pure.t(), RunState.t()}
   def interpret(
@@ -130,8 +132,7 @@ defmodule Freya.Run do
   end
 
   @doc """
-  Interpret a single effects but don't finalise. Useful for EffectHandlers which
-  want to run a sub-computation and control the outputs
+  Interpret a single effects
   """
   @spec interpret_one(Freer.freer(), RunState.t()) :: {Freer.freer(), RunState.t()}
   def interpret_one(
