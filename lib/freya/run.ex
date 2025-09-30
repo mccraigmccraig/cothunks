@@ -61,24 +61,16 @@ defmodule Freya.Run do
   """
   @spec run(Freer.freer(), RunState.t()) :: RunOutcome.t()
   def run(
-        %Pure{val: val} = pure,
-        %RunState{
-          handlers: handlers
-        } = run_state
+        %Pure{val: val} = computation,
+        %RunState{} = run_state
       ) do
     # if we get to the output phase and no effect has decided upon
     # what type of output it's going to be, then it's an OkResult,
     # signalling a normal completion
-    pure = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: pure
+    computation = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: computation
 
     # should all effects get a shot at the result ? maybe not
-    {%Pure{val: final_val}, final_run_state} =
-      handlers
-      |> Enum.reduce({pure, run_state}, fn {key, mod}, {pure, run_state} ->
-        # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
-        {pure, updated_state} = mod.finalize(pure, key, Map.get(run_state.states, key), run_state)
-        {pure, %{run_state | states: Map.put(run_state.states, key, updated_state)}}
-      end)
+    {%Pure{val: final_val}, final_run_state} = finalize(computation, run_state)
 
     %RunOutcome{
       result: final_val,
@@ -97,9 +89,25 @@ defmodule Freya.Run do
     run(new_computation, updated_run_state)
   end
 
+  # finalize output value and states - gives each Effect chance to finalize
+  # its state and the result value
+  @spec finalize(Pure.t(), RunState.t()) :: {Pure.t(), RunState.t()}
+  defp finalize(
+         %Pure{} = computation,
+         %RunState{
+           handlers: handlers
+         } = run_state
+       ) do
+    handlers
+    |> Enum.reduce({computation, run_state}, fn {key, mod}, {pure, run_state} ->
+      # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
+      {pure, updated_state} = mod.finalize(pure, key, Map.get(run_state.states, key), run_state)
+      {pure, %{run_state | states: Map.put(run_state.states, key, updated_state)}}
+    end)
+  end
+
   @doc """
-  Interpret effects, but don't finalise. Useful for EffectHandlers which
-  want to run a sub-computation and control the outputs
+  Interpret effects until there is only %Pure{} remaining
   """
   @spec interpret(Freer.freer(), RunState.t()) :: {Pure.t(), RunState.t()}
   def interpret(
@@ -110,6 +118,30 @@ defmodule Freya.Run do
   end
 
   def interpret(
+        %Impure{} = computation,
+        %RunState{} = run_state
+      ) do
+    {new_computation, updated_run_state} = interpret_one(computation, run_state)
+
+    case new_computation do
+      %Pure{} -> {new_computation, updated_run_state}
+      _ -> interpret(new_computation, updated_run_state)
+    end
+  end
+
+  @doc """
+  Interpret a single effects but don't finalise. Useful for EffectHandlers which
+  want to run a sub-computation and control the outputs
+  """
+  @spec interpret_one(Freer.freer(), RunState.t()) :: {Freer.freer(), RunState.t()}
+  def interpret_one(
+        %Pure{} = computation,
+        %RunState{} = run_state
+      ) do
+    {computation, run_state}
+  end
+
+  def interpret_one(
         %Impure{
           sig: RunEffects,
           data: %CommitStates{value: value, states: new_states},
@@ -122,7 +154,7 @@ defmodule Freya.Run do
     {Impl.q_apply(q, value), %{run_state | states: new_states}}
   end
 
-  def interpret(
+  def interpret_one(
         %Impure{sig: _sig, data: _u, q: _q} = effect,
         %RunState{handlers: handlers} = run_state
       ) do
@@ -170,9 +202,9 @@ defmodule Freya.Run do
           "#{__MODULE__}.run: no handler for effect in stack\n" <>
             "#{inspect(effect, pretty: true)}\n" <>
             "#{inspect(run_state, pretty: true)}"
-    else
-      interpret(new_effect, updated_run_state)
     end
+
+    {new_effect, updated_run_state}
   end
 
   # is effect b different from effect a
