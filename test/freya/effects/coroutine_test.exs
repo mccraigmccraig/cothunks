@@ -12,6 +12,7 @@ defmodule Freya.Effects.CoroutineTest do
   alias Freya.Effects.CoroutineHandler
   alias Freya.Run
   alias Freya.YieldResult
+  alias Freya.OkResult
 
   describe "basic coroutine operations" do
     test "simple yield and resume" do
@@ -32,33 +33,30 @@ defmodule Freya.Effects.CoroutineTest do
       assert %Freya.RunOutcome{result: "finished: 100"} = outcome2
     end
 
-    # test "multiple yields" do
-    #   require Freer
+    test "multiple yields" do
+      require Freer
 
-    #   # Keep the simple test as well
-    #   computation =
-    #     Freya.Con.con Coroutine do
-    #       a <- yield("first")
-    #       b <- yield("second: #{a}")
-    #       Freer.return("final: #{a + b}")
-    #     end
+      # Keep the simple test as well
+      computation =
+        con Coroutine do
+          a <- yield("first")
+          b <- yield("second: #{a}")
+          return("final: #{a + b}")
+        end
 
-    #   # First yield
-    #   result = computation |> CoroutineHandler.interpret_coroutine() |> Freer.run()
+      # First yield
+      runner =
+        Run.with_handlers(c: Coroutine.Handler)
 
-    #   assert %RunOutcome{result: %Freya.YieldResult{value: "first", continuation: _k1}} =
-    #            result
+      outcome = Run.run(computation, runner)
+      assert %RunOutcome{result: %YieldResult{value: "first"}} = outcome
 
-    #   # Second yield
-    #   result2 = result |> CoroutineHandler.resume(10) |> Freer.run()
+      outcome2 = Coroutine.Handler.resume(outcome, 100, runner)
+      assert %Freya.RunOutcome{result: %YieldResult{value: "second: 100"}} = outcome2
 
-    #   assert %RunOutcome{result: %Freya.YieldResult{value: "second: 10", continuation: _k2}} =
-    #            result2
-
-    #   # Final result
-    #   result3 = result2 |> CoroutineHandler.resume(20) |> Freer.run()
-    #   assert %RunOutcome{result: %Freya.OkResult{value: "final: 30"}} = result3
-    # end
+      outcome3 = Coroutine.Handler.resume(outcome2, 50, runner)
+      assert %Freya.RunOutcome{result: %OkResult{value: "final: 150"}} = outcome3
+    end
 
     # test "multiple yields" do
     #   require Freer
