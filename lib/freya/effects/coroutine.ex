@@ -18,7 +18,7 @@ defmodule Freya.Effects.Coroutine do
   use Freya.Freer.Ops, constructors: Freya.Effects.Coroutine.Constructors
 end
 
-defmodule Freya.Effects.CoroutineHandler do
+defmodule Freya.Effects.Coroutine.Handler do
   @moduledoc """
   A coroutine effect implementation using the Freer monad.
   Provides yield operation that suspends computation and returns a value to the caller.
@@ -28,33 +28,64 @@ defmodule Freya.Effects.CoroutineHandler do
   """
 
   alias Freya.Freer
+  alias Freya.Freer.Impl
+  alias Freya.Freer.Impure
+  alias Freya.Freer.Pure
+  alias Freya.Effects.Coroutine
   alias Freya.Effects.Coroutine.Yield
   alias Freya.RunOutcome
+  alias Freya.Run.RunState
+  alias Freya.Run
+  alias Freya.YieldResult
 
-  @doc """
-  Reply to a coroutine effect by returning the Continue constructor.
-  """
-  def reply_c(%Yield{value: a}, k) do
-    Freer.return(RunOutcome.yield(a, fn b -> k.(b) end))
+  @behaviour Freya.EffectHandler
+
+  @impl Freya.EffectHandler
+  def handles?(%Impure{sig: sig, data: _data, q: _q}) do
+    sig == Coroutine
   end
 
   @doc """
   Interpret a coroutine and report its status.
   """
-  def interpret_coroutine(computation) do
-    computation
-    |> Freya.Freer.Impl.handle_relay(
-      [Freya.Effects.Coroutine],
-      fn x -> Freer.return(RunOutcome.ensure(x)) end,
-      fn %Yield{} = y, k -> reply_c(y, k) end
-    )
+  @impl Freya.EffectHandler
+  def interpret(
+        %Impure{sig: Coroutine, data: u, q: q} = _computation,
+        _handler_key,
+        _state,
+        %RunState{} = run_state
+      ) do
+    case u do
+      # shoft-circuit - discard queue - it lives on in k
+      %Yield{value: val} ->
+        k = fn v -> Impl.q_apply(q, v) end
+        {YieldResult.yield(val, k, run_state.states) |> Freer.return(), nil}
+    end
+  end
+
+  @impl Freya.EffectHandler
+  def finalize(
+        %Pure{} = computation,
+        _handler_key,
+        state,
+        %RunState{} = _run_state
+      ) do
+    {computation, state}
   end
 
   @doc """
   Resume a previously yielded coroutine with a value.
   """
-  def resume(%RunOutcome{result: %Freya.YieldResult{continuation: k}}, input), do: k.(input)
-  def resume(%RunOutcome{} = out, _input), do: Freer.return(out)
+  def resume(
+        %RunOutcome{
+          result: %Freya.YieldResult{continuation: k, states: states}
+        },
+        input,
+        %RunState{} = run_state
+      ) do
+    run_state = %{run_state | states: states}
+    Run.run(k.(input), run_state)
+  end
 
   # @doc """
   # Run a coroutine to completion, collecting all yielded values and the final result.
