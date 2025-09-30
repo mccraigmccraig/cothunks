@@ -49,7 +49,7 @@ defmodule Freya.Effects.Error.Handler do
         {Freya.ErrorResult.error(err) |> Freer.return(), nil}
 
       {:catch, inner, handler} ->
-        {%Pure{val: result} = pure, updated_run_state} = inner |> Run.interpret(run_state)
+        {%Pure{val: result}, updated_run_state} = inner |> Run.interpret(run_state)
 
         case result do
           %ErrorResult{error: err} ->
@@ -64,7 +64,7 @@ defmodule Freya.Effects.Error.Handler do
             end
 
           _ ->
-            {RunEffects.commit_states(pure, updated_run_state.states), nil}
+            {RunEffects.commit_states(result, updated_run_state.states), nil}
         end
     end
   end

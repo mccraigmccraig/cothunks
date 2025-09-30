@@ -20,9 +20,7 @@ defmodule Freya.Effects.ErrorTest do
           return(:unreachable)
         end
 
-      runner =
-        Run.with_handlers(e: Error.Handler)
-
+      runner = Run.with_handlers(e: Error.Handler)
       outcome = Run.run(fv, runner)
 
       assert %RunOutcome{result: %ErrorResult{error: :oops}} = outcome
@@ -45,9 +43,7 @@ defmodule Freya.Effects.ErrorTest do
           return(res)
         end
 
-      runner =
-        Run.with_handlers(e: Error.Handler)
-
+      runner = Run.with_handlers(e: Error.Handler)
       outcome = Run.run(fv, runner)
 
       assert %Freya.RunOutcome{
@@ -56,23 +52,20 @@ defmodule Freya.Effects.ErrorTest do
     end
   end
 
-  #   test "catch passes through success" do
-  #     require Freer
-  #     require Freya.Con
+  describe "catch and success" do
+    test "catch passes through success" do
+      fv =
+        con Error do
+          res <- catch_fx(return(42), fn _ -> return(0) end)
+          return(res)
+        end
 
-  #     fv =
-  #       Freya.Con.con Error do
-  #         res <- Error.catch_fx(Freer.return(42), fn _ -> Freer.return(0) end)
-  #         Freer.return(res)
-  #       end
+      runner = Run.with_handlers(e: Error.Handler)
+      outcome = Run.run(fv, runner)
 
-  #     %Freya.RunOutcome{result: res, outputs: _out} =
-  #       fv |> ErrorHandler.interpret_error() |> Freer.run()
-
-  #     assert Freya.Protocols.Result.type(res) == Freya.OkResult
-  #     assert Freya.Protocols.Result.value(res) == 42
-  #   end
-  # end
+      assert %Freya.RunOutcome{result: %Freya.OkResult{value: 42}} = outcome
+    end
+  end
 
   # describe "composition with Writer and State" do
   #   test "writer before throw is kept; after is skipped" do
