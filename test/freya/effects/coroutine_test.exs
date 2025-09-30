@@ -29,7 +29,7 @@ defmodule Freya.Effects.CoroutineTest do
       assert %RunOutcome{result: %YieldResult{value: 42}} = outcome
 
       outcome2 = Coroutine.Handler.resume(outcome, 100, runner)
-      assert nil = outcome2
+      assert %Freya.RunOutcome{result: "finished: 100"} = outcome2
     end
 
     # test "multiple yields" do
