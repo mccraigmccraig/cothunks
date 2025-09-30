@@ -49,6 +49,6 @@ defmodule Freya.Effects.Writer.Interpreter do
         state,
         %RunState{} = _run_state
       ) do
-    {computation, state}
+    {computation, Enum.reverse(state || [])}
   end
 end

@@ -92,7 +92,7 @@ defmodule Freya.Effects.ErrorTest do
                result: %Freya.OkResult{
                  value: 42
                },
-               outputs: %{w: [:from_outer_2, :from_inner, :from_outer_1]}
+               outputs: %{w: [:from_outer_1, :from_inner, :from_outer_2]}
              } = outcome
     end
 
@@ -150,7 +150,7 @@ defmodule Freya.Effects.ErrorTest do
 
       assert %Freya.RunOutcome{
                result: %Freya.OkResult{value: {:recovered, :bad}},
-               outputs: %{w: [:from_outer_2, :from_inner, :from_outer_1]}
+               outputs: %{w: [:from_outer_1, :from_inner, :from_outer_2]}
              } = outcome
     end
 
