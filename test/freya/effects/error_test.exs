@@ -29,30 +29,32 @@ defmodule Freya.Effects.ErrorTest do
     end
   end
 
-  #   test "catch recovers from throw" do
-  #     require Freer
-  #     require Freya.Con
+  describe "recovery" do
+    test "catch recovers from throw" do
+      fv =
+        con Error do
+          res <-
+            catch_fx(
+              con Error do
+                _ <- throw_fx(:bad)
+                return(:nope)
+              end,
+              fn err -> return({:recovered, err}) end
+            )
 
-  #     fv =
-  #       Freya.Con.con Error do
-  #         res <-
-  #           Error.catch_fx(
-  #             Freya.Con.con Error do
-  #               _ <- Error.throw_fx(:bad)
-  #               Freer.return(:nope)
-  #             end,
-  #             fn err -> Freer.return({:recovered, err}) end
-  #           )
+          return(res)
+        end
 
-  #         Freer.return(res)
-  #       end
+      runner =
+        Run.with_handlers(e: Error.Handler)
 
-  #     %Freya.RunOutcome{result: res, outputs: _out} =
-  #       fv |> ErrorHandler.interpret_error() |> Freer.run()
+      outcome = Run.run(fv, runner)
 
-  #     assert Freya.Protocols.Result.type(res) == Freya.OkResult
-  #     assert Freya.Protocols.Result.value(res) == {:recovered, :bad}
-  #   end
+      assert %Freya.RunOutcome{
+               result: %Freya.OkResult{value: {:recovered, :bad}}
+             } = outcome
+    end
+  end
 
   #   test "catch passes through success" do
   #     require Freer

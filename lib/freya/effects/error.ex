@@ -59,8 +59,8 @@ defmodule Freya.Effects.Error.Handler do
               {%Pure{val: %ErrorResult{}}, _updated_run_state_2} ->
                 {Error.throw_fx(err), nil}
 
-              {pure, updated_run_state_2} ->
-                {RunEffects.commit_states(pure, updated_run_state_2.states), nil}
+              {%Pure{val: val}, updated_run_state_2} ->
+                {RunEffects.commit_states(val, updated_run_state_2.states), nil}
             end
 
           _ ->
