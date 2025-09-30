@@ -3,11 +3,9 @@ defmodule Freya.Effects.ErrorTest do
 
   import Freya.Con
 
-  alias Freya.Freer
   alias Freya.Effects.Error
-  alias Freya.Effects.ErrorHandler
   alias Freya.Effects.Writer
-  alias Freya.Effects.WriterHandler
+  alias Freya.Effects.State
   alias Freya.Run
   alias Freya.RunOutcome
   alias Freya.ErrorResult
@@ -157,70 +155,97 @@ defmodule Freya.Effects.ErrorTest do
     end
 
     test "state in successful computation is applied" do
+      fv =
+        con [Error, State] do
+          put(5)
+
+          res <-
+            catch_fx(
+              con [Error, State] do
+                a <- get()
+                put(a + 5)
+                return(42)
+              end,
+              fn _ -> return(0) end
+            )
+
+          b <- get()
+          put(b + 5)
+
+          return(res)
+        end
+
+      runner = Run.with_handlers(e: Error.Handler, s: State.Interpreter)
+      outcome = Run.run(fv, runner)
+
+      assert %Freya.RunOutcome{
+               result: %Freya.OkResult{
+                 value: 42
+               },
+               outputs: %{s: 15}
+             } = outcome
     end
 
     test "state in failed computation is discarded" do
+      fv =
+        con [Error, State] do
+          put(5)
+
+          res <-
+            catch_fx(
+              con [Error, State] do
+                a <- get()
+                put(a + 5)
+                throw_fx(:bad)
+                return(:nope)
+              end,
+              fn _err -> throw_fx(:also_bad) end
+            )
+
+          b <- get()
+          put(b + 5)
+
+          return(res)
+        end
+
+      runner = Run.with_handlers(e: Error.Handler, s: State.Interpreter)
+      outcome = Run.run(fv, runner)
+
+      assert %Freya.RunOutcome{
+               result: %Freya.ErrorResult{error: :bad},
+               outputs: %{s: 5}
+             } = outcome
     end
 
     test "state in reocvered computation is applied" do
+      fv =
+        con [Error, State] do
+          put(5)
+
+          res <-
+            catch_fx(
+              con [Error, State] do
+                a <- get()
+                put(a + 5)
+                throw_fx(:bad)
+                return(:nope)
+              end,
+              fn err -> return({:recovered, err}) end
+            )
+
+          b <- get()
+          put(b + 5)
+
+          return(res)
+        end
+
+      runner = Run.with_handlers(e: Error.Handler, s: State.Interpreter)
+      outcome = Run.run(fv, runner)
+
+      assert %Freya.RunOutcome{
+               result: %Freya.OkResult{value: {:recovered, :bad}},
+               outputs: %{s: 15}
+             } = outcome
     end
   end
-
-  # describe "composition with Writer and State" do
-  #   test "writer before throw is kept; after is skipped" do
-  #     require Freer
-  #     require Freya.Con
-
-  #     fv =
-  #       Freya.Con.con [Error, Writer] do
-  #         _ <- Writer.put(:before)
-  #         _ <- Error.throw_fx(:bad)
-  #         _ <- Writer.put(:after)
-  #         Freer.return(:unreachable)
-  #       end
-
-  #     %Freya.RunOutcome{result: res, outputs: out} =
-  #       fv |> ErrorHandler.interpret_error() |> WriterHandler.interpret_writer() |> Freer.run()
-
-  #     assert out.writer == [:before]
-  #     assert Freya.Protocols.Result.type(res) == Freya.ErrorResult
-  #     assert Freya.Protocols.Result.value(res) == :bad
-  #   end
-
-  #   test "nested catch with state" do
-  #     require Freer
-  #     require Freya.Con
-
-  #     fv =
-  #       Freya.Con.con [Error, Writer] do
-  #         # emulate state with Reader+Writer interpreter
-  #         res <-
-  #           Error.catch_fx(
-  #             Freya.Con.con [Error, Writer] do
-  #               _ <- Error.throw_fx(:inner)
-  #               _ <- Writer.put(:after_throw)
-  #               Freer.return(:nope)
-  #             end,
-  #             fn err ->
-  #               Freya.Con.con [Writer] do
-  #                 _ <- Writer.put({:handled, err})
-  #                 Freer.return(:ok)
-  #               end
-  #             end
-  #           )
-
-  #         Freer.return(res)
-  #       end
-
-  #     %Freya.RunOutcome{result: res, outputs: out} =
-  #       fv
-  #       |> ErrorHandler.interpret_error()
-  #       |> WriterHandler.interpret_writer()
-  #       |> Freer.run()
-
-  #     assert Freya.Protocols.Result.type(res) == Freya.OkResult
-  #     assert Freya.Protocols.Result.value(res) == :ok
-  #     assert out[:writer] == [{:handled, :inner}]
-  #   end
-  # end
 end
