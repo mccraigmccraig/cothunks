@@ -47,7 +47,7 @@ defmodule Freya.Effects.Error.Handler do
       ) do
     case u do
       {:throw, err} ->
-        Logger.error("#{__MODULE__}.throw")
+        # Logger.error("#{__MODULE__}.throw")
         # throw shoft-circuits
         {Freya.ErrorResult.error(err) |> Freer.return(), nil}
 

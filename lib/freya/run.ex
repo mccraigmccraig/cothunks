@@ -75,7 +75,7 @@ defmodule Freya.Run do
     {%Pure{val: final_val}, final_run_state} =
       handlers
       |> Enum.reduce({pure, run_state}, fn {key, mod}, {pure, run_state} ->
-        Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
+        # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
         {pure, updated_state} = mod.finalize(pure, key, Map.get(run_state.states, key), run_state)
         {pure, %{run_state | states: Map.put(run_state.states, key, updated_state)}}
       end)
@@ -92,7 +92,7 @@ defmodule Freya.Run do
       ) do
     {new_computation, updated_run_state} = interpret(computation, run_state)
 
-    Logger.error("#{__MODULE__}.after-interpret")
+    # Logger.error("#{__MODULE__}.after-interpret")
     # it's %Pure{} now
     run(new_computation, updated_run_state)
   end
@@ -117,8 +117,8 @@ defmodule Freya.Run do
         },
         %RunState{} = run_state
       ) do
-    # blessed handler for delimited effects to use to commit outputs to
-    # the parent computation
+    # blessed handler for delimited effects to use to commit updated
+    # effect states to the parent computation
     {Impl.q_apply(q, value), %{run_state | states: new_states}}
   end
 
@@ -126,16 +126,16 @@ defmodule Freya.Run do
         %Impure{sig: _sig, data: _u, q: _q} = effect,
         %RunState{handlers: handlers} = run_state
       ) do
-    Logger.error(
-      "#{__MODULE__}.run\n" <>
-        "effect: #{inspect(effect, pretty: true)}\n" <>
-        "run_state: #{inspect(run_state, pretty: true)}"
-    )
+    # Logger.error(
+    #   "#{__MODULE__}.run\n" <>
+    #     "effect: #{inspect(effect, pretty: true)}\n" <>
+    #     "run_state: #{inspect(run_state, pretty: true)}"
+    # )
 
     {new_effect, updated_run_state} =
       handlers
       |> Enum.reduce_while({effect, run_state}, fn {key, mod}, {effect, run_state} = acc ->
-        Logger.error("#{__MODULE__}.interpret reduce\n#{inspect(effect, pretty: true)}")
+        # Logger.error("#{__MODULE__}.interpret reduce\n#{inspect(effect, pretty: true)}")
 
         if mod.handles?(effect) do
           {new_effect, updated_state} =
@@ -145,10 +145,10 @@ defmodule Freya.Run do
           observer? = effect_equals?(new_effect, effect)
           reduce_action = if observer?, do: :cont, else: :halt
 
-          Logger.error(
-            "#{__MODULE__}.post-interpret\n" <>
-              "new_effect: #{inspect(new_effect, pretty: true)}\n"
-          )
+          # Logger.error(
+          #   "#{__MODULE__}.post-interpret\n" <>
+          #     "new_effect: #{inspect(new_effect, pretty: true)}\n"
+          # )
 
           {reduce_action,
            {new_effect,
