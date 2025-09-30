@@ -61,14 +61,9 @@ defmodule Freya.Run do
   """
   @spec run(Freer.freer(), RunState.t()) :: RunOutcome.t()
   def run(
-        %Pure{val: val} = computation,
+        %Pure{} = computation,
         %RunState{} = run_state
       ) do
-    # if we get to the output phase and no effect has decided upon
-    # what type of output it's going to be, then it's an OkResult,
-    # signalling a normal completion
-    computation = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: computation
-
     # should all effects get a shot at the result ? maybe not
     {%Pure{val: final_val}, final_run_state} = finalize(computation, run_state)
 
@@ -79,7 +74,7 @@ defmodule Freya.Run do
   end
 
   def run(
-        %Impure{sig: _sig, data: _u, q: _q} = computation,
+        %Impure{} = computation,
         %RunState{} = run_state
       ) do
     {new_computation, updated_run_state} = interpret(computation, run_state)
@@ -93,11 +88,16 @@ defmodule Freya.Run do
   # its state and the result value
   @spec finalize(Pure.t(), RunState.t()) :: {Pure.t(), RunState.t()}
   defp finalize(
-         %Pure{} = computation,
+         %Pure{val: val} = computation,
          %RunState{
            handlers: handlers
          } = run_state
        ) do
+    # if we get to the finalize phase and no effect has decided upon
+    # what type of output it's going to be, then it's an OkResult,
+    # signalling a normal completion
+    computation = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: computation
+
     handlers
     |> Enum.reduce({computation, run_state}, fn {key, mod}, {pure, run_state} ->
       # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
