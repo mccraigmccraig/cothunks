@@ -88,16 +88,11 @@ defmodule Freya.Run do
   # its state and the result value
   @spec finalize(Pure.t(), RunState.t()) :: {Pure.t(), RunState.t()}
   defp finalize(
-         %Pure{val: val} = computation,
+         %Pure{} = computation,
          %RunState{
            handlers: handlers
          } = run_state
        ) do
-    # if we get to the finalize phase and no effect has decided upon
-    # what type of output it's going to be, then it's an OkResult,
-    # signalling a normal completion
-    computation = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: computation
-
     handlers
     |> Enum.reduce({computation, run_state}, fn {key, mod}, {pure, run_state} ->
       # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
@@ -113,9 +108,14 @@ defmodule Freya.Run do
   """
   @spec interpret(Freer.freer(), RunState.t()) :: {Pure.t(), RunState.t()}
   def interpret(
-        %Pure{} = computation,
+        %Pure{val: val} = computation,
         %RunState{} = run_state
       ) do
+    # if we get to the finalize phase and no effect has decided upon
+    # what type of output it's going to be, then it's an OkResult,
+    # signalling a normal completion
+    computation = if !Result.type(val), do: %Pure{val: %OkResult{value: val}}, else: computation
+
     {computation, run_state}
   end
 
@@ -125,10 +125,7 @@ defmodule Freya.Run do
       ) do
     {new_computation, updated_run_state} = interpret_one(computation, run_state)
 
-    case new_computation do
-      %Pure{} -> {new_computation, updated_run_state}
-      _ -> interpret(new_computation, updated_run_state)
-    end
+    interpret(new_computation, updated_run_state)
   end
 
   @doc """
