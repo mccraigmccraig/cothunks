@@ -67,6 +67,105 @@ defmodule Freya.Effects.ErrorTest do
     end
   end
 
+  describe "composition with stateful Effects" do
+    test "writer in successful computation is applied" do
+      fv =
+        con [Error, Writer] do
+          tell(:from_outer_1)
+
+          res <-
+            catch_fx(
+              con [Error, Writer] do
+                tell(:from_inner)
+                return(42)
+              end,
+              fn _ -> return(0) end
+            )
+
+          tell(:from_outer_2)
+
+          return(res)
+        end
+
+      runner = Run.with_handlers(e: Error.Handler, w: Writer.Interpreter)
+      outcome = Run.run(fv, runner)
+
+      assert %Freya.RunOutcome{
+               result: %Freya.OkResult{
+                 value: 42
+               },
+               outputs: %{w: [:from_outer_2, :from_inner, :from_outer_1]}
+             } = outcome
+    end
+
+    test "writer in throwing computation is discarded" do
+      fv =
+        con [Error, Writer] do
+          tell(:from_outer_1)
+
+          res <-
+            catch_fx(
+              con [Error, Writer] do
+                tell(:from_inner)
+                throw_fx(:bad)
+                return(:nope)
+              end,
+              fn _err -> throw_fx(:also_bad) end
+            )
+
+          tell(:from_outer_2)
+
+          return(res)
+        end
+
+      runner = Run.with_handlers(e: Error.Handler, w: Writer.Interpreter)
+      outcome = Run.run(fv, runner)
+
+      assert %Freya.RunOutcome{
+               result: %Freya.ErrorResult{error: :bad},
+               outputs: %{w: [:from_outer_1]}
+             } = outcome
+    end
+
+    test "writer in recovered computation is applied" do
+      fv =
+        con [Error, Writer] do
+          tell(:from_outer_1)
+
+          res <-
+            catch_fx(
+              con [Error, Writer] do
+                tell(:from_inner)
+                throw_fx(:bad)
+                return(:nope)
+              end,
+              fn err -> return({:recovered, err}) end
+            )
+
+          tell(:from_outer_2)
+
+          return(res)
+        end
+
+      runner = Run.with_handlers(e: Error.Handler, w: Writer.Interpreter)
+      outcome = Run.run(fv, runner)
+
+      assert %Freya.RunOutcome{
+               result: %Freya.OkResult{value: {:recovered, :bad}},
+               outputs: %{w: [:from_outer_2, :from_inner, :from_outer_1]}
+             } = outcome
+    end
+
+    test "state in successful computation is applied" do
+    end
+
+    test "state in failed computation is discarded" do
+    end
+
+    test "state in reocvered computation is applied" do
+    end
+  end
+
   # describe "composition with Writer and State" do
   #   test "writer before throw is kept; after is skipped" do
   #     require Freer
