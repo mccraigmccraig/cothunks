@@ -48,7 +48,7 @@ defmodule Freya.Effects.Error.Handler do
     case u do
       {:throw, err} ->
         # Logger.error("#{__MODULE__}.throw")
-        # throw shoft-circuits
+        # throw shoft-circuits - discards queue
         {Freya.ErrorResult.error(err) |> Freer.return(), nil}
 
       {:catch, inner, handler} ->
@@ -60,11 +60,12 @@ defmodule Freya.Effects.Error.Handler do
             |> Run.interpret(updated_run_state)
             |> case do
               {%Pure{val: %ErrorResult{}}, _updated_run_state_2} ->
-                # handling failed - rethrow original error
+                # handling failed - rethrow original error, preserve queue
+                # for handling later
                 {%Impure{sig: Error, data: {:throw, err}, q: q}, nil}
 
               {%Pure{val: val}, updated_run_state_2} ->
-                # recovered - continue
+                # recovered - continue and commit state updates
                 commit_k = fn val -> RunEffects.commit_states(val, updated_run_state_2.states) end
                 updated_q = q |> Impl.q_prepend(commit_k)
                 {Impl.q_apply(updated_q, val), nil}
@@ -72,7 +73,7 @@ defmodule Freya.Effects.Error.Handler do
 
           res ->
             val = Result.value(res)
-            # success - continue
+            # success - continue and commit state updates
             commit_k = fn val -> RunEffects.commit_states(val, updated_run_state.states) end
             updated_q = q |> Impl.q_prepend(commit_k)
             {Impl.q_apply(updated_q, val), nil}
