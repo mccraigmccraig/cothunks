@@ -56,6 +56,19 @@ defmodule Freya.Run do
   end
 
   @doc """
+  Resume a suspended computation with a value.
+  """
+  def resume(
+        %RunOutcome{
+          result: %Freya.SuspendResult{continuation: k},
+          run_state: run_state
+        },
+        input
+      ) do
+    run(k.(input), run_state)
+  end
+
+  @doc """
   Interpret effects and finalize outputs - the main client-facing
   computation runner
   """

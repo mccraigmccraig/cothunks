@@ -33,9 +33,7 @@ defmodule Freya.Effects.Coroutine.Handler do
   alias Freya.Freer.Pure
   alias Freya.Effects.Coroutine
   alias Freya.Effects.Coroutine.Yield
-  alias Freya.RunOutcome
   alias Freya.Run.RunState
-  alias Freya.Run
   alias Freya.SuspendResult
 
   @behaviour Freya.EffectHandler
@@ -71,18 +69,5 @@ defmodule Freya.Effects.Coroutine.Handler do
         %RunState{} = _run_state
       ) do
     {computation, state}
-  end
-
-  @doc """
-  Resume a previously yielded coroutine with a value.
-  """
-  def resume(
-        %RunOutcome{
-          result: %Freya.SuspendResult{continuation: k},
-          run_state: run_state
-        },
-        input
-      ) do
-    Run.run(k.(input), run_state)
   end
 end
