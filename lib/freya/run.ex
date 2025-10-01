@@ -69,7 +69,8 @@ defmodule Freya.Run do
 
     %RunOutcome{
       result: final_val,
-      outputs: final_run_state.states
+      outputs: final_run_state.states,
+      run_state: run_state
     }
   end
 

@@ -28,7 +28,7 @@ defmodule Freya.Effects.CoroutineTest do
       outcome = Run.run(computation, runner)
       assert %RunOutcome{result: %YieldResult{value: 42}} = outcome
 
-      outcome2 = Coroutine.Handler.resume(outcome, 100, runner)
+      outcome2 = Coroutine.Handler.resume(outcome, 100)
       assert %Freya.RunOutcome{result: %OkResult{value: "finished: 100"}} = outcome2
     end
 
@@ -53,10 +53,10 @@ defmodule Freya.Effects.CoroutineTest do
       outcome = Run.run(computation, runner)
       assert %RunOutcome{result: %YieldResult{value: "first"}} = outcome
 
-      outcome2 = Coroutine.Handler.resume(outcome, 100, runner)
+      outcome2 = Coroutine.Handler.resume(outcome, 100)
       assert %Freya.RunOutcome{result: %YieldResult{value: "second: 100"}} = outcome2
 
-      outcome3 = Coroutine.Handler.resume(outcome2, 50, runner)
+      outcome3 = Coroutine.Handler.resume(outcome2, 50)
       assert %Freya.RunOutcome{result: %OkResult{value: "final: 150"}} = outcome3
 
       Logger.error("#{__MODULE__}.log\n#{inspect(outcome3, pretty: true)}")

@@ -78,12 +78,11 @@ defmodule Freya.Effects.Coroutine.Handler do
   """
   def resume(
         %RunOutcome{
-          result: %Freya.YieldResult{continuation: k, states: states}
+          result: %Freya.YieldResult{continuation: k},
+          run_state: run_state
         },
-        input,
-        %RunState{} = run_state
+        input
       ) do
-    run_state = %{run_state | states: states}
     Run.run(k.(input), run_state)
   end
 end

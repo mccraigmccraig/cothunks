@@ -6,11 +6,13 @@ defmodule Freya.RunOutcome do
   - `outputs`: flat map for effect-specific outputs (e.g., state, writer, logs)
   """
 
-  defstruct result: nil, outputs: %{}
+  alias Freya.Run.RunState
 
-  @type t :: %__MODULE__{result: any, outputs: map()}
+  defstruct result: nil, outputs: %{}, run_state: nil
 
-  @spec new(any, map()) :: t
-  def new(result, outputs) when is_map(outputs),
-    do: %__MODULE__{result: result, outputs: outputs}
+  @type t :: %__MODULE__{result: any, outputs: map(), run_state: RunState.t()}
+
+  @spec new(any, map(), RunState.t()) :: t
+  def new(result, outputs, %RunState{} = run_state) when is_map(outputs),
+    do: %__MODULE__{result: result, outputs: outputs, run_state: run_state}
 end
