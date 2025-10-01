@@ -3,7 +3,7 @@ defmodule Freya.Run do
   Functions to manage a priority-list of EffectHandlers and run a computation
   in the context of that list of EffectHandlers
 
-  EffectHandlers are structs providing the EffectHandler protocol
+  EffectHandlers are structs implementing the EffectHandler behaviour
   """
   alias Freya.Freer
   alias Freya.Freer.Impl
