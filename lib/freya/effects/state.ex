@@ -10,7 +10,7 @@ defmodule Freya.Effects.State do
   use Freya.Freer.Ops, constructors: Freya.Effects.State.Constructors
 end
 
-defmodule Freya.Effects.State.Interpreter do
+defmodule Freya.Effects.State.Handler do
   @moduledoc """
   A State effect implementation using the Freer monad.
   """

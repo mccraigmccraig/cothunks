@@ -37,10 +37,10 @@ defmodule Freya.Effects.StateTest do
     test "it does state stuff" do
       runner =
         Run.with_handlers(
-          l: EffectLogger.Interpreter,
-          s: {State.Interpreter, 5},
-          r: {Reader.Interpreter, %{env: 7}},
-          w: {Writer.Interpreter, []}
+          l: EffectLogger.Handler,
+          s: {State.Handler, 5},
+          r: {Reader.Handler, %{env: 7}},
+          w: {Writer.Handler, []}
         )
 
       outcome = Run.run(calc(10), runner)

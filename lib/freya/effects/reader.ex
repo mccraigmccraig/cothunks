@@ -10,7 +10,7 @@ defmodule Freya.Effects.Reader do
   use Freya.Freer.Ops, constructors: Freya.Effects.Reader.Constructors
 end
 
-defmodule Freya.Effects.Reader.Interpreter do
+defmodule Freya.Effects.Reader.Handler do
   @moduledoc "Interpreter (handler) for the Reader effect"
   alias Freya.Freer
   alias Freya.Freer.Impl

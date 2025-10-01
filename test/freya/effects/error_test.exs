@@ -85,7 +85,7 @@ defmodule Freya.Effects.ErrorTest do
           return(res)
         end
 
-      runner = Run.with_handlers(e: Error.Handler, w: Writer.Interpreter)
+      runner = Run.with_handlers(e: Error.Handler, w: Writer.Handler)
       outcome = Run.run(fv, runner)
 
       assert %Freya.RunOutcome{
@@ -116,7 +116,7 @@ defmodule Freya.Effects.ErrorTest do
           return(res)
         end
 
-      runner = Run.with_handlers(e: Error.Handler, w: Writer.Interpreter)
+      runner = Run.with_handlers(e: Error.Handler, w: Writer.Handler)
       outcome = Run.run(fv, runner)
 
       assert %Freya.RunOutcome{
@@ -145,7 +145,7 @@ defmodule Freya.Effects.ErrorTest do
           return(res)
         end
 
-      runner = Run.with_handlers(e: Error.Handler, w: Writer.Interpreter)
+      runner = Run.with_handlers(e: Error.Handler, w: Writer.Handler)
       outcome = Run.run(fv, runner)
 
       assert %Freya.RunOutcome{
@@ -175,7 +175,7 @@ defmodule Freya.Effects.ErrorTest do
           return(res)
         end
 
-      runner = Run.with_handlers(e: Error.Handler, s: State.Interpreter)
+      runner = Run.with_handlers(e: Error.Handler, s: State.Handler)
       outcome = Run.run(fv, runner)
 
       assert %Freya.RunOutcome{
@@ -208,7 +208,7 @@ defmodule Freya.Effects.ErrorTest do
           return(res)
         end
 
-      runner = Run.with_handlers(e: Error.Handler, s: State.Interpreter)
+      runner = Run.with_handlers(e: Error.Handler, s: State.Handler)
       outcome = Run.run(fv, runner)
 
       assert %Freya.RunOutcome{
@@ -239,7 +239,7 @@ defmodule Freya.Effects.ErrorTest do
           return(res)
         end
 
-      runner = Run.with_handlers(e: Error.Handler, s: State.Interpreter)
+      runner = Run.with_handlers(e: Error.Handler, s: State.Handler)
       outcome = Run.run(fv, runner)
 
       assert %Freya.RunOutcome{

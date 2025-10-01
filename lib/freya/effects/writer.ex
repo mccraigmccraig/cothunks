@@ -10,7 +10,7 @@ defmodule Freya.Effects.Writer do
   use Freya.Freer.Ops, constructors: Freya.Effects.Writer.Constructors
 end
 
-defmodule Freya.Effects.Writer.Interpreter do
+defmodule Freya.Effects.Writer.Handler do
   alias Freya.Freer
   alias Freya.Freer.Impl
   alias Freya.Freer.Impure

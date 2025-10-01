@@ -115,7 +115,7 @@ defmodule Freya.Effects.EffectLogger.LoggedComputation do
   end
 end
 
-defmodule Freya.Effects.EffectLogger.Interpreter do
+defmodule Freya.Effects.EffectLogger.Handler do
   require Logger
 
   alias Freya.Freer

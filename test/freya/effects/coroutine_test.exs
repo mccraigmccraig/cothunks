@@ -46,7 +46,7 @@ defmodule Freya.Effects.CoroutineTest do
       # First yield
       runner =
         Run.with_handlers(
-          l: EffectLogger.Interpreter,
+          l: EffectLogger.Handler,
           c: Coroutine.Handler
         )
 
