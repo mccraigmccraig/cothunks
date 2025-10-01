@@ -53,13 +53,13 @@ defmodule Freya.Effects.Coroutine.Handler do
         %Impure{sig: Coroutine, data: u, q: q} = _computation,
         _handler_key,
         _state,
-        %RunState{} = run_state
+        %RunState{}
       ) do
     case u do
       # shoft-circuit - discard queue - it lives on in k
       %Yield{value: val} ->
         k = fn v -> Impl.q_apply(q, v) end
-        {YieldResult.yield(val, k, run_state.states) |> Freer.return(), nil}
+        {YieldResult.yield(val, k) |> Freer.return(), nil}
     end
   end
 

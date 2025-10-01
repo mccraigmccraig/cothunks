@@ -56,10 +56,12 @@ defmodule Freya.Effects.CoroutineTest do
       outcome2 = Coroutine.Handler.resume(outcome, 100)
       assert %Freya.RunOutcome{result: %YieldResult{value: "second: 100"}} = outcome2
 
+      Logger.error("#{__MODULE__}.outcome2\n#{inspect(outcome2, pretty: true)}")
+
       outcome3 = Coroutine.Handler.resume(outcome2, 50)
       assert %Freya.RunOutcome{result: %OkResult{value: "final: 150"}} = outcome3
 
-      Logger.error("#{__MODULE__}.log\n#{inspect(outcome3, pretty: true)}")
+      Logger.error("#{__MODULE__}.outcome3\n#{inspect(outcome3, pretty: true)}")
     end
 
     # test "multiple yields" do

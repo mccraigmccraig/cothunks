@@ -34,10 +34,10 @@ defmodule Freya.YieldResult do
   with the expectation that the caller will supply a return value to
   continue the computation
   """
-  defstruct value: nil, continuation: nil, states: %{}
+  defstruct value: nil, continuation: nil
 
-  def yield(val, continuation, states),
-    do: %__MODULE__{value: val, continuation: continuation, states: states}
+  def yield(val, continuation),
+    do: %__MODULE__{value: val, continuation: continuation}
 end
 
 defimpl Freya.Protocols.Result, for: Freya.YieldResult do
