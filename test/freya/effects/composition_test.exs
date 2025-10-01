@@ -77,7 +77,7 @@ defmodule Freya.Effects.CompositionTest do
 
       Logger.error("Logger + Coroutine out1: \n#{inspect(out1, pretty: true, limit: :infinity)}")
 
-      assert %RunOutcome{result: %Freya.YieldResult{value: "first", continuation: k}} = out1
+      assert %RunOutcome{result: %Freya.SuspendResult{value: "first", continuation: k}} = out1
       assert is_function(k, 1)
 
       # Logger cannot finalize since continuation isn't invoked; no logged_computation yet
@@ -112,7 +112,7 @@ defmodule Freya.Effects.CompositionTest do
 
       Logger.error("Error + Coroutine out1: \n#{inspect(out1, pretty: true, limit: :infinity)}")
 
-      assert %RunOutcome{result: %Freya.YieldResult{value: :step, continuation: _k}} = out1
+      assert %RunOutcome{result: %Freya.SuspendResult{value: :step, continuation: _k}} = out1
 
       out2 = out1 |> CoroutineHandler.resume(:ignored) |> Freer.run()
 
@@ -140,7 +140,7 @@ defmodule Freya.Effects.CompositionTest do
         |> CoroutineHandler.interpret_coroutine()
         |> Freer.run()
 
-      assert %RunOutcome{result: %Freya.YieldResult{value: :hello, continuation: _k1}} =
+      assert %RunOutcome{result: %Freya.SuspendResult{value: :hello, continuation: _k1}} =
                out1
 
       Logger.error(

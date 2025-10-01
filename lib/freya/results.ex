@@ -28,7 +28,7 @@ defimpl Freya.Protocols.Result, for: Freya.ErrorResult do
   def short_circuits?(_r), do: true
 end
 
-defmodule Freya.YieldResult do
+defmodule Freya.SuspendResult do
   @moduledoc """
   Result type for a computation which is yielding a value to a caller,
   with the expectation that the caller will supply a return value to
@@ -40,8 +40,8 @@ defmodule Freya.YieldResult do
     do: %__MODULE__{value: val, continuation: continuation}
 end
 
-defimpl Freya.Protocols.Result, for: Freya.YieldResult do
-  def type(_r), do: Freya.YieldResult
+defimpl Freya.Protocols.Result, for: Freya.SuspendResult do
+  def type(_r), do: Freya.SuspendResult
   def value(r), do: r.value
   def short_circuits?(_r), do: true
 end

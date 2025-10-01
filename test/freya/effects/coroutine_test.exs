@@ -10,7 +10,7 @@ defmodule Freya.Effects.CoroutineTest do
   alias Freya.Freer
   alias Freya.RunOutcome
   alias Freya.Run
-  alias Freya.YieldResult
+  alias Freya.SuspendResult
   alias Freya.OkResult
 
   describe "basic coroutine operations" do
@@ -26,7 +26,7 @@ defmodule Freya.Effects.CoroutineTest do
         Run.with_handlers(c: Coroutine.Handler)
 
       outcome = Run.run(computation, runner)
-      assert %RunOutcome{result: %YieldResult{value: 42}} = outcome
+      assert %RunOutcome{result: %SuspendResult{value: 42}} = outcome
 
       outcome2 = Coroutine.Handler.resume(outcome, 100)
       assert %Freya.RunOutcome{result: %OkResult{value: "finished: 100"}} = outcome2
@@ -51,10 +51,10 @@ defmodule Freya.Effects.CoroutineTest do
         )
 
       outcome = Run.run(computation, runner)
-      assert %RunOutcome{result: %YieldResult{value: "first"}} = outcome
+      assert %RunOutcome{result: %SuspendResult{value: "first"}} = outcome
 
       outcome2 = Coroutine.Handler.resume(outcome, 100)
-      assert %Freya.RunOutcome{result: %YieldResult{value: "second: 100"}} = outcome2
+      assert %Freya.RunOutcome{result: %SuspendResult{value: "second: 100"}} = outcome2
 
       Logger.error("#{__MODULE__}.outcome2\n#{inspect(outcome2, pretty: true)}")
 
@@ -189,14 +189,14 @@ defmodule Freya.Effects.CoroutineTest do
   #       |> Freer.run()
 
   #     assert %RunOutcome{
-  #              result: %Freya.YieldResult{value: "State is: 5", continuation: _k1}
+  #              result: %Freya.SuspendResult{value: "State is: 5", continuation: _k1}
   #            } =
   #              result1
 
   #     result2 = result1 |> CoroutineHandler.resume(10) |> Freer.run()
 
   #     assert %RunOutcome{
-  #              result: %Freya.YieldResult{value: "New state is: 15", continuation: _k2}
+  #              result: %Freya.SuspendResult{value: "New state is: 15", continuation: _k2}
   #            } = result2
 
   #     result3 = result2 |> CoroutineHandler.resume(100) |> Freer.run()

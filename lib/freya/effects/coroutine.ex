@@ -4,7 +4,7 @@ defmodule Freya.Effects.Coroutine.Yield do
 end
 
 # Define the Status type for coroutine state
-# Status structs are superseded by RunOutcome with OkResult/YieldResult
+# Status structs are superseded by RunOutcome with OkResult/SuspendResult
 
 # Constructors for the coroutine effect
 defmodule Freya.Effects.Coroutine.Constructors do
@@ -36,7 +36,7 @@ defmodule Freya.Effects.Coroutine.Handler do
   alias Freya.RunOutcome
   alias Freya.Run.RunState
   alias Freya.Run
-  alias Freya.YieldResult
+  alias Freya.SuspendResult
 
   @behaviour Freya.EffectHandler
 
@@ -59,7 +59,7 @@ defmodule Freya.Effects.Coroutine.Handler do
       # shoft-circuit - discard queue - it lives on in k
       %Yield{value: val} ->
         k = fn v -> Impl.q_apply(q, v) end
-        {YieldResult.yield(val, k) |> Freer.return(), nil}
+        {SuspendResult.yield(val, k) |> Freer.return(), nil}
     end
   end
 
@@ -78,7 +78,7 @@ defmodule Freya.Effects.Coroutine.Handler do
   """
   def resume(
         %RunOutcome{
-          result: %Freya.YieldResult{continuation: k},
+          result: %Freya.SuspendResult{continuation: k},
           run_state: run_state
         },
         input
