@@ -223,4 +223,11 @@ defmodule Freya.Effects.EffectLogger.Handler do
         raise ArgumentError, message: "Effect diverged from log: #{inspect(log, pretty: true)}"
     end
   end
+
+  ## need to extend this to deal with higher-order effects
+  ## e.g. if a list effect repeatedly calls its continuation,
+  ## then each call will have its own logs, leading to a
+  ## list result in the parent... so any node in the
+  ## Log can haev a list of children - which is descended into
+  ## when a new effect is seen while an existing effect is open
 end
