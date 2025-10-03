@@ -27,6 +27,7 @@ thunks-*.tar
 .aider*
 
 /freer-simple
+/heftia
 
 /.elixir-tools
 
