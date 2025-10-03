@@ -2,12 +2,22 @@ defmodule Freya.LoggerTest do
   use ExUnit.Case
 
   require Logger
+
+  import Freya.Con
+
+  alias Freya.ErrorResult
   alias Freya.Freer
+  alias Freya.Freer.Impl
+  alias Freya.Freer.Impure
   alias Freya.Freer.Ops
+  alias Freya.Freer.Pure
   alias Freya.Effects.EffectLogger
   alias Freya.Effects.EffectLogger.InterpretedEffectLogEntry
   alias Freya.Effects.Reader
   alias Freya.Effects.Writer
+  alias Freya.Effects.State
+  alias Freya.Run
+  alias Freya.Run.RunState
 
   # define constructors for a simple language with
   # - number
@@ -37,71 +47,96 @@ defmodule Freya.LoggerTest do
   # - handle : interpret a Numbers statement, either
   #  passing a plain value on to the continuation, or
   #  short-circuit returning a Freer<Numbers>
-  defmodule InterpretNumbers do
-    # wrap a value in a Numbers structure
-    def ret(n), do: Freer.return(Freya.RunOutcome.ensure(n))
+  defmodule Numbers.Handler do
+    alias Freya.LoggerTest.Numbers
 
-    # interpret a Numbers structure and pass a value on to
-    # the continuation. The continuiation will return a Freer,
-    # so handle must return a Freer too if it doesn't call
-    # the continuation
-    def handle({:number, n}, k), do: k.(n)
-    def handle({:also_number, n}, k), do: k.(n)
-    def handle({:add, a, b}, k), do: k.(a + b)
-    def handle({:subtract, a, b}, k), do: k.(a - b)
-    def handle({:multiply, a, b}, k), do: k.(a * b)
+    @behaviour Freya.EffectHandler
 
-    def handle({:divide, a, b}, k) do
-      if b != 0 do
-        k.(a / b)
-      else
-        Freer.return(Freya.RunOutcome.ok({:error, "divide by zero: #{a}/#{b}"}))
-      end
+    @impl Freya.EffectHandler
+    def handles?(%Impure{sig: sig, data: _data, q: _q}) do
+      sig == Numbers
     end
 
-    def handle({:error, err}, _f), do: Freer.return({:error, err})
-  end
+    @impl Freya.EffectHandler
+    def interpret(
+          %Freer.Impure{sig: Numbers, data: u, q: q} = _computation,
+          _handler_key,
+          _state,
+          %RunState{} = _run_state
+        ) do
+      next =
+        case u do
+          {:number, n} ->
+            Impl.q_apply(q, n)
 
-  def interpret_numbers(fv) do
-    fv
-    |> Freya.Freer.Impl.handle_relay(
-      [Numbers],
-      &InterpretNumbers.ret/1,
-      &InterpretNumbers.handle/2
-    )
+          {:also_number, n} ->
+            Impl.q_apply(q, n)
+
+          {:add, a, b} ->
+            Impl.q_apply(q, a + b)
+
+          {:subtract, a, b} ->
+            Impl.q_apply(q, a - b)
+
+          {:multiply, a, b} ->
+            Impl.q_apply(q, a * b)
+
+          {:divide, a, b} ->
+            if b != 0 do
+              Impl.q_apply(q, a / b)
+            else
+              Numbers.error("divide by zero #{a}/#{b}")
+            end
+
+          {:error, err} ->
+            Freer.return(ErrorResult.error(err))
+        end
+
+      {next, nil}
+    end
+
+    @impl Freya.EffectHandler
+    def finalize(
+          %Pure{} = computation,
+          _handler_key,
+          state,
+          %RunState{} = _run_state
+        ) do
+      {computation, state}
+    end
   end
 
   describe "logger handler" do
     test "it can mix numbers with the state interpretation of Reader+Writer" do
-      require Freer
-
-      require Freya.Con
-
       fv =
-        Freya.Con.con [Numbers, Freya.Effects.Reader, Freya.Effects.Writer] do
+        con [Numbers, State] do
           {:foo, a} <- get()
           b <- number(10)
-          x <- Freer.return(12)
+          x <- return(12)
           put({:bar, a + b + x})
           c <- multiply(a, b)
           {:bar, d} <- get()
           subtract(d, c)
         end
 
-      result =
-        fv
-        |> EffectLogger.interpret_logger()
-        |> interpret_numbers()
-        |> Freya.Effects.State.interpret_state_expanded({:foo, 12})
-        |> Freer.run()
+      runner =
+        Run.with_handlers(
+          l: EffectLogger.Handler,
+          n: Numbers.Handler,
+          s: {State.Handler, {:foo, 12}}
+        )
+
+      # Logger.error("#{inspect(runner, pretty: true)}\n#{inspect(fv, pretty: true)}")
+
+      result = fv |> Run.run(runner)
 
       Logger.error("#{__MODULE__}.logger-handler\n#{inspect(result, pretty: true)}")
 
       assert %Freya.RunOutcome{
                result: %Freya.OkResult{value: final_val},
                outputs: %{
-                 state: {:bar, 34},
-                 logged_computation: %Freya.Effects.EffectLogger.LoggedComputation{
+                 s: {:bar, 34},
+                 l: %Freya.Effects.EffectLogger.LoggedComputation{
                    result: lc_val,
                    log: %Freya.Effects.EffectLogger.Log{stack: lc_stack, queue: lc_queue}
                  }
