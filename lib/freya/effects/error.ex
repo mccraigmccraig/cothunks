@@ -1,16 +1,29 @@
-defmodule Freya.Effects.Error.Constructors do
-  @moduledoc "Constructors for the Error effect"
+defmodule Freya.Effects.Error.Throw do
+  defstruct error: nil
+end
 
-  @doc "Throw an error value"
-  def throw_fx(error), do: {:throw, error}
+defmodule Freya.Effects.Error.Catch do
+  defstruct computation: nil, handler: nil
+end
 
-  @doc "Catch errors in an inner computation with a handler"
-  def catch_fx(computation, handler), do: {:catch, computation, handler}
+defimpl Freya.Protocols.Sendable, for: Freya.Effects.Error.Throw do
+  def send(%Freya.Effects.Error.Throw{} = eff),
+    do: Freya.Freer.send_effect(eff, Freya.Effects.Error)
+end
+
+defimpl Freya.Protocols.Sendable, for: Freya.Effects.Error.Catch do
+  def send(%Freya.Effects.Error.Catch{} = eff),
+    do: Freya.Freer.send_effect(eff, Freya.Effects.Error)
 end
 
 defmodule Freya.Effects.Error do
   @moduledoc "Operations (Ops) for the Error effect"
-  use Freya.Freer.Ops, constructors: Freya.Effects.Error.Constructors
+
+  alias Freya.Effects.Error.Throw
+  alias Freya.Effects.Error.Catch
+
+  def throw_fx(err), do: %Throw{error: err}
+  def catch_fx(computation, handler), do: %Catch{computation: computation, handler: handler}
 end
 
 defmodule Freya.Effects.Error.Handler do
@@ -24,6 +37,8 @@ defmodule Freya.Effects.Error.Handler do
   alias Freya.Freer.Impure
   alias Freya.Freer.Pure
   alias Freya.Effects.Error
+  alias Freya.Effects.Error.Throw
+  alias Freya.Effects.Error.Catch
   alias Freya.Run
   alias Freya.Run.RunEffects
   alias Freya.Run.RunState
@@ -40,18 +55,18 @@ defmodule Freya.Effects.Error.Handler do
   @doc "Interpret an Error computation, handling throw/catch"
   @impl Freya.EffectHandler
   def interpret(
-        %Freer.Impure{sig: _eff, data: u, q: q} = _computation,
+        %Freer.Impure{sig: Error, data: u, q: q} = _computation,
         _handler_key,
         _state,
         %RunState{} = run_state
       ) do
     case u do
-      {:throw, err} ->
+      %Throw{error: err} ->
         # Logger.error("#{__MODULE__}.throw")
         # throw shoft-circuits - discards queue
         {Freya.ErrorResult.error(err) |> Freer.return(), nil}
 
-      {:catch, inner, handler} ->
+      %Catch{computation: inner, handler: handler} ->
         {%Pure{val: result}, updated_run_state} = inner |> Run.interpret(run_state)
 
         case result do
@@ -62,7 +77,7 @@ defmodule Freya.Effects.Error.Handler do
               {%Pure{val: %ErrorResult{}}, _updated_run_state_2} ->
                 # handling failed - rethrow original error, preserve queue
                 # for handling later
-                {%Impure{sig: Error, data: {:throw, err}, q: q}, nil}
+                {%Impure{sig: Error, data: %Throw{error: err}, q: q}, nil}
 
               {%Pure{val: val}, updated_run_state_2} ->
                 # recovered - continue and commit state updates
