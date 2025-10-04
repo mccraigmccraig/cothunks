@@ -107,7 +107,9 @@ defmodule Freya.Run do
 
     if computation == sendable do
       raise ArgumentError,
-        message: "#{__MODULE__}.run - not Sendable: #{inspect(sendable, pretty: true)}"
+        message:
+          "#{__MODULE__}.run - not Sendable: #{inspect(sendable, pretty: true)} - " <>
+            " do you need to return() ?"
     end
 
     run(computation, run_state)
@@ -170,7 +172,9 @@ defmodule Freya.Run do
 
     if computation == sendable do
       raise ArgumentError,
-        message: "#{__MODULE__}.run - not Sendable: #{inspect(sendable, pretty: true)}"
+        message:
+          "#{__MODULE__}.run - not Sendable: #{inspect(sendable, pretty: true)} - " <>
+            " do you need to return() ?"
     end
 
     interpret(computation, run_state)

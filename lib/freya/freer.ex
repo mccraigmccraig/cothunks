@@ -79,7 +79,8 @@ defmodule Freya.Freer do
     if eff == sendable do
       raise ArgumentError,
         message:
-          "#{__MODULE__}.bind - not Sendable: #{inspect(sendable, pretty: true)} - do you need to return() ?"
+          "#{__MODULE__}.bind - not Sendable: #{inspect(sendable, pretty: true)} - " <>
+            "do you need to return() ?"
     end
 
     bind(eff, k)
