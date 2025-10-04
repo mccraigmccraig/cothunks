@@ -1,13 +1,27 @@
-defmodule Freya.Effects.State.Constructors do
-  @moduledoc "Constructors for the State effect"
+defmodule Freya.Effects.State.Get do
+  defstruct []
+end
 
-  def put(o), do: {:put, o}
-  def get(), do: :get
+defmodule Freya.Effects.State.Put do
+  defstruct val: nil
+end
+
+defimpl Freya.Protocols.Sendable, for: Freya.Effects.State.Get do
+  def send(%Freya.Effects.State.Get{} = eff),
+    do: Freya.Freer.send_effect(eff, Freya.Effects.State)
+end
+
+defimpl Freya.Protocols.Sendable, for: Freya.Effects.State.Put do
+  def send(%Freya.Effects.State.Put{} = eff),
+    do: Freya.Freer.send_effect(eff, Freya.Effects.State)
 end
 
 defmodule Freya.Effects.State do
-  @moduledoc "Operations (Ops) for the State effect"
-  use Freya.Freer.Ops, constructors: Freya.Effects.State.Constructors
+  @moduledoc """
+  Operations in the State effect
+  """
+  def put(v), do: %Freya.Effects.State.Put{val: v}
+  def get(), do: %Freya.Effects.State.Get{}
 end
 
 defmodule Freya.Effects.State.Handler do
@@ -20,6 +34,8 @@ defmodule Freya.Effects.State.Handler do
   alias Freya.Freer.Impure
   alias Freya.Freer.Pure
   alias Freya.Effects.State
+  alias Freya.Effects.State.Get
+  alias Freya.Effects.State.Put
   alias Freya.Run.RunState
 
   @behaviour Freya.EffectHandler
@@ -31,20 +47,18 @@ defmodule Freya.Effects.State.Handler do
 
   @impl Freya.EffectHandler
   def interpret(
-        %Freer.Impure{sig: eff, data: u, q: q} = _computation,
+        %Freer.Impure{sig: State, data: u, q: q} = _computation,
         _handler_key,
         state,
         %RunState{} = _run_state
       ) do
-    case {eff, u} do
-      {State, {:put, o}} ->
-        {Impl.q_apply(q, nil), o}
+    case u do
+      %Put{val: o} ->
+        # return the old value, set the new
+        {Impl.q_apply(q, state), o}
 
-      {State, :get} ->
+      %Get{} ->
         {Impl.q_apply(q, state), state}
-
-      _ ->
-        {%Freer.Impure{sig: eff, data: u, q: q}, state}
     end
   end
 
