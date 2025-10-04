@@ -44,5 +44,5 @@ defmodule Freya.EffectHandler do
               handler_key :: atom,
               state :: any,
               run_state :: RunState.t()
-            ) :: {Freer.freer(), any}
+            ) :: {Freer.Pure.t(), any}
 end
