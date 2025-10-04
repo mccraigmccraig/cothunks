@@ -69,68 +69,72 @@ defmodule Freya.Freer.Impl do
     end
   end
 
-  @doc """
-  return a new continuation `x->Freer` which composes the
-  `(freer -> freer)` function `h` with the application of the queue `q`.
-  """
-  @spec q_comp([(any -> Freer.freer())], (Freer.freer() -> Freer.freer())) :: (any ->
-                                                                                 Freer.freer())
-  def q_comp(q, h), do: fn x -> q_apply(q, x) |> h.() end
+  # all the stuff below was for the first-order effects with
+  # layered handlers - modelled afterfreer-simple - it's not used with
+  # newer non-layered handler approach
 
-  # can the effect `eff` be handled ?
-  defp handles?(effs, eff) when is_list(effs), do: Enum.member?(effs, eff)
-  defp handles?(f, eff) when is_function(f, 1), do: f.(eff)
+  # @doc """
+  # return a new continuation `x->Freer` which composes the
+  # `(freer -> freer)` function `h` with the application of the queue `q`.
+  # """
+  # @spec q_comp([(any -> Freer.freer())], (Freer.freer() -> Freer.freer())) :: (any ->
+  #                                                                                Freer.freer())
+  # def q_comp(q, h), do: fn x -> q_apply(q, x) |> h.() end
 
-  @doc """
-  Allows easy implementation of interpreters with `ret` and `h` functions.
+  # # can the effect `eff` be handled ?
+  # defp handles?(effs, eff) when is_list(effs), do: Enum.member?(effs, eff)
+  # defp handles?(f, eff) when is_function(f, 1), do: f.(eff)
 
-  handle_relay must return a Freer struct
-  """
-  @spec handle_relay(
-          Freer.freer(),
-          [atom],
-          (any -> Freer.freer()),
-          (any, (any -> Freer.freer()) ->
-             Freer.freer())
-        ) ::
-          Freer.freer()
-  def handle_relay(%Pure{val: x}, _effs_or_fn, ret, _h), do: ret.(x)
+  # @doc """
+  # Allows easy implementation of interpreters with `ret` and `h` functions.
 
-  def handle_relay(%Impure{sig: sig, data: u, q: q}, effs_or_fn, ret, h) do
-    # a continuation including this handler
-    k = q_comp(q, &handle_relay(&1, effs_or_fn, ret, h))
+  # handle_relay must return a Freer struct
+  # """
+  # @spec handle_relay(
+  #         Freer.freer(),
+  #         [atom],
+  #         (any -> Freer.freer()),
+  #         (any, (any -> Freer.freer()) ->
+  #            Freer.freer())
+  #       ) ::
+  #         Freer.freer()
+  # def handle_relay(%Pure{val: x}, _effs_or_fn, ret, _h), do: ret.(x)
 
-    if handles?(effs_or_fn, sig) do
-      h.(u, k)
-    else
-      %Impure{sig: sig, data: u, q: [k]}
-    end
-  end
+  # def handle_relay(%Impure{sig: sig, data: u, q: q}, effs_or_fn, ret, h) do
+  #   # a continuation including this handler
+  #   k = q_comp(q, &handle_relay(&1, effs_or_fn, ret, h))
 
-  @doc """
-  Allows easy implementation of interpreters which maintain state - such as the
-  classical State effect. Adapted from the freer-simple implementation
-  """
-  @spec handle_relay_s(
-          Freer.freer(),
-          [atom],
-          any,
-          (any -> Freer.freer()),
-          (any, (any -> Freer.freer()) ->
-             Freer.freer())
-        ) ::
-          Freer.freer()
-  def handle_relay_s(%Pure{val: x}, _effs_or_fn, initial_state, ret, _h),
-    do: ret.(initial_state).(x)
+  #   if handles?(effs_or_fn, sig) do
+  #     h.(u, k)
+  #   else
+  #     %Impure{sig: sig, data: u, q: [k]}
+  #   end
+  # end
 
-  def handle_relay_s(%Impure{sig: sig, data: u, q: q}, effs_or_fn, initial_state, ret, h) do
-    # a continuation including this handler
-    k = fn s -> q_comp(q, &handle_relay_s(&1, effs_or_fn, s, ret, h)) end
+  # @doc """
+  # Allows easy implementation of interpreters which maintain state - such as the
+  # classical State effect. Adapted from the freer-simple implementation
+  # """
+  # @spec handle_relay_s(
+  #         Freer.freer(),
+  #         [atom],
+  #         any,
+  #         (any -> Freer.freer()),
+  #         (any, (any -> Freer.freer()) ->
+  #            Freer.freer())
+  #       ) ::
+  #         Freer.freer()
+  # def handle_relay_s(%Pure{val: x}, _effs_or_fn, initial_state, ret, _h),
+  #   do: ret.(initial_state).(x)
 
-    if handles?(effs_or_fn, sig) do
-      h.(initial_state).(u, k)
-    else
-      %Impure{sig: sig, data: u, q: [k.(initial_state)]}
-    end
-  end
+  # def handle_relay_s(%Impure{sig: sig, data: u, q: q}, effs_or_fn, initial_state, ret, h) do
+  #   # a continuation including this handler
+  #   k = fn s -> q_comp(q, &handle_relay_s(&1, effs_or_fn, s, ret, h)) end
+
+  #   if handles?(effs_or_fn, sig) do
+  #     h.(initial_state).(u, k)
+  #   else
+  #     %Impure{sig: sig, data: u, q: [k.(initial_state)]}
+  #   end
+  # end
 end
