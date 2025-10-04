@@ -1,8 +1,11 @@
 defmodule Freya.Effects.ErrorTest do
   use ExUnit.Case
 
+  require Logger
+
   import Freya.Con
 
+  alias Freya.Effects.EffectLogger
   alias Freya.Effects.Error
   alias Freya.Effects.Writer
   alias Freya.Effects.State
@@ -239,13 +242,21 @@ defmodule Freya.Effects.ErrorTest do
           return(res)
         end
 
-      runner = Run.with_handlers(e: Error.Handler, s: State.Handler)
+      runner =
+        Run.with_handlers(
+          l: EffectLogger.Handler,
+          e: Error.Handler,
+          s: State.Handler
+        )
+
       outcome = Run.run(fv, runner)
 
       assert %Freya.RunOutcome{
                result: %Freya.OkResult{value: {:recovered, :bad}},
                outputs: %{s: 15}
              } = outcome
+
+      Logger.error("#{__MODULE__}.outcome\n" <> inspect(outcome, pretty: true))
     end
   end
 end
