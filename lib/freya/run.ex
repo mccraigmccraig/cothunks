@@ -44,6 +44,9 @@ defmodule Freya.Run do
                 "%run{}: #{inspect(acc, pretty: true)}"
         end
 
+        # make sure the EffectHandler behaviours are loaded!
+        Code.ensure_loaded(mod)
+
         %{
           acc
           | handlers: [{key, mod} | acc.handlers],
@@ -126,20 +129,17 @@ defmodule Freya.Run do
            handlers: handlers
          } = run_state
        ) do
+    handlers
+    |> Enum.reduce(run_state, fn {key, mod}, run_state ->
+      if function_exported?(mod, :initialize, 4) do
+        updated_state =
+          mod.initialize(computation, key, Map.get(run_state.states, key), run_state)
 
-      handlers
-      |> Enum.reduce(run_state, fn {key, mod}, run_state ->
-        # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
-        if function_exported?(mod, :initialize, 4) do
-          updated_state =
-            mod.initialize(computation, key, Map.get(run_state.states, key), run_state)
-
-          %{run_state | states: Map.put(run_state.states, key, updated_state)}
-        else
-          run_state
-        end
-      end)
-
+        %{run_state | states: Map.put(run_state.states, key, updated_state)}
+      else
+        run_state
+      end
+    end)
   end
 
   # finalize output value and states - gives each Effect chance to finalize
