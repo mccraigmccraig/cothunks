@@ -159,13 +159,22 @@ defmodule Freya.Effects.EffectLogger.Handler do
   end
 
   @impl Freya.EffectHandler
-  def interpret(
-        %Impure{sig: eff, data: u, q: q} = computation,
+  def initialize(
+        _computation,
         _handler_key,
         log,
         %RunState{} = _run_state
       ) do
-    log = log || Log.new()
+    log || Log.new()
+  end
+
+  @impl Freya.EffectHandler
+  def interpret(
+        %Impure{sig: eff, data: u, q: q} = computation,
+        _handler_key,
+        %Log{} = log,
+        %RunState{} = _run_state
+      ) do
     # Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
 
     # Logger.error(
