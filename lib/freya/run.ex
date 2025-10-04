@@ -92,7 +92,9 @@ defmodule Freya.Run do
         %Impure{} = computation,
         %RunState{} = run_state
       ) do
-    {new_computation, updated_run_state} = interpret(computation, run_state)
+    updated_run_state = initialize(computation, run_state)
+
+    {new_computation, updated_run_state} = interpret(computation, updated_run_state)
 
     # Logger.error("#{__MODULE__}.after-interpret")
     # it's %Pure{} now
@@ -115,6 +117,31 @@ defmodule Freya.Run do
     run(computation, run_state)
   end
 
+  # initialize output value and states - gives each Effect chance to initialize
+  # its state and the result value
+  @spec initialize(Freer.freer(), RunState.t()) :: RunState.t()
+  defp initialize(
+         computation,
+         %RunState{
+           handlers: handlers
+         } = run_state
+       ) do
+
+      handlers
+      |> Enum.reduce(run_state, fn {key, mod}, run_state ->
+        # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
+        if function_exported?(mod, :initialize, 4) do
+          updated_state =
+            mod.initialize(computation, key, Map.get(run_state.states, key), run_state)
+
+          %{run_state | states: Map.put(run_state.states, key, updated_state)}
+        else
+          run_state
+        end
+      end)
+
+  end
+
   # finalize output value and states - gives each Effect chance to finalize
   # its state and the result value
   @spec finalize(Pure.t(), RunState.t()) :: {Pure.t(), RunState.t()}
@@ -131,9 +158,13 @@ defmodule Freya.Run do
 
     handlers
     |> Enum.reduce({computation, run_state}, fn {key, mod}, {pure, run_state} ->
-      # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
-      {pure, updated_state} = mod.finalize(pure, key, Map.get(run_state.states, key), run_state)
-      {pure, %{run_state | states: Map.put(run_state.states, key, updated_state)}}
+      if function_exported?(mod, :finalize, 4) do
+        # Logger.error("#{inspect(pure)}\n#{inspect(key)}\n#{inspect(run_state)}")
+        {pure, updated_state} = mod.finalize(pure, key, Map.get(run_state.states, key), run_state)
+        {pure, %{run_state | states: Map.put(run_state.states, key, updated_state)}}
+      else
+        {computation, run_state}
+      end
     end)
   end
 

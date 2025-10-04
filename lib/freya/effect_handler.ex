@@ -19,6 +19,19 @@ defmodule Freya.EffectHandler do
   @callback handles?(computation :: Freer.Impure.t()) :: boolean
 
   @doc """
+  called before a new computation (or nested computation) is run
+
+  Offers an opportunity for Effect handlers to initialize their state,
+  particularly when entering a nested computation (cf: EffectLogger)
+  """
+  @callback initialize(
+              computation :: Freer.Impure.t(),
+              handler_key :: atom,
+              state :: any,
+              run_state :: RunState.t()
+            ) :: any
+
+  @doc """
   interpret an Effect with the handler - the handler
   - handler_key - its key in the outputs
   - state - its state returned from its last invocation
@@ -45,4 +58,6 @@ defmodule Freya.EffectHandler do
               state :: any,
               run_state :: RunState.t()
             ) :: {Freer.Pure.t(), any}
+
+  @optional_callbacks initialize: 4, finalize: 4
 end
