@@ -10,6 +10,7 @@ defmodule Freya.Freer do
   require Logger
 
   alias Freya.Freer
+  alias Freya.Protocols.Sendable
 
   # Freer values are %Pure{} and %Impure{}
 
@@ -65,8 +66,22 @@ defmodule Freya.Freer do
   def return(x), do: pure(x)
 
   @spec bind(freer, (any -> freer)) :: freer
-  def bind(%Pure{val: x}, k), do: k.(x)
+  def bind(%Pure{val: x}, k), do: k.(x) |> Sendable.send()
 
   def bind(%Impure{sig: sig, data: u, q: q}, k),
     do: %Impure{sig: sig, data: u, q: Freya.Freer.Impl.q_append(q, k)}
+
+  # this allows plain Sendable structs to behave just like Freer values
+  # which have been sent with `etaf` / `send_effect`
+  def bind(sendable, k) do
+    eff = Sendable.send(sendable)
+
+    if eff == sendable do
+      raise ArgumentError,
+        message:
+          "#{__MODULE__}.bind - not Sendable: #{inspect(sendable, pretty: true)} - do you need to return() ?"
+    end
+
+    bind(eff, k)
+  end
 end

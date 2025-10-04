@@ -3,9 +3,11 @@ defmodule Freya.Freer.Impl do
   Interpreter-facing implementation details for the Freer monad.
   Contains continuation-queue utilities and interpreter helpers.
   """
+  require Logger
 
   alias Freya.Freer
   alias Freya.Freer.{Pure, Impure}
+  alias Freya.Protocols.Sendable
 
   @doc """
   add a continuation `mf` to a queue of continuations `q`
@@ -35,6 +37,9 @@ defmodule Freya.Freer.Impl do
 
   @doc """
   apply value `x` to a queue `q` of continuations, returning a Freer value.
+  Uses the Sendable.send protocol method to convert a plain effect value
+  to a Freer - so effects can also be plain struct values with a
+  Sendable.send implementation
 
   Applies a value through the list of continuations until it gets an %Impure{},
   then adds any remaining continuations from `q` to that %Impure{}'s queue.
@@ -42,8 +47,15 @@ defmodule Freya.Freer.Impl do
   @spec q_apply([(any -> Freer.freer())], any) :: Freer.freer()
   def q_apply(q, x) do
     case q do
-      [k] -> k.(x)
-      [k | t] -> bindp(k.(x), t)
+      [k] ->
+        neff = k.(x) |> Sendable.send()
+        # Logger.info("#{__MODULE__}.q_apply: #{inspect(neff, pretty: true)}")
+        neff
+
+      [k | t] ->
+        neff = k.(x) |> Sendable.send()
+        # Logger.info("#{__MODULE__}.q_apply: #{inspect(neff, pretty: true)}")
+        bindp(neff, t)
     end
   end
 
