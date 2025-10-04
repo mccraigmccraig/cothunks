@@ -30,7 +30,6 @@ defmodule Freya.Effects.Coroutine.Handler do
   alias Freya.Freer
   alias Freya.Freer.Impl
   alias Freya.Freer.Impure
-  alias Freya.Freer.Pure
   alias Freya.Effects.Coroutine
   alias Freya.Effects.Coroutine.Yield
   alias Freya.Run.RunState
@@ -59,15 +58,5 @@ defmodule Freya.Effects.Coroutine.Handler do
         k = fn v -> Impl.q_apply(q, v) end
         {SuspendResult.yield(val, k) |> Freer.return(), nil}
     end
-  end
-
-  @impl Freya.EffectHandler
-  def finalize(
-        %Pure{} = computation,
-        _handler_key,
-        state,
-        %RunState{} = _run_state
-      ) do
-    {computation, state}
   end
 end

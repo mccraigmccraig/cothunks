@@ -95,14 +95,4 @@ defmodule Freya.Effects.Error.Handler do
         end
     end
   end
-
-  @impl Freya.EffectHandler
-  def finalize(
-        %Pure{} = computation,
-        _handler_key,
-        state,
-        %RunState{} = _run_state
-      ) do
-    {computation, state}
-  end
 end

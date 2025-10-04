@@ -27,18 +27,15 @@ defmodule Freya.Effects.Writer.Handler do
 
   @impl Freya.EffectHandler
   def interpret(
-        %Freer.Impure{sig: eff, data: u, q: q} = _computation,
+        %Freer.Impure{sig: Writer, data: u, q: q} = _computation,
         _handler_key,
         state,
         %RunState{} = _run_state
       ) do
-    case {eff, u} do
-      {Writer, {:tell, o}} ->
+    case u do
+      {:tell, o} ->
         updated_state = [o | state || []]
         {Impl.q_apply(q, updated_state), updated_state}
-
-      _ ->
-        {%Freer.Impure{sig: eff, data: u, q: q}, state}
     end
   end
 

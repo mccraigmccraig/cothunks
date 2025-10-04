@@ -35,7 +35,6 @@ defmodule Freya.Effects.State.Handler do
   alias Freya.Freer
   alias Freya.Freer.Impl
   alias Freya.Freer.Impure
-  alias Freya.Freer.Pure
   alias Freya.Effects.State
   alias Freya.Effects.State.Get
   alias Freya.Effects.State.Put
@@ -63,15 +62,5 @@ defmodule Freya.Effects.State.Handler do
       %Get{} ->
         {Impl.q_apply(q, state), state}
     end
-  end
-
-  @impl Freya.EffectHandler
-  def finalize(
-        %Pure{} = computation,
-        _handler_key,
-        state,
-        %RunState{} = _run_state
-      ) do
-    {computation, state}
   end
 end
