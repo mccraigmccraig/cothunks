@@ -11,6 +11,7 @@ defmodule Freya.Run do
   alias Freya.OkResult
   alias Freya.Freer.Pure
   alias Freya.Protocols.Result
+  alias Freya.Protocols.Sendable
   alias Freya.Run.RunEffects
   alias Freya.Run.RunEffects.CommitStates
   alias Freya.Run.RunState
@@ -98,6 +99,20 @@ defmodule Freya.Run do
     run(new_computation, updated_run_state)
   end
 
+  def run(
+        sendable,
+        %RunState{} = run_state
+      ) do
+    computation = Sendable.send(sendable)
+
+    if computation == sendable do
+      raise ArgumentError,
+        message: "#{__MODULE__}.run - not Sendable: #{inspect(sendable, pretty: true)}"
+    end
+
+    run(computation, run_state)
+  end
+
   # finalize output value and states - gives each Effect chance to finalize
   # its state and the result value
   @spec finalize(Pure.t(), RunState.t()) :: {Pure.t(), RunState.t()}
@@ -145,6 +160,20 @@ defmodule Freya.Run do
     {new_computation, updated_run_state} = interpret_one(computation, run_state)
 
     interpret(new_computation, updated_run_state)
+  end
+
+  def interpret(
+        sendable,
+        %RunState{} = run_state
+      ) do
+    computation = Sendable.send(sendable)
+
+    if computation == sendable do
+      raise ArgumentError,
+        message: "#{__MODULE__}.run - not Sendable: #{inspect(sendable, pretty: true)}"
+    end
+
+    interpret(computation, run_state)
   end
 
   @doc """
