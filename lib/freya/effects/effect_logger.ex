@@ -229,7 +229,10 @@ defmodule Freya.Effects.EffectLogger.Handler do
         {Freya.Freer.Impl.q_apply(q, value), updated_log}
 
       _ ->
-        raise ArgumentError, message: "Effect diverged from log: #{inspect(log, pretty: true)}"
+        raise ArgumentError,
+          message:
+            "Effect diverged from log:\n" <>
+              " #{inspect(log, pretty: true)}"
     end
   end
 
