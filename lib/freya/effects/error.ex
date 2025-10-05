@@ -35,13 +35,13 @@ defmodule Freya.Effects.Error.Handler do
   alias Freya.Freer
   alias Freya.Freer.Impl
   alias Freya.Freer.Impure
-  alias Freya.Freer.Pure
   alias Freya.Effects.Error
   alias Freya.Effects.Error.Throw
   alias Freya.Effects.Error.Catch
   alias Freya.Run
   alias Freya.Run.RunEffects
   alias Freya.Run.RunState
+  alias Freya.RunOutcome
   alias Freya.ErrorResult
   alias Freya.Protocols.Result
 
@@ -67,29 +67,34 @@ defmodule Freya.Effects.Error.Handler do
         {Freya.ErrorResult.error(err) |> Freer.return(), nil}
 
       %Catch{computation: inner, handler: handler} ->
-        {%Pure{val: result}, updated_run_state} = inner |> Run.interpret(run_state)
+        # {%Pure{val: result}, updated_run_state}
+        %RunOutcome{
+          result: result
+        } = inner_outcome = Run.run(inner, run_state)
 
         case result do
           %ErrorResult{error: err} ->
             handler.(err)
-            |> Run.interpret(updated_run_state)
+            |> Run.run(inner_outcome.run_state)
             |> case do
-              {%Pure{val: %ErrorResult{}}, _updated_run_state_2} ->
+              %RunOutcome{result: %ErrorResult{}} = unrecovered_outcome ->
+                discard_k = fn val -> RunEffects.discard(val, unrecovered_outcome) end
+                updated_q = q |> Impl.q_prepend(discard_k)
                 # handling failed - rethrow original error, preserve queue
                 # for handling later
-                {%Impure{sig: Error, data: %Throw{error: err}, q: q}, nil}
+                {%Impure{sig: Error, data: %Throw{error: err}, q: updated_q}, nil}
 
-              {%Pure{val: val}, updated_run_state_2} ->
+              %RunOutcome{result: result} = recovered_outcome ->
                 # recovered - continue and commit state updates
-                commit_k = fn val -> RunEffects.commit_states(val, updated_run_state_2.states) end
+                commit_k = fn val -> RunEffects.commit(val, recovered_outcome) end
                 updated_q = q |> Impl.q_prepend(commit_k)
-                {Impl.q_apply(updated_q, val), nil}
+                {Impl.q_apply(updated_q, result), nil}
             end
 
           res ->
             val = Result.value(res)
             # success - continue and commit state updates
-            commit_k = fn val -> RunEffects.commit_states(val, updated_run_state.states) end
+            commit_k = fn val -> RunEffects.commit(val, inner_outcome) end
             updated_q = q |> Impl.q_prepend(commit_k)
             {Impl.q_apply(updated_q, val), nil}
         end

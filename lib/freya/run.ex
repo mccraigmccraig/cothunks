@@ -225,14 +225,14 @@ defmodule Freya.Run do
   def interpret_one(
         %Impure{
           sig: RunEffects,
-          data: %CommitStates{value: value, states: new_states},
+          data: %CommitStates{value: value, run_outcome: run_outcome},
           q: q
         },
         %RunState{} = run_state
       ) do
     # blessed handler for delimited effects to use to commit updated
     # effect states to the parent computation
-    {Impl.q_apply(q, value), %{run_state | states: new_states}}
+    {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
   end
 
   def interpret_one(
