@@ -299,9 +299,7 @@ defmodule Freya.Run do
     end
   end
 
-  # - need to validate returns from effect handlers with case
-  # - need to validate returns from mpnadic fns too
-  # - maybe add Effect protocol, so we don't need Ops modules to
-  #   send effect values - can just have send(val) protocol
-  #   method dispatching on struct type
+  # put the handlers for the Freya.Run.RunEffects into a Handler module,
+  # and silently add them to the _end_ of the handler list (so other handlers
+  # like EffectLogger get a chance to have at the commit/discard effects)
 end
