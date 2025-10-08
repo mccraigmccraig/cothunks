@@ -278,6 +278,22 @@ defmodule Freya.Effects.EffectLogger.Handler do
         updated_log = Log.log_interpreted_effect_value(log, val)
         {Impl.q_apply(q, val), updated_log}
 
+      {Freya.Run.RunEffects,
+       %Freya.Run.RunEffects.CommitStates{
+         value: _value,
+         run_outcome: run_outcome
+       }} ->
+        Logger.error("#{__MODULE__}.CommitStates #{inspect(run_outcome, pretty: true)}")
+        log_or_resume(computation, log)
+
+      {Freya.Run.RunEffects,
+       %Freya.Run.RunEffects.DiscardStates{
+         value: _value,
+         run_outcome: run_outcome
+       }} ->
+        Logger.error("#{__MODULE__}.DiscardStates #{inspect(run_outcome, pretty: true)}")
+        log_or_resume(computation, log)
+
       _ ->
         # Logger.error("#{__MODULE__}.run_logger log_or_resume")
         log_or_resume(computation, log)
