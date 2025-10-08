@@ -47,3 +47,36 @@ defmodule Freya.Run.RunEffects do
   """
   def discard(value, run_outcome), do: %DiscardStates{value: value, run_outcome: run_outcome}
 end
+
+defmodule Freya.Run.RunEffects.Handler do
+  alias Freya.Freer
+  alias Freya.Freer.Impl
+  alias Freya.Freer.Impure
+  alias Freya.Run.RunEffects
+  alias Freya.Run.RunEffects.CommitStates
+  alias Freya.Run.RunEffects.DiscardStates
+  alias Freya.Run.RunState
+
+  @behaviour Freya.EffectHandler
+
+  @impl Freya.EffectHandler
+  def handles?(%Impure{sig: sig, data: _data, q: _q}) do
+    sig == RunEffects
+  end
+
+  @impl Freya.EffectHandler
+  def interpret(
+        %Freer.Impure{sig: RunEffects, data: u, q: q} = _computation,
+        _handler_key,
+        _state,
+        %RunState{} = run_state
+      ) do
+    case u do
+      %CommitStates{value: value, run_outcome: run_outcome} ->
+        {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
+
+      %DiscardStates{value: value, run_outcome: _run_outcome} ->
+        {Impl.q_apply(q, value), run_state}
+    end
+  end
+end
