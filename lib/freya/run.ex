@@ -6,14 +6,12 @@ defmodule Freya.Run do
   EffectHandlers are structs implementing the EffectHandler behaviour
   """
   alias Freya.Freer
-  alias Freya.Freer.Impl
   alias Freya.Freer.Impure
   alias Freya.OkResult
   alias Freya.Freer.Pure
   alias Freya.Protocols.Result
   alias Freya.Protocols.Sendable
   alias Freya.Run.RunEffects
-  alias Freya.Run.RunEffects.CommitStates
   alias Freya.Run.RunState
   alias Freya.RunOutcome
 
@@ -28,6 +26,9 @@ defmodule Freya.Run do
   """
   @spec with_handlers(handler_spec_list()) :: %RunState{}
   def with_handlers(handler_specs) do
+    # silently add the RunEffects handler
+    handler_specs = handler_specs ++ [run: RunEffects.Handler]
+
     handler_specs
     |> Enum.map(fn
       {key, mod} when is_atom(key) and is_atom(mod) -> {key, {mod, nil}}
@@ -222,18 +223,18 @@ defmodule Freya.Run do
     {computation, run_state}
   end
 
-  def interpret_one(
-        %Impure{
-          sig: RunEffects,
-          data: %CommitStates{value: value, run_outcome: run_outcome},
-          q: q
-        },
-        %RunState{} = run_state
-      ) do
-    # blessed handler for delimited effects to use to commit updated
-    # effect states to the parent computation
-    {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
-  end
+  # def interpret_one(
+  #       %Impure{
+  #         sig: RunEffects,
+  #         data: %CommitStates{value: value, run_outcome: run_outcome},
+  #         q: q
+  #       },
+  #       %RunState{} = run_state
+  #     ) do
+  #   # blessed handler for delimited effects to use to commit updated
+  #   # effect states to the parent computation
+  #   {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
+  # end
 
   def interpret_one(
         %Impure{sig: _sig, data: _u, q: _q} = effect,
