@@ -1,4 +1,4 @@
-defmodule Freya.Run.RunEffects.CommitStates do
+defmodule Freya.Run.RunEffects.ScopedOk do
   alias Freya.RunOutcome
 
   defstruct value: nil, run_outcome: nil
@@ -9,12 +9,12 @@ defmodule Freya.Run.RunEffects.CommitStates do
         }
 end
 
-defimpl Freya.Protocols.Sendable, for: Freya.Run.RunEffects.CommitStates do
-  def send(%Freya.Run.RunEffects.CommitStates{} = eff),
+defimpl Freya.Protocols.Sendable, for: Freya.Run.RunEffects.ScopedOk do
+  def send(%Freya.Run.RunEffects.ScopedOk{} = eff),
     do: Freya.Freer.send_effect(eff, Freya.Run.RunEffects)
 end
 
-defmodule Freya.Run.RunEffects.DiscardStates do
+defmodule Freya.Run.RunEffects.ScopedError do
   alias Freya.RunOutcome
 
   defstruct value: nil, run_outcome: nil
@@ -25,27 +25,27 @@ defmodule Freya.Run.RunEffects.DiscardStates do
         }
 end
 
-defimpl Freya.Protocols.Sendable, for: Freya.Run.RunEffects.DiscardStates do
-  def send(%Freya.Run.RunEffects.DiscardStates{} = eff),
+defimpl Freya.Protocols.Sendable, for: Freya.Run.RunEffects.ScopedError do
+  def send(%Freya.Run.RunEffects.ScopedError{} = eff),
     do: Freya.Freer.send_effect(eff, Freya.Run.RunEffects)
 end
 
 defmodule Freya.Run.RunEffects do
-  alias Freya.Run.RunEffects.CommitStates
-  alias Freya.Run.RunEffects.DiscardStates
+  alias Freya.Run.RunEffects.ScopedOk
+  alias Freya.Run.RunEffects.ScopedError
 
   @doc """
   A privileged operation which allows delimited effects like
   Error to commit the effect states of a child computation to the
   parent's RunState
   """
-  def commit(value, run_outcome), do: %CommitStates{value: value, run_outcome: run_outcome}
+  def scoped_ok(value, run_outcome), do: %ScopedOk{value: value, run_outcome: run_outcome}
 
   @doc """
   A privileged operation which allows delimited effects like
   Error to discard the effect states of a child computation
   """
-  def discard(value, run_outcome), do: %DiscardStates{value: value, run_outcome: run_outcome}
+  def scoped_error(value, run_outcome), do: %ScopedError{value: value, run_outcome: run_outcome}
 end
 
 defmodule Freya.Run.RunEffects.Handler do
@@ -53,8 +53,8 @@ defmodule Freya.Run.RunEffects.Handler do
   alias Freya.Freer.Impl
   alias Freya.Freer.Impure
   alias Freya.Run.RunEffects
-  alias Freya.Run.RunEffects.CommitStates
-  alias Freya.Run.RunEffects.DiscardStates
+  alias Freya.Run.RunEffects.ScopedOk
+  alias Freya.Run.RunEffects.ScopedError
   alias Freya.Run.RunState
 
   @behaviour Freya.EffectHandler
@@ -72,10 +72,10 @@ defmodule Freya.Run.RunEffects.Handler do
         %RunState{} = run_state
       ) do
     case u do
-      %CommitStates{value: value, run_outcome: run_outcome} ->
+      %ScopedOk{value: value, run_outcome: run_outcome} ->
         {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
 
-      %DiscardStates{value: value, run_outcome: _run_outcome} ->
+      %ScopedError{value: value, run_outcome: _run_outcome} ->
         {Impl.q_apply(q, value), run_state}
     end
   end
