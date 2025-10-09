@@ -42,29 +42,15 @@ defmodule Freya.Effects.EffectLogger.InterpretedEffectLogEntry do
   alias Freya.Effects.EffectLogger.EffectLogEntry
   alias Freya.Effects.EffectLogger.Log
 
-  defstruct effects: [], scoped: nil, value: nil
+  defstruct effects: [], value: nil
 
   @type t :: %__MODULE__{
           effects: list(IntermediateEffectLogEntry.t()),
-          scoped: Log.t() | nil,
           value: any
         }
 
   def set_value(%EffectLogEntry{} = log_entry, value) do
     %__MODULE__{effects: log_entry.effects, value: value}
-  end
-
-  def set_scoped_value(
-        %EffectLogEntry{} = log_entry,
-        scoped,
-        value
-      ) do
-    %__MODULE__{
-      effects: log_entry.effects,
-      # inversion: the scoped log is now a child
-      scoped: %{scoped | parent: nil},
-      value: value
-    }
   end
 end
 
@@ -75,28 +61,17 @@ defmodule Freya.Effects.EffectLogger.Log do
   alias Freya.Freer.Pure
   alias Freya.Freer.Impure
 
-  defstruct stack: [], queue: [], parent: nil
+  defstruct stack: [], queue: []
 
   @type t :: %__MODULE__{
           stack: list(InterpretedEffectLogEntry.t()),
-          queue: list(EffectLogEntry.t() | InterpretedEffectLogEntry.t()),
-          parent: nil | t()
+          queue: list(EffectLogEntry.t() | InterpretedEffectLogEntry.t())
         }
 
   def new() do
     %__MODULE__{
       stack: [],
-      queue: [],
-      parent: nil
-    }
-  end
-
-  # create a new Log with a parent - for scoped effects
-  def new(%__MODULE__{} = parent) do
-    %__MODULE__{
-      stack: [],
-      queue: [],
-      parent: parent
+      queue: []
     }
   end
 
@@ -128,27 +103,6 @@ defmodule Freya.Effects.EffectLogger.Log do
         %{
           log
           | stack: [InterpretedEffectLogEntry.set_value(log_entry, effect_value) | log.stack],
-            queue: []
-        }
-
-      _ ->
-        raise ArgumentError, message: "unexpected effect value: #{inspect(log, pretty: true)}"
-    end
-  end
-
-  def log_interpreted_scoped_effect_value(
-        %__MODULE__{} = log,
-        %__MODULE__{} = scoped_log,
-        effect_value
-      ) do
-    case log.queue do
-      [%EffectLogEntry{} = log_entry] ->
-        %{
-          log
-          | stack: [
-              InterpretedEffectLogEntry.set_scoped_value(log_entry, scoped_log, effect_value)
-              | log.stack
-            ],
             queue: []
         }
 
@@ -246,13 +200,13 @@ defmodule Freya.Effects.EffectLogger.Handler do
       ) do
     log = log || Log.new()
 
-    # if there's an open effect then we're creating a new scope
+    # if there's an open effect then we're starting a scoped effect
     case log do
       %Log{
         queue: [%EffectLogEntry{} | _]
       } ->
-        # keep the current log as the parent in a new scoped log
-        Log.new(log)
+        # start a new log to capture the scoped computation
+        Log.new()
 
       _ ->
         log
@@ -290,15 +244,6 @@ defmodule Freya.Effects.EffectLogger.Handler do
         # - add the scoped-state as the scoped child of the open effect log in the parent-state
         # - that's the new state
         # Logger.error("#{__MODULE__}.ScopedOk #{inspect(run_outcome, pretty: true)}")
-
-        updated_log =
-          Log.log_interpreted_scoped_effect_value(
-            log,
-            Map.get(run_outcome.outputs, handler_key),
-            value
-          )
-
-        Logger.error("#{__MODULE__}.ScopedOk #{inspect(updated_log, pretty: true)}")
 
         log_or_resume(computation, log)
 
@@ -366,6 +311,9 @@ defmodule Freya.Effects.EffectLogger.Handler do
         # push the ne effect tp the current log entry
         # and carry on
         updated_log = Log.push_effect(log, computation)
+
+        Logger.error("#{__MODULE__}.partial #{inspect(updated_log, pretty: true)}")
+
         {computation, updated_log}
 
       _ ->

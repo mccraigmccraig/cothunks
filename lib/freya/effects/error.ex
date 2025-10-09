@@ -85,10 +85,12 @@ defmodule Freya.Effects.Error.Handler do
                 {%Impure{sig: Error, data: %Throw{error: err}, q: updated_q}, nil}
 
               %RunOutcome{result: result} = recovered_outcome ->
+                val = Result.value(result)
+
                 # recovered - continue and commit state updates
                 commit_k = fn val -> RunEffects.scoped_ok(val, recovered_outcome) end
                 updated_q = q |> Impl.q_prepend(commit_k)
-                {Impl.q_apply(updated_q, result), nil}
+                {Impl.q_apply(updated_q, val), nil}
             end
 
           res ->
