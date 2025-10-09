@@ -78,7 +78,7 @@ defmodule Freya.Effects.Error.Handler do
             |> Run.run(inner_outcome.run_state)
             |> case do
               %RunOutcome{result: %ErrorResult{}} = unrecovered_outcome ->
-                discard_k = fn val -> RunEffects.discard(val, unrecovered_outcome) end
+                discard_k = fn val -> RunEffects.scoped_error(val, unrecovered_outcome) end
                 updated_q = q |> Impl.q_prepend(discard_k)
                 # handling failed - rethrow original error, preserve queue
                 # for handling later
@@ -86,7 +86,7 @@ defmodule Freya.Effects.Error.Handler do
 
               %RunOutcome{result: result} = recovered_outcome ->
                 # recovered - continue and commit state updates
-                commit_k = fn val -> RunEffects.commit(val, recovered_outcome) end
+                commit_k = fn val -> RunEffects.scoped_ok(val, recovered_outcome) end
                 updated_q = q |> Impl.q_prepend(commit_k)
                 {Impl.q_apply(updated_q, result), nil}
             end
@@ -94,7 +94,7 @@ defmodule Freya.Effects.Error.Handler do
           res ->
             val = Result.value(res)
             # success - continue and commit state updates
-            commit_k = fn val -> RunEffects.commit(val, inner_outcome) end
+            commit_k = fn val -> RunEffects.scoped_ok(val, inner_outcome) end
             updated_q = q |> Impl.q_prepend(commit_k)
             {Impl.q_apply(updated_q, val), nil}
         end

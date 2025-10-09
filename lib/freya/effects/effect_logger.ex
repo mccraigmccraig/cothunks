@@ -262,7 +262,7 @@ defmodule Freya.Effects.EffectLogger.Handler do
   @impl Freya.EffectHandler
   def interpret(
         %Impure{sig: eff, data: u, q: q} = computation,
-        _handler_key,
+        handler_key,
         %Log{} = log,
         %RunState{} = _run_state
       ) do
@@ -280,19 +280,34 @@ defmodule Freya.Effects.EffectLogger.Handler do
         {Impl.q_apply(q, val), updated_log}
 
       {Freya.Run.RunEffects,
-       %Freya.Run.RunEffects.CommitStates{
-         value: _value,
+       %Freya.Run.RunEffects.ScopedOk{
+         value: value,
          run_outcome: run_outcome
        }} ->
-        Logger.error("#{__MODULE__}.CommitStates #{inspect(run_outcome, pretty: true)}")
+        # - take the log state from the run_outcome,
+        # - consider the current-state as the scoped-state
+        # - extract the parent-state - that will be the basis for the new state
+        # - add the scoped-state as the scoped child of the open effect log in the parent-state
+        # - that's the new state
+        # Logger.error("#{__MODULE__}.ScopedOk #{inspect(run_outcome, pretty: true)}")
+
+        updated_log =
+          Log.log_interpreted_scoped_effect_value(
+            log,
+            Map.get(run_outcome.outputs, handler_key),
+            value
+          )
+
+        Logger.error("#{__MODULE__}.ScopedOk #{inspect(updated_log, pretty: true)}")
+
         log_or_resume(computation, log)
 
       {Freya.Run.RunEffects,
-       %Freya.Run.RunEffects.DiscardStates{
+       %Freya.Run.RunEffects.ScopedError{
          value: _value,
          run_outcome: run_outcome
        }} ->
-        Logger.error("#{__MODULE__}.DiscardStates #{inspect(run_outcome, pretty: true)}")
+        Logger.error("#{__MODULE__}.ScopedError #{inspect(run_outcome, pretty: true)}")
         log_or_resume(computation, log)
 
       _ ->
