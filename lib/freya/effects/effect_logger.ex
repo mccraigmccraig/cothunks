@@ -170,8 +170,9 @@ defmodule Freya.Effects.EffectLogger.Log do
 
   def prepare_for_resume(%__MODULE__{} = log) do
     %__MODULE__{
-      stack: [],
-      queue: Enum.reverse(log.stack) ++ log.queue
+      log
+      | stack: [],
+        queue: Enum.reverse(log.stack) ++ log.queue
     }
   end
 end
