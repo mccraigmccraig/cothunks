@@ -52,6 +52,23 @@ defmodule Freya.EffectHandler do
               run_state :: RunState.t()
             ) :: {Freer.freer(), any}
 
+  @doc """
+  determines what to do with state from a scoped effect when
+  that effect returns. If not provided then the default behaviour is
+  to
+  - keep scoped state on a successful return
+  - discard scoped state on an error return
+  - not sure yet on a suspend return - suspending from within a scoped effect
+    seems like it might require some extra thought
+  """
+  @callback scoped_return(
+              result :: Freya.Result.result(),
+              handler_key :: atom,
+              state :: any,
+              scoped_state :: any,
+              run_state :: RunState.t()
+            ) :: any
+
   @callback finalize(
               computation :: Freer.Pure.t(),
               handler_key :: atom,
@@ -59,5 +76,5 @@ defmodule Freya.EffectHandler do
               run_state :: RunState.t()
             ) :: {Freer.Pure.t(), any}
 
-  @optional_callbacks initialize: 4, finalize: 4
+  @optional_callbacks initialize: 4, scoped_return: 5, finalize: 4
 end
