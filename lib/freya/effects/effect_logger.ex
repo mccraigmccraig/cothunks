@@ -195,22 +195,11 @@ defmodule Freya.Effects.EffectLogger.Handler do
   def initialize(
         _computation,
         _handler_key,
-        log,
+        _log,
         %RunState{} = _run_state
       ) do
-    log = log || Log.new()
-
-    # if there's an open effect then we're starting a scoped effect
-    case log do
-      %Log{
-        queue: [%EffectLogEntry{} | _]
-      } ->
-        # start a new log to capture the scoped computation
-        Log.new()
-
-      _ ->
-        log
-    end
+    # always start a new log for a new scope
+    Log.new()
   end
 
   @impl Freya.EffectHandler
@@ -225,29 +214,7 @@ defmodule Freya.Effects.EffectLogger.Handler do
         # Logger.error("#{__MODULE__}.run_logger handling")
         # capturing the value of an executed effect
         updated_log = Log.log_interpreted_effect_value(log, val)
-
         {Impl.q_apply(q, val), updated_log}
-
-      {Freya.Run.RunEffects,
-       %Freya.Run.RunEffects.ScopedResult{
-         computation: _computation,
-         run_outcome: _run_outcome
-       }} ->
-        # - take the log state from the run_outcome,
-        # - consider the current-state as the scoped-state
-        # - extract the parent-state - that will be the basis for the new state
-        # - add the scoped-state as the scoped child of the open effect log in the parent-state
-        # - that's the new state
-
-        log_or_resume(computation, log)
-
-      {Freya.Run.RunEffects,
-       %Freya.Run.RunEffects.ScopedResult{
-         computation: _computation,
-         run_outcome: run_outcome
-       }} ->
-        Logger.error("#{__MODULE__}.ScopedError #{inspect(run_outcome, pretty: true)}")
-        log_or_resume(computation, log)
 
       _ ->
         # Logger.error("#{__MODULE__}.run_logger log_or_resume")
