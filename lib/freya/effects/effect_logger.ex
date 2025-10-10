@@ -220,11 +220,6 @@ defmodule Freya.Effects.EffectLogger.Handler do
         %Log{} = log,
         %RunState{} = _run_state
       ) do
-    Logger.error(
-      "#{__MODULE__}.interpret\n" <>
-        "#{inspect(computation, pretty: true)}"
-    )
-
     case {eff, u} do
       {EffectLogger, %LogInterpretedEffectValue{value: val}} ->
         # Logger.error("#{__MODULE__}.run_logger handling")

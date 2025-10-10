@@ -215,7 +215,10 @@ defmodule Freya.Run do
   @doc """
   Interpret a single effects
   """
-  @spec interpret_one(Freer.freer(), RunState.t()) :: {Freer.freer(), RunState.t()}
+  @spec interpret_one(
+          Freer.freer(),
+          RunState.t()
+        ) :: {Freer.freer(), RunState.t()}
   def interpret_one(
         %Pure{} = computation,
         %RunState{} = run_state
@@ -240,11 +243,11 @@ defmodule Freya.Run do
         %Impure{sig: _sig, data: _u, q: _q} = effect,
         %RunState{handlers: handlers} = run_state
       ) do
-    # Logger.error(
-    #   "#{__MODULE__}.run\n" <>
-    #     "effect: #{inspect(effect, pretty: true)}\n" <>
-    #     "run_state: #{inspect(run_state, pretty: true)}"
-    # )
+    Logger.error(
+      "#{__MODULE__}.interpret_one\n" <>
+        "effect: #{inspect(effect, pretty: true)}\n" <>
+        "run_state: #{inspect(run_state, pretty: true)}"
+    )
 
     {new_effect, updated_run_state} =
       handlers

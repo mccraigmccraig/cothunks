@@ -82,6 +82,7 @@ defmodule Freya.Run.RunEffects.Handler do
             "new-states: #{inspect(run_outcome.run_state.states, pretty: true)}"
         )
 
+        # ARGH! this can never work
         {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
 
       %ScopedError{value: value, run_outcome: _run_outcome} ->
