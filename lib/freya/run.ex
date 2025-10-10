@@ -250,7 +250,7 @@ defmodule Freya.Run do
     updated_effect_states =
       handlers
       |> Enum.reduce(effect_states, fn {key, mod}, effect_states ->
-        if function_exported?(mod, :scoped_return, 5) do
+        if function_exported?(mod, :scoped_return, 6) do
           updated_effect_state =
             mod.scoped_return(
               scoped_effect_result,
