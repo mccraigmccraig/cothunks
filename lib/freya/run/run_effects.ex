@@ -27,6 +27,12 @@ defmodule Freya.Run.RunEffects do
   a normal EffectHandler and must be handled in Run - because it
   can involve modification of any EffectHandler's state, not just the
   EffectHandler's own state
+
+  * computation - a Pure or Impure which the scoping handler can use
+    to achieve anything (continue, return an error &c) once the
+    effect states have been updated
+  * run_outcome - the outcome of the scoped computation, including
+      the result, the effect states and the effect outputs
   """
   def scoped_result(computation, run_outcome),
     do: %ScopedResult{computation: computation, run_outcome: run_outcome}
