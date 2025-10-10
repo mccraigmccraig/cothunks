@@ -1,92 +1,33 @@
-defmodule Freya.Run.RunEffects.ScopedOk do
+defmodule Freya.Run.RunEffects.ScopedResult do
   alias Freya.RunOutcome
+  alias Freya.Freer
 
-  defstruct value: nil, run_outcome: nil
+  defstruct computation: nil, run_outcome: nil
 
   @type t :: %__MODULE__{
-          value: any,
+          computation: Freer.freer(),
           run_outcome: RunOutcome.t()
         }
 end
 
-defimpl Freya.Protocols.Sendable, for: Freya.Run.RunEffects.ScopedOk do
-  def send(%Freya.Run.RunEffects.ScopedOk{} = eff),
-    do: Freya.Freer.send_effect(eff, Freya.Run.RunEffects)
-end
-
-defmodule Freya.Run.RunEffects.ScopedError do
-  alias Freya.RunOutcome
-
-  defstruct value: nil, run_outcome: nil
-
-  @type t :: %__MODULE__{
-          value: any,
-          run_outcome: RunOutcome.t()
-        }
-end
-
-defimpl Freya.Protocols.Sendable, for: Freya.Run.RunEffects.ScopedError do
-  def send(%Freya.Run.RunEffects.ScopedError{} = eff),
+defimpl Freya.Protocols.Sendable, for: Freya.Run.RunEffects.ScopedResult do
+  def send(%Freya.Run.RunEffects.ScopedResult{} = eff),
     do: Freya.Freer.send_effect(eff, Freya.Run.RunEffects)
 end
 
 defmodule Freya.Run.RunEffects do
-  alias Freya.Run.RunEffects.ScopedOk
-  alias Freya.Run.RunEffects.ScopedError
+  alias Freya.Run.RunEffects.ScopedResult
 
   @doc """
-  A privileged operation which allows delimited effects like
-  Error to commit the effect states of a child computation to the
-  parent's RunState
+  A privileged operation which allows scoped effects like
+  Error to return the effect states of a child computation to the
+  parent's RunState, along with a computation to continue with
+
+  NB: this is a privileged operation which can't be handled in
+  a normal EffectHandler and must be handled in Run - because it
+  can involve modification of any EffectHandler's state, not just the
+  EffectHandler's own state
   """
-  def scoped_ok(value, run_outcome), do: %ScopedOk{value: value, run_outcome: run_outcome}
-
-  @doc """
-  A privileged operation which allows delimited effects like
-  Error to discard the effect states of a child computation
-  """
-  def scoped_error(value, run_outcome), do: %ScopedError{value: value, run_outcome: run_outcome}
-end
-
-defmodule Freya.Run.RunEffects.Handler do
-  require Logger
-
-  alias Freya.Freer
-  alias Freya.Freer.Impl
-  alias Freya.Freer.Impure
-  alias Freya.Run.RunEffects
-  alias Freya.Run.RunEffects.ScopedOk
-  alias Freya.Run.RunEffects.ScopedError
-  alias Freya.Run.RunState
-
-  @behaviour Freya.EffectHandler
-
-  @impl Freya.EffectHandler
-  def handles?(%Impure{sig: sig, data: _data, q: _q}) do
-    sig == RunEffects
-  end
-
-  @impl Freya.EffectHandler
-  def interpret(
-        %Freer.Impure{sig: RunEffects, data: u, q: q} = _computation,
-        _handler_key,
-        _state,
-        %RunState{} = run_state
-      ) do
-    case u do
-      %ScopedOk{value: value, run_outcome: run_outcome} ->
-        Logger.error(
-          "#{__MODULE__}.interpret\n" <>
-            "value: #{inspect(value)}\n" <>
-            "q: #{inspect(q, pretty: true)}\n" <>
-            "new-states: #{inspect(run_outcome.run_state.states, pretty: true)}"
-        )
-
-        # ARGH! this can never work
-        {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
-
-      %ScopedError{value: value, run_outcome: _run_outcome} ->
-        {Impl.q_apply(q, value), run_state}
-    end
-  end
+  def scoped_result(computation, run_outcome),
+    do: %ScopedResult{computation: computation, run_outcome: run_outcome}
 end

@@ -62,7 +62,7 @@ defmodule Freya.Freer.Impl do
   # bind continuation queue `k` to Freer value `mx`, returning a new `Freer` value
   # with the continuation queues concatenated
   @spec bindp(Freer.freer(), [(any -> Freer.freer())]) :: Freer.freer()
-  defp bindp(mx, k) do
+  def bindp(mx, k) do
     case mx do
       %Pure{val: y} -> q_apply(k, y)
       %Impure{sig: sig, data: u, q: q} -> %Impure{sig: sig, data: u, q: q_concat(q, k)}

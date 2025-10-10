@@ -229,8 +229,8 @@ defmodule Freya.Effects.EffectLogger.Handler do
         {Impl.q_apply(q, val), updated_log}
 
       {Freya.Run.RunEffects,
-       %Freya.Run.RunEffects.ScopedOk{
-         value: _value,
+       %Freya.Run.RunEffects.ScopedResult{
+         computation: _computation,
          run_outcome: _run_outcome
        }} ->
         # - take the log state from the run_outcome,
@@ -242,8 +242,8 @@ defmodule Freya.Effects.EffectLogger.Handler do
         log_or_resume(computation, log)
 
       {Freya.Run.RunEffects,
-       %Freya.Run.RunEffects.ScopedError{
-         value: _value,
+       %Freya.Run.RunEffects.ScopedResult{
+         computation: _computation,
          run_outcome: run_outcome
        }} ->
         Logger.error("#{__MODULE__}.ScopedError #{inspect(run_outcome, pretty: true)}")

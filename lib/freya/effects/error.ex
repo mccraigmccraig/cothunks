@@ -40,7 +40,7 @@ defmodule Freya.Effects.Error.Handler do
   alias Freya.Effects.Error.Catch
   alias Freya.Run
   alias Freya.Run.RunEffects
-  alias Freya.Run.RunEffects.ScopedOk
+  alias Freya.Run.RunEffects.ScopedResult
   alias Freya.Run.RunState
   alias Freya.RunOutcome
   alias Freya.ErrorResult
@@ -79,7 +79,7 @@ defmodule Freya.Effects.Error.Handler do
             |> Run.run(inner_outcome.run_state)
             |> case do
               %RunOutcome{result: %ErrorResult{}} = unrecovered_outcome ->
-                discard_k = fn val -> RunEffects.scoped_error(val, unrecovered_outcome) end
+                discard_k = fn val -> RunEffects.scoped_result(val, unrecovered_outcome) end
                 updated_q = q |> Impl.q_prepend(discard_k)
                 # handling failed - rethrow original error, preserve queue
                 # for handling later
@@ -99,8 +99,8 @@ defmodule Freya.Effects.Error.Handler do
 
                 {%Impure{
                    sig: RunEffects,
-                   data: %ScopedOk{
-                     value: val,
+                   data: %ScopedResult{
+                     computation: Freer.return(val),
                      run_outcome: recovered_outcome
                    },
                    q: q
@@ -114,8 +114,8 @@ defmodule Freya.Effects.Error.Handler do
             # updated_q = q |> Impl.q_prepend(commit_k)
             {%Impure{
                sig: RunEffects,
-               data: %ScopedOk{
-                 value: val,
+               data: %ScopedResult{
+                 computation: Freer.return(val),
                  run_outcome: inner_outcome
                },
                q: q

@@ -6,12 +6,14 @@ defmodule Freya.Run do
   EffectHandlers are structs implementing the EffectHandler behaviour
   """
   alias Freya.Freer
+  alias Freya.Freer.Impl
   alias Freya.Freer.Impure
   alias Freya.OkResult
   alias Freya.Freer.Pure
   alias Freya.Protocols.Result
   alias Freya.Protocols.Sendable
   alias Freya.Run.RunEffects
+  alias Freya.Run.RunEffects.ScopedResult
   alias Freya.Run.RunState
   alias Freya.RunOutcome
 
@@ -226,18 +228,59 @@ defmodule Freya.Run do
     {computation, run_state}
   end
 
-  # def interpret_one(
-  #       %Impure{
-  #         sig: RunEffects,
-  #         data: %CommitStates{value: value, run_outcome: run_outcome},
-  #         q: q
-  #       },
-  #       %RunState{} = run_state
-  #     ) do
-  #   # blessed handler for delimited effects to use to commit updated
-  #   # effect states to the parent computation
-  #   {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
-  # end
+  # blessed handler for ScopedResults - it must be handled here, because
+  # the EffectHandler behaviour does not support effects which can
+  # change other effect's state - instead, the EffectHandler.scoped_return
+  # funciton is offered, which allows handlers to override their own
+  # scoped_return action
+  def interpret_one(
+        %Impure{
+          sig: RunEffects,
+          data: %ScopedResult{
+            computation: computation,
+            run_outcome: %RunOutcome{
+              result: scoped_effect_result,
+              run_state: %RunState{states: scoped_effect_states}
+            }
+          },
+          q: q
+        },
+        %RunState{handlers: handlers, states: effect_states} = run_state
+      ) do
+    updated_effect_states =
+      handlers
+      |> Enum.reduce(effect_states, fn {key, mod}, effect_states ->
+        if function_exported?(mod, :scoped_return, 5) do
+          updated_effect_state =
+            mod.scoped_return(
+              scoped_effect_result,
+              key,
+              Map.get(effect_states, key),
+              Map.get(scoped_effect_states, key),
+              run_state
+            )
+
+          Map.put(effect_states, key, updated_effect_state)
+        else
+          case scoped_effect_result do
+            %Freya.OkResult{} ->
+              # accept the scoped state
+              Map.put(effect_states, key, Map.get(scoped_effect_states, key))
+
+            _ ->
+              # ignore the scoped state
+              effect_states
+          end
+        end
+      end)
+
+    # blessed handler for delimited effects to use to commit updated
+    # effect states to the parent computation
+    {
+      Impl.bindp(computation, q),
+      %{run_state | states: updated_effect_states}
+    }
+  end
 
   def interpret_one(
         %Impure{sig: _sig, data: _u, q: _q} = effect,
