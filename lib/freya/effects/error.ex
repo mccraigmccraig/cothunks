@@ -40,6 +40,7 @@ defmodule Freya.Effects.Error.Handler do
   alias Freya.Effects.Error.Catch
   alias Freya.Run
   alias Freya.Run.RunEffects
+  alias Freya.Run.RunEffects.ScopedOk
   alias Freya.Run.RunState
   alias Freya.RunOutcome
   alias Freya.ErrorResult
@@ -88,17 +89,37 @@ defmodule Freya.Effects.Error.Handler do
                 val = Result.value(result)
 
                 # recovered - continue and commit state updates
-                commit_k = fn val -> RunEffects.scoped_ok(val, recovered_outcome) end
-                updated_q = q |> Impl.q_prepend(commit_k)
-                {Impl.q_apply(updated_q, val), nil}
+
+                # commit_k = fn val -> RunEffects.scoped_ok(val, recovered_outcome) end
+                # updated_q = q |> Impl.q_prepend(commit_k)
+
+                # Logger.error(
+                #   "#{__MODULE__}.recovered updated_q: #{inspect(updated_q, pretty: true)}"
+                # )
+
+                {%Impure{
+                   sig: RunEffects,
+                   data: %ScopedOk{
+                     value: val,
+                     run_outcome: recovered_outcome
+                   },
+                   q: q
+                 }, nil}
             end
 
           res ->
             val = Result.value(res)
-            # success - continue and commit state updates
-            commit_k = fn val -> RunEffects.scoped_ok(val, inner_outcome) end
-            updated_q = q |> Impl.q_prepend(commit_k)
-            {Impl.q_apply(updated_q, val), nil}
+
+            # commit_k = fn val -> RunEffects.scoped_ok(val, inner_outcome) end
+            # updated_q = q |> Impl.q_prepend(commit_k)
+            {%Impure{
+               sig: RunEffects,
+               data: %ScopedOk{
+                 value: val,
+                 run_outcome: inner_outcome
+               },
+               q: q
+             }, nil}
         end
     end
   end

@@ -49,6 +49,8 @@ defmodule Freya.Run.RunEffects do
 end
 
 defmodule Freya.Run.RunEffects.Handler do
+  require Logger
+
   alias Freya.Freer
   alias Freya.Freer.Impl
   alias Freya.Freer.Impure
@@ -73,6 +75,13 @@ defmodule Freya.Run.RunEffects.Handler do
       ) do
     case u do
       %ScopedOk{value: value, run_outcome: run_outcome} ->
+        Logger.error(
+          "#{__MODULE__}.interpret\n" <>
+            "value: #{inspect(value)}\n" <>
+            "q: #{inspect(q, pretty: true)}\n" <>
+            "new-states: #{inspect(run_outcome.run_state.states, pretty: true)}"
+        )
+
         {Impl.q_apply(q, value), %{run_state | states: run_outcome.run_state.states}}
 
       %ScopedError{value: value, run_outcome: _run_outcome} ->

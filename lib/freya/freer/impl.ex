@@ -49,12 +49,12 @@ defmodule Freya.Freer.Impl do
     case q do
       [k] ->
         neff = k.(x) |> Sendable.send()
-        # Logger.info("#{__MODULE__}.q_apply: #{inspect(neff, pretty: true)}")
+        Logger.info("#{__MODULE__}.q_apply: #{inspect(neff, pretty: true)}")
         neff
 
       [k | t] ->
         neff = k.(x) |> Sendable.send()
-        # Logger.info("#{__MODULE__}.q_apply: #{inspect(neff, pretty: true)}")
+        Logger.info("#{__MODULE__}.q_apply: #{inspect(neff, pretty: true)}")
         bindp(neff, t)
     end
   end

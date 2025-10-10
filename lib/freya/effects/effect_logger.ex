@@ -216,34 +216,33 @@ defmodule Freya.Effects.EffectLogger.Handler do
   @impl Freya.EffectHandler
   def interpret(
         %Impure{sig: eff, data: u, q: q} = computation,
-        handler_key,
+        _handler_key,
         %Log{} = log,
         %RunState{} = _run_state
       ) do
-    # Logger.error("#{__MODULE__}.run_logger #{inspect(computation, pretty: true)}")
-
-    # Logger.error(
-    #   "#{__MODULE__}.interprety_logger(%Impure{}) #{inspect(computation, pretty: true)}"
-    # )
+    Logger.error(
+      "#{__MODULE__}.interpret\n" <>
+        "#{inspect(computation, pretty: true)}"
+    )
 
     case {eff, u} do
       {EffectLogger, %LogInterpretedEffectValue{value: val}} ->
         # Logger.error("#{__MODULE__}.run_logger handling")
         # capturing the value of an executed effect
         updated_log = Log.log_interpreted_effect_value(log, val)
+
         {Impl.q_apply(q, val), updated_log}
 
       {Freya.Run.RunEffects,
        %Freya.Run.RunEffects.ScopedOk{
-         value: value,
-         run_outcome: run_outcome
+         value: _value,
+         run_outcome: _run_outcome
        }} ->
         # - take the log state from the run_outcome,
         # - consider the current-state as the scoped-state
         # - extract the parent-state - that will be the basis for the new state
         # - add the scoped-state as the scoped child of the open effect log in the parent-state
         # - that's the new state
-        # Logger.error("#{__MODULE__}.ScopedOk #{inspect(run_outcome, pretty: true)}")
 
         log_or_resume(computation, log)
 
