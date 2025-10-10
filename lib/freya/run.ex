@@ -254,6 +254,7 @@ defmodule Freya.Run do
           updated_effect_state =
             mod.scoped_return(
               scoped_effect_result,
+              computation,
               key,
               Map.get(effect_states, key),
               Map.get(scoped_effect_states, key),

@@ -65,6 +65,7 @@ defmodule Freya.EffectHandler do
   """
   @callback scoped_return(
               result :: Freya.Result.result(),
+              computation :: Freya.Freer.freer(),
               handler_key :: atom,
               state :: any,
               scoped_state :: any,
@@ -78,5 +79,5 @@ defmodule Freya.EffectHandler do
               run_state :: RunState.t()
             ) :: {Freer.Pure.t(), any}
 
-  @optional_callbacks initialize: 4, scoped_return: 5, finalize: 4
+  @optional_callbacks initialize: 4, scoped_return: 6, finalize: 4
 end

@@ -223,6 +223,18 @@ defmodule Freya.Effects.EffectLogger.Handler do
   end
 
   @impl Freya.EffectHandler
+  def scoped_return(
+        _result,
+        _computation,
+        _handler_key,
+        state,
+        _scoped_state,
+        _run_state
+      ) do
+    state
+  end
+
+  @impl Freya.EffectHandler
   def finalize(
         %Pure{} = computation,
         _handler_key,
