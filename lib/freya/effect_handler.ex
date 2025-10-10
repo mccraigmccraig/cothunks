@@ -59,7 +59,9 @@ defmodule Freya.EffectHandler do
   - keep scoped state on a successful return
   - discard scoped state on an error return
   - not sure yet on a suspend return - suspending from within a scoped effect
-    seems like it might require some extra thought
+    seems like it might require some extra thought - perhaps wrapping the
+    scoped suspend in an outer suspend - not sure how that works with
+    logging at all
   """
   @callback scoped_return(
               result :: Freya.Result.result(),
