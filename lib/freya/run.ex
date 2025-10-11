@@ -11,7 +11,7 @@ defmodule Freya.Run do
   alias Freya.OkResult
   alias Freya.Freer.Pure
   alias Freya.Protocols.Result
-  alias Freya.Protocols.Sendable
+  alias Freya.Sig.ISendable
   alias Freya.Run.RunEffects
   alias Freya.Run.RunEffects.ScopedResult
   alias Freya.Run.RunState
@@ -111,7 +111,7 @@ defmodule Freya.Run do
         sendable,
         %RunState{} = run_state
       ) do
-    computation = Sendable.send(sendable)
+    computation = ISendable.send(sendable)
 
     if computation == sendable do
       raise ArgumentError,
@@ -245,7 +245,7 @@ defmodule Freya.Run do
         sendable,
         %RunState{} = run_state
       ) do
-    computation = Sendable.send(sendable)
+    computation = ISendable.send(sendable)
 
     if computation == sendable do
       raise ArgumentError,

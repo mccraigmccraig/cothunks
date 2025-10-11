@@ -2,7 +2,7 @@
 
 defmodule Freya.Effects.EffectLogger do
   defmodule LogInterpretedEffectValue do
-    use Freya.Effect.SendableImpl, sig: Freya.Effects.EffectLogger
+    use Freya.Sig.Sendable, sig: Freya.Effects.EffectLogger
     defstruct value: nil
   end
 

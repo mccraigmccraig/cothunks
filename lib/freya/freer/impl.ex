@@ -7,7 +7,7 @@ defmodule Freya.Freer.Impl do
 
   alias Freya.Freer
   alias Freya.Freer.{Pure, Impure}
-  alias Freya.Protocols.Sendable
+  alias Freya.Sig.ISendable
 
   @doc """
   add a continuation `mf` to a queue of continuations `q`
@@ -48,12 +48,12 @@ defmodule Freya.Freer.Impl do
   def q_apply(q, x) do
     case q do
       [k] ->
-        neff = k.(x) |> Sendable.send()
+        neff = k.(x) |> ISendable.send()
         Logger.info("#{__MODULE__}.q_apply: #{inspect(neff, pretty: true)}")
         neff
 
       [k | t] ->
-        neff = k.(x) |> Sendable.send()
+        neff = k.(x) |> ISendable.send()
         Logger.info("#{__MODULE__}.q_apply: #{inspect(neff, pretty: true)}")
         bindp(neff, t)
     end

@@ -6,12 +6,12 @@ defmodule Freya.Effects.Error.Catch do
   defstruct computation: nil, handler: nil
 end
 
-defimpl Freya.Protocols.Sendable, for: Freya.Effects.Error.Throw do
+defimpl Freya.Sig.ISendable, for: Freya.Effects.Error.Throw do
   def send(%Freya.Effects.Error.Throw{} = eff),
     do: Freya.Freer.send_effect(eff, Freya.Effects.Error)
 end
 
-defimpl Freya.Protocols.Sendable, for: Freya.Effects.Error.Catch do
+defimpl Freya.Sig.ISendable, for: Freya.Effects.Error.Catch do
   def send(%Freya.Effects.Error.Catch{} = eff),
     do: Freya.Freer.send_effect(eff, Freya.Effects.Error)
 end

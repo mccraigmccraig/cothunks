@@ -1,6 +1,6 @@
 defmodule Freya.Run.RunEffects do
   defmodule ScopedResult do
-    use Freya.Effect.SendableImpl, sig: Freya.Effects.State
+    use Freya.Sig.Sendable, sig: Freya.Effects.State
 
     defstruct computation: nil, run_outcome: nil
 
