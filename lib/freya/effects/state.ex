@@ -12,11 +12,8 @@ defmodule Freya.Effects.State do
   @moduledoc """
   Operations in the State effect
   """
-  alias Freya.Effects.State.Put
-  alias Freya.Effects.State.Get
-
-  def put(v), do: %Put{val: v}
-  def get, do: %Get{}
+  def put(v), do: %Freya.Effects.State.Put{val: v}
+  def get, do: %Freya.Effects.State.Get{}
 end
 
 defmodule Freya.Effects.State.Handler do
