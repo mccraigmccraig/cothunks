@@ -2,16 +2,10 @@ defmodule Freya.Effects.State do
   @moduledoc """
   Operations in the State effect
   """
+  import Freya.Sig.DefEffectStruct
 
-  defmodule Get do
-    use Freya.Sig.Sendable, sig: Freya.Effects.State
-    defstruct []
-  end
-
-  defmodule Put do
-    use Freya.Sig.Sendable, sig: Freya.Effects.State
-    defstruct val: nil
-  end
+  def_effect_struct(Get, [])
+  def_effect_struct(Put, val: nil)
 
   def put(v), do: %Put{val: v}
   def get, do: %Get{}
