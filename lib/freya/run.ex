@@ -273,9 +273,11 @@ defmodule Freya.Run do
 
   # blessed handler for ScopedResults - it must be handled here, because
   # the EffectHandler behaviour does not support effects which can
-  # change other effect's state - instead, the EffectHandler.scoped_return
-  # funciton is offered, which allows handlers to override their own
-  # scoped_return action
+  # change other effect's state - instead, the optional
+  # EffectHandler.scoped_return funciton is offered, which allows
+  # handlers to override their own scoped_return action, and this
+  # blessed interpreter can call that function for every EffectHandler
+  # (which implements it)
   def interpret_one(
         %Impure{
           sig: RunEffects,
