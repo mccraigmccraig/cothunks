@@ -1,4 +1,4 @@
-defmodule Freya.Effect.SendableSImpl do
+defmodule Freya.Effect.SendableImpl do
   defmacro __using__(_opts) do
     quote do
       defimpl Freya.Protocols.Sendable, for: __MODULE__ do

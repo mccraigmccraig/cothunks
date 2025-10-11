@@ -1,10 +1,10 @@
 defmodule Freya.Effects.State.Get do
-  use Freya.Effect.SendableSImpl
+  use Freya.Effect.SendableImpl
   defstruct []
 end
 
 defmodule Freya.Effects.State.Put do
-  use Freya.Effect.SendableSImpl
+  use Freya.Effect.SendableImpl
   defstruct val: nil
 end
 
