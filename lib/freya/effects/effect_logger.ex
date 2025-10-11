@@ -1,10 +1,9 @@
 # define a private effect to capture interpreted effect values
 
 defmodule Freya.Effects.EffectLogger do
-  defmodule LogInterpretedEffectValue do
-    use Freya.Sig.Sendable, sig: Freya.Effects.EffectLogger
-    defstruct value: nil
-  end
+  import Freya.Sig.DefEffectStruct
+
+  def_effect_struct(LogInterpretedEffectValue, value: nil)
 
   def log_interpreted_effect_value(v), do: %LogInterpretedEffectValue{value: v}
 end
