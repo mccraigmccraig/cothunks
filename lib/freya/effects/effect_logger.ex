@@ -238,6 +238,8 @@ defmodule Freya.Effects.EffectLogger.Handler do
       ) do
     log = log || Log.new()
     finalized_log = Log.prepare_for_resume(log)
+
+    Logger.error("#{__MODULE__}.finalize #{inspect(log, pretty: true)}")
     {computation, finalized_log}
   end
 

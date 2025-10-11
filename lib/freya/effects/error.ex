@@ -1,26 +1,9 @@
-defmodule Freya.Effects.Error.Throw do
-  defstruct error: nil
-end
-
-defmodule Freya.Effects.Error.Catch do
-  defstruct computation: nil, handler: nil
-end
-
-defimpl Freya.Sig.ISendable, for: Freya.Effects.Error.Throw do
-  def send(%Freya.Effects.Error.Throw{} = eff),
-    do: Freya.Freer.send_effect(eff, Freya.Effects.Error)
-end
-
-defimpl Freya.Sig.ISendable, for: Freya.Effects.Error.Catch do
-  def send(%Freya.Effects.Error.Catch{} = eff),
-    do: Freya.Freer.send_effect(eff, Freya.Effects.Error)
-end
-
 defmodule Freya.Effects.Error do
   @moduledoc "Operations (Ops) for the Error effect"
+  import Freya.Sig.DefEffectStruct
 
-  alias Freya.Effects.Error.Throw
-  alias Freya.Effects.Error.Catch
+  def_effect_struct(Throw, error: nil)
+  def_effect_struct(Catch, computation: nil, handler: nil)
 
   def throw_fx(err), do: %Throw{error: err}
   def catch_fx(computation, handler), do: %Catch{computation: computation, handler: handler}
