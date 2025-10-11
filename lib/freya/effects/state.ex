@@ -1,19 +1,20 @@
-defmodule Freya.Effects.State.Get do
-  use Freya.Effect.SendableImpl, sig: Freya.Effects.State
-  defstruct []
-end
-
-defmodule Freya.Effects.State.Put do
-  use Freya.Effect.SendableImpl, sig: Freya.Effects.State
-  defstruct val: nil
-end
-
 defmodule Freya.Effects.State do
   @moduledoc """
   Operations in the State effect
   """
-  def put(v), do: %Freya.Effects.State.Put{val: v}
-  def get, do: %Freya.Effects.State.Get{}
+
+  defmodule Get do
+    use Freya.Effect.SendableImpl, sig: Freya.Effects.State
+    defstruct []
+  end
+
+  defmodule Put do
+    use Freya.Effect.SendableImpl, sig: Freya.Effects.State
+    defstruct val: nil
+  end
+
+  def put(v), do: %Put{val: v}
+  def get, do: %Get{}
 end
 
 defmodule Freya.Effects.State.Handler do
