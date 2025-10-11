@@ -171,6 +171,49 @@ defmodule Freya.Run do
     end)
   end
 
+  # use the EffectHandler.scoped_return function to update each of the
+  # effect states after a scoped handler returns
+  #
+  # returns: an updated Map of effect states
+  @spec scoped_return(RunState.t(), ScopedResult.t()) :: map
+  defp scoped_return(
+         %RunState{handlers: handlers, states: effect_states} = run_state,
+         %ScopedResult{
+           computation: computation,
+           run_outcome: %RunOutcome{
+             result: scoped_effect_result,
+             run_state: %RunState{states: scoped_effect_states}
+           }
+         }
+       ) do
+    handlers
+    |> Enum.reduce(effect_states, fn {key, mod}, effect_states ->
+      if function_exported?(mod, :scoped_return, 6) do
+        updated_effect_state =
+          mod.scoped_return(
+            scoped_effect_result,
+            computation,
+            key,
+            Map.get(effect_states, key),
+            Map.get(scoped_effect_states, key),
+            run_state
+          )
+
+        Map.put(effect_states, key, updated_effect_state)
+      else
+        case scoped_effect_result do
+          %Freya.OkResult{} ->
+            # accept the scoped state
+            Map.put(effect_states, key, Map.get(scoped_effect_states, key))
+
+          _ ->
+            # ignore the scoped state
+            effect_states
+        end
+      end
+    end)
+  end
+
   @doc """
   Interpret effects until there is only %Pure{} remaining - does not finalize.
   Useful for Effect handlers which want to run a sub-computation and control
@@ -236,47 +279,16 @@ defmodule Freya.Run do
   def interpret_one(
         %Impure{
           sig: RunEffects,
-          data: %ScopedResult{
-            computation: computation,
-            run_outcome: %RunOutcome{
-              result: scoped_effect_result,
-              run_state: %RunState{states: scoped_effect_states}
-            }
-          },
+          data:
+            %ScopedResult{
+              computation: computation
+            } = scoped_result,
           q: q
         },
-        %RunState{handlers: handlers, states: effect_states} = run_state
+        %RunState{} = run_state
       ) do
-    updated_effect_states =
-      handlers
-      |> Enum.reduce(effect_states, fn {key, mod}, effect_states ->
-        if function_exported?(mod, :scoped_return, 6) do
-          updated_effect_state =
-            mod.scoped_return(
-              scoped_effect_result,
-              computation,
-              key,
-              Map.get(effect_states, key),
-              Map.get(scoped_effect_states, key),
-              run_state
-            )
+    updated_effect_states = scoped_return(run_state, scoped_result)
 
-          Map.put(effect_states, key, updated_effect_state)
-        else
-          case scoped_effect_result do
-            %Freya.OkResult{} ->
-              # accept the scoped state
-              Map.put(effect_states, key, Map.get(scoped_effect_states, key))
-
-            _ ->
-              # ignore the scoped state
-              effect_states
-          end
-        end
-      end)
-
-    # blessed handler for delimited effects to use to commit updated
-    # effect states to the parent computation
     {
       Impl.bindp(computation, q),
       %{run_state | states: updated_effect_states}
