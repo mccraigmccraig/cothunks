@@ -1,19 +1,11 @@
 defmodule Freya.Effects.State.Get do
+  use Freya.Effect.SendableSImpl
   defstruct []
 end
 
 defmodule Freya.Effects.State.Put do
+  use Freya.Effect.SendableSImpl
   defstruct val: nil
-end
-
-defimpl Freya.Protocols.Sendable, for: Freya.Effects.State.Get do
-  def send(%Freya.Effects.State.Get{} = eff),
-    do: Freya.Freer.send_effect(eff, Freya.Effects.State)
-end
-
-defimpl Freya.Protocols.Sendable, for: Freya.Effects.State.Put do
-  def send(%Freya.Effects.State.Put{} = eff),
-    do: Freya.Freer.send_effect(eff, Freya.Effects.State)
 end
 
 defmodule Freya.Effects.State do
