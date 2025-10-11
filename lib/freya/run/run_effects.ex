@@ -1,15 +1,15 @@
-defmodule Freya.Run.RunEffects.ScopedResult do
-  use Freya.Effect.SendableImpl, sig: Freya.Effects.State
-
-  defstruct computation: nil, run_outcome: nil
-
-  @type t :: %__MODULE__{
-          computation: Freya.Freer.freer(),
-          run_outcome: Freya.RunOutcome.t()
-        }
-end
-
 defmodule Freya.Run.RunEffects do
+  defmodule ScopedResult do
+    use Freya.Effect.SendableImpl, sig: Freya.Effects.State
+
+    defstruct computation: nil, run_outcome: nil
+
+    @type t :: %__MODULE__{
+            computation: Freya.Freer.freer(),
+            run_outcome: Freya.RunOutcome.t()
+          }
+  end
+
   @doc """
   A privileged operation which allows scoped effects like
   Error to return the effect states of a child computation to the
@@ -27,7 +27,7 @@ defmodule Freya.Run.RunEffects do
       the result, the effect states and the effect outputs
   """
   def scoped_result(computation, run_outcome),
-    do: %Freya.Run.RunEffects.ScopedResult{
+    do: %ScopedResult{
       computation: computation,
       run_outcome: run_outcome
     }
