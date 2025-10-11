@@ -4,7 +4,7 @@ defmodule Freya.Effects.State do
   """
   import Freya.Sig.DefEffectStruct
 
-  def_effect_struct(Get, [])
+  def_effect_struct(Get)
   def_effect_struct(Put, val: nil)
 
   def put(v), do: %Put{val: v}
